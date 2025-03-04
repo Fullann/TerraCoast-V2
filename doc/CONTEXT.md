@@ -50,6 +50,10 @@ Terracoast est une application ludique et interactive qui permet aux utilisateur
   - Clic sur une carte interactive
 - Notation des quiz (1 à 5 étoiles) après la première complétion.
 - Système d'expérience (EXP) pour monter en niveau.
+- Création de quiz
+  - Quiz créer par les admins dispo pour tout le monde
+  - Quiz perso on peut les partagers via un lien mais il ne sont pas disponile sur la page d'acceuil
+
 
 ### 2.5. Mode Duel et Compétition
 - **Duel sur un pays** : Deux joueurs reçoivent des questions sur un même pays (capitale, population, langue, etc.) et celui qui se rapproche le plus de la bonne réponse gagne.
@@ -57,10 +61,12 @@ Terracoast est une application ludique et interactive qui permet aux utilisateur
 - **Mode Événement** : Quiz temporaires sur des événements géographiques actuels (ex : éruption volcanique, JO, etc.).
 - **Classement** : Affichage des scores mondiaux et par région.
 - Rangs visibles sur le profil.
+- Clans avec lesquelles on peut faire des combat clans contre clans 
+- combat 1v1 rapidité : la meme question et celui qui repond le plus vite a les points 
 
 ### 2.6. Expérience Utilisateur et Monétisation
 - **Processus d'accueil** :
-  1. Arrivée sur la page d'accueil avec un quiz d'évaluation sur la géographie du monde.
+  1. Arrivée sur la page d'accueil avec un quiz d'évaluation et un tuto où l'on apprend comment repondre à chaques types questions.
   2. Analyse des résultats et proposition de thèmes à apprendre en priorité.
   3. Accès aux quiz avec une limite de 10 quiz/jour (au-delà, visionnage d'une pub ou abonnement premium pour vies illimitées).
 - **Navigation** :
@@ -87,7 +93,10 @@ Terracoast est une application ludique et interactive qui permet aux utilisateur
 - **Tests** :
   - Tests utilisateurs pour optimiser l'UX/UI.
   - Tests unitaires et d'intégration pour assurer la stabilité.
-
+### 2.8 Récompenses
+- Des badges selon les performances sur des quiz, sur l'ancienneté, sur les evenements de saison sur les top leagus
+- Gagner des XPs a chaque quiz resolu, lorsqu'on gagne un duel ou quand on fait un 1v1 de vitesse.
+- Si dans le top 10 de ça propre leagus on monte dans la leaugue du dessus ( comme duolingo) chaque league est reset le samedi si on est en desous des 20 derniers on dessent de league.
 ## 3. Technologies Utilisées
 
 ### **Frontend (Interface Utilisateur)**
@@ -99,13 +108,10 @@ Terracoast est une application ludique et interactive qui permet aux utilisateur
 - **Shadcn/UI** – Pour des composants modernes et accessibles.
 - **Framer Motion** – Pour les animations fluides.
 
-#### **Gestion d'état**
-- **Zustand** ou **Redux Toolkit** – Pour gérer l'état global de l'application.
-- **React Query (TanStack Query)** – Pour la gestion des requêtes API et cache.
-
 #### **Cartographie & Géolocalisation**
 - **Leaflet.js** ou **Mapbox** – Pour les cartes interactives et modes de jeu type GeoGuessr.
 - **OpenStreetMap API** – Pour récupérer des données géographiques.
+- **DataSet** https://www.geonames.org/
 
 #### **Authentification & Sécurité**
 - **NextAuth.js** – Pour l'authentification OAuth, JWT et sécurisation des sessions.
