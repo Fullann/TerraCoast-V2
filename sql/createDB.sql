@@ -175,7 +175,7 @@ CREATE TABLE subscriptions (
     active BOOLEAN DEFAULT TRUE
 );
 
--- 1.14. Table des Évaluations de Quiz (notation par étoiles)
+-- 1.14. Ta ble des Évaluations de Quiz (notation par étoiles)
 CREATE TABLE quiz_ratings (
     id SERIAL PRIMARY KEY,
     quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
