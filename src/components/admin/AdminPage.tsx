@@ -1,0 +1,290 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { Shield, Users, BookOpen, AlertTriangle, Award, Star, Tag, Target } from 'lucide-react';
+import type { Database } from '../../lib/database.types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type Quiz = Database['public']['Tables']['quizzes']['Row'];
+type Report = Database['public']['Tables']['reports']['Row'];
+
+interface AdminPageProps {
+  onNavigate?: (view: string) => void;
+}
+
+export function AdminPage({ onNavigate }: AdminPageProps = {}) {
+  const { profile } = useAuth();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalQuizzes: 0,
+    pendingReports: 0,
+    totalBadges: 0,
+  });
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+
+  useEffect(() => {
+    if (profile?.role === 'admin') {
+      loadAdminData();
+    }
+  }, [profile]);
+
+  const loadAdminData = async () => {
+    const { count: usersCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: quizzesCount } = await supabase
+      .from('quizzes')
+      .select('*', { count: 'exact', head: true });
+
+    const { count: reportsCount } = await supabase
+      .from('reports')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending');
+
+    const { count: badgesCount } = await supabase
+      .from('badges')
+      .select('*', { count: 'exact', head: true });
+
+    setStats({
+      totalUsers: usersCount || 0,
+      totalQuizzes: quizzesCount || 0,
+      pendingReports: reportsCount || 0,
+      totalBadges: badgesCount || 0,
+    });
+
+    const { data: usersData } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (usersData) setUsers(usersData);
+
+    const { data: quizzesData } = await supabase
+      .from('quizzes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (quizzesData) setQuizzes(quizzesData);
+
+    const { data: reportsData } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    if (reportsData) setReports(reportsData);
+  };
+
+  const toggleUserRole = async (userId: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'user' : 'admin';
+
+    await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+
+    loadAdminData();
+  };
+
+  const deleteQuiz = async (quizId: string) => {
+    if (!confirm('Voulez-vous vraiment supprimer ce quiz?')) return;
+
+    await supabase.from('quizzes').delete().eq('id', quizId);
+    loadAdminData();
+  };
+
+  if (profile?.role !== 'admin') {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center">
+          <Shield className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Accès refusé</h2>
+          <p className="text-gray-600">Vous devez être administrateur pour accéder à cette page</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+          <Shield className="w-10 h-10 mr-3 text-emerald-600" />
+          Administration
+        </h1>
+        <p className="text-gray-600">Gestion de la plateforme GeoQuiz</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+          <Users className="w-10 h-10 mb-3" />
+          <p className="text-blue-100 text-sm">Utilisateurs</p>
+          <p className="text-4xl font-bold">{stats.totalUsers}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
+          <BookOpen className="w-10 h-10 mb-3" />
+          <p className="text-emerald-100 text-sm">Quiz</p>
+          <p className="text-4xl font-bold">{stats.totalQuizzes}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
+          <AlertTriangle className="w-10 h-10 mb-3" />
+          <p className="text-amber-100 text-sm">Signalements</p>
+          <p className="text-4xl font-bold">{stats.pendingReports}</p>
+        </div>
+
+        <button
+          onClick={() => onNavigate?.('badge-management')}
+          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Award className="w-10 h-10 mb-3" />
+          <p className="text-purple-100 text-sm">Badges</p>
+          <p className="text-4xl font-bold mb-2">{stats.totalBadges}</p>
+          <p className="text-xs text-purple-100">Cliquer pour gérer →</p>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <button
+          onClick={() => onNavigate?.('title-management')}
+          className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Star className="w-10 h-10 mb-3" />
+          <p className="text-amber-100 text-sm">Gestion des titres</p>
+          <p className="text-xs text-amber-100 mt-2">Créer et gérer les titres →</p>
+        </button>
+
+        <button
+          onClick={() => onNavigate?.('category-management')}
+          className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Tag className="w-10 h-10 mb-3" />
+          <p className="text-blue-100 text-sm">Gestion des catégories</p>
+          <p className="text-xs text-blue-100 mt-2">Gérer les catégories de quiz →</p>
+        </button>
+
+        <button
+          onClick={() => onNavigate?.('difficulty-management')}
+          className="bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Target className="w-10 h-10 mb-3" />
+          <p className="text-orange-100 text-sm">Gestion des difficultés</p>
+          <p className="text-xs text-orange-100 mt-2">Gérer les niveaux de difficulté →</p>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <Users className="w-6 h-6 mr-2 text-blue-600" />
+            Utilisateurs récents
+          </h2>
+
+          <div className="space-y-3">
+            {users.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+              >
+                <div>
+                  <p className="font-semibold text-gray-800">{user.pseudo}</p>
+                  <p className="text-sm text-gray-600">
+                    Niveau {user.level} - {user.role}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => toggleUserRole(user.id, user.role)}
+                  className={`px-4 py-2 rounded-lg font-medium ${
+                    user.role === 'admin'
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                  }`}
+                >
+                  {user.role === 'admin' ? 'Retirer admin' : 'Promouvoir admin'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <BookOpen className="w-6 h-6 mr-2 text-emerald-600" />
+            Quiz récents
+          </h2>
+
+          <div className="space-y-3">
+            {quizzes.map((quiz) => (
+              <div
+                key={quiz.id}
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+              >
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-800">{quiz.title}</p>
+                  <div className="flex items-center space-x-3 mt-1">
+                    <span className="text-xs text-gray-600">{quiz.category}</span>
+                    <span className="text-xs text-gray-600">{quiz.difficulty}</span>
+                    <span className="text-xs text-gray-600">
+                      {quiz.total_plays} parties
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => deleteQuiz(quiz.id)}
+                  className="ml-4 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                >
+                  Supprimer
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {reports.length > 0 && (
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <AlertTriangle className="w-6 h-6 mr-2 text-amber-600" />
+            Signalements en attente
+          </h2>
+
+          <div className="space-y-3">
+            {reports.map((report) => (
+              <div
+                key={report.id}
+                className="p-4 border-2 border-amber-200 bg-amber-50 rounded-lg"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-gray-800">{report.reason}</p>
+                    <p className="text-sm text-gray-600 mt-1">{report.description}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {new Date(report.created_at).toLocaleString('fr-FR')}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                      Résoudre
+                    </button>
+                    <button className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
+                      Rejeter
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
