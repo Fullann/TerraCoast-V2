@@ -114,7 +114,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
           <Users className="w-10 h-10 mr-3 text-emerald-600" />
           Amis
         </h1>
-        <p className="text-gray-600">Gérez vos amis et lancez des défis</p>
+        <p className="text-gray-600">Gérez vos amis et tchattez ensemble</p>
       </div>
 
       {pendingRequests.length > 0 && (

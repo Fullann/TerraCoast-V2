@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell } from 'lucide-react';
+import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell, Trash2 } from 'lucide-react';
 import { ShareQuizModal } from './ShareQuizModal';
 import type { Database } from '../../lib/database.types';
 
@@ -25,6 +25,23 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   useEffect(() => {
     loadQuizzes();
   }, [profile, categoryFilter, difficultyFilter]);
+
+  const removeSharedQuiz = async (quizId: string) => {
+    if (!confirm('Voulez-vous retirer ce quiz de votre liste partagée ?')) return;
+
+    const { error } = await supabase
+      .from('quiz_shares')
+      .delete()
+      .eq('quiz_id', quizId)
+      .eq('shared_with_user_id', profile?.id);
+
+    if (error) {
+      alert('Erreur lors de la suppression');
+      return;
+    }
+
+    loadQuizzes();
+  };
 
   const loadQuizzes = async () => {
     if (!profile) return;
@@ -214,7 +231,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                 </div>
 
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {quiz.description || 'Pas de description'}
+                  {quiz.description || ''}
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -269,6 +286,15 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                         </button>
                       )}
                     </>
+                  )}
+                  {activeTab === 'shared' && (
+                    <button
+                      onClick={() => removeSharedQuiz(quiz.id)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      title="Retirer de ma liste"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>

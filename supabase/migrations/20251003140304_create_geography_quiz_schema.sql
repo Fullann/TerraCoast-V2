@@ -213,6 +213,16 @@ CREATE POLICY "Users can insert own profile"
   TO authenticated
   WITH CHECK (auth.uid() = id);
 
+CREATE POLICY "Admins can select all profiles"
+  ON profiles FOR SELECT TO authenticated
+  USING ((SELECT role FROM profiles WHERE id = auth.uid()) = 'admin');
+
+-- Autoriser les admins à mettre à jour toutes les lignes
+CREATE POLICY "Admins can update all profiles"
+  ON profiles FOR UPDATE TO authenticated
+  USING ((SELECT role FROM profiles WHERE id = auth.uid()) = 'admin')
+  WITH CHECK ((SELECT role FROM profiles WHERE id = auth.uid()) = 'admin');
+
 -- Create badges table
 CREATE TABLE IF NOT EXISTS badges (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

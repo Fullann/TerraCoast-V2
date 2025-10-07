@@ -203,6 +203,11 @@ export function TitleManagementPage() {
                   <option value="wins">Victoires</option>
                   <option value="quizzes_completed">Quiz complétés</option>
                   <option value="perfect_scores">Scores parfaits</option>
+                  <option value="published_quizzes">Quiz publiés</option>
+                  <option value="monthly_rank">Classement mensuel (top X)</option>
+                  <option value="badges_earned">Badges gagnés</option>
+                  <option value="total_score">Score total</option>
+                  <option value="friends_count">Nombre d'amis</option>
                 </select>
               </div>
 

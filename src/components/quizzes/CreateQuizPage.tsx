@@ -12,6 +12,7 @@ interface Question {
   question_text: string;
   question_type: QuestionType;
   correct_answer: string;
+  correct_answers?: string[];
   options: string[];
   image_url?: string;
   option_images?: Record<string, string>;
@@ -30,12 +31,16 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [category, setCategory] = useState<QuizCategory>('capitals');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [isPublic, setIsPublic] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
+  const [randomizeQuestions, setRandomizeQuestions] = useState(false);
+  const [randomizeAnswers, setRandomizeAnswers] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     question_text: '',
     question_type: 'mcq',
     correct_answer: '',
+    correct_answers: [],
     options: ['', '', '', ''],
     image_url: '',
     option_images: {},
@@ -126,19 +131,39 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     try {
       const isGlobal = profile.role === 'admin' && isPublic;
 
+      const quizData: any = {
+        creator_id: profile.id,
+        title,
+        description,
+        category,
+        difficulty,
+        time_limit_seconds: timeLimitSeconds,
+        cover_image_url: coverImageUrl || null,
+        randomize_questions: randomizeQuestions,
+        randomize_answers: randomizeAnswers,
+      };
+
+      if (profile.role === 'admin') {
+        quizData.is_public = isPublic;
+        quizData.is_global = isGlobal;
+        quizData.validation_status = 'approved';
+        quizData.pending_validation = false;
+        quizData.published_at = isPublic ? new Date().toISOString() : null;
+      } else if (isPublic) {
+        quizData.is_public = false;
+        quizData.validation_status = 'pending';
+        quizData.pending_validation = true;
+        quizData.published_at = null;
+      } else {
+        quizData.is_public = false;
+        quizData.validation_status = 'approved';
+        quizData.pending_validation = false;
+        quizData.published_at = null;
+      }
+
       const { data: quiz, error: quizError } = await supabase
         .from('quizzes')
-        .insert({
-          creator_id: profile.id,
-          title,
-          description,
-          category,
-          difficulty,
-          is_public: isPublic,
-          is_global: isGlobal,
-          time_limit_seconds: timeLimitSeconds,
-          published_at: isPublic ? new Date().toISOString() : null,
-        })
+        .insert(quizData)
         .select()
         .single();
 
@@ -149,6 +174,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         question_text: q.question_text,
         question_type: q.question_type,
         correct_answer: q.correct_answer,
+        correct_answers: q.correct_answers && q.correct_answers.length > 0 ? q.correct_answers : null,
         options: q.question_type === 'mcq' ? q.options.filter(opt => opt.trim()) : null,
         image_url: q.image_url || null,
         option_images: q.option_images && Object.keys(q.option_images).length > 0 ? q.option_images : null,
@@ -228,6 +254,24 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             />
           </div>
 
+          {isPublic && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image de couverture (URL)
+              </label>
+              <input
+                type="text"
+                value={coverImageUrl}
+                onChange={(e) => setCoverImageUrl(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                placeholder="https://exemple.com/image.jpg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Optionnel : Ajoute une image de présentation pour ton quiz public
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -277,18 +321,54 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="isPublic"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-              className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-            />
-            <label htmlFor="isPublic" className="text-sm text-gray-700">
-              Quiz public ({profile?.published_quiz_count || 0}/10 quiz publiés)
-              {profile?.role === 'admin' && ' - En tant qu\'admin, ce sera un quiz global'}
-            </label>
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="randomizeQuestions"
+                checked={randomizeQuestions}
+                onChange={(e) => setRandomizeQuestions(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="randomizeQuestions" className="text-sm text-gray-700">
+                Mélanger l'ordre des questions
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="randomizeAnswers"
+                checked={randomizeAnswers}
+                onChange={(e) => setRandomizeAnswers(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="randomizeAnswers" className="text-sm text-gray-700">
+                Mélanger l'ordre des réponses (QCM)
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isPublic"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="isPublic" className="text-sm text-gray-700">
+                {profile?.role === 'admin' ? (
+                  'Quiz public - En tant qu\'admin, ce sera un quiz global approuvé immédiatement'
+                ) : (
+                  `Soumettre pour validation (${profile?.published_quiz_count || 0}/10 quiz publiés)`
+                )}
+              </label>
+            </div>
+            {profile?.role !== 'admin' && isPublic && (
+              <p className="text-xs text-gray-500">
+                Ton quiz sera examiné par un administrateur avant d'être publié
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -409,25 +489,45 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Réponse correcte *
+              Réponse(s) correcte(s) *
             </label>
             {currentQuestion.question_type === 'mcq' ? (
-              <select
-                value={currentQuestion.correct_answer}
-                onChange={(e) =>
-                  setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              >
-                <option value="">Sélectionnez la bonne réponse</option>
-                {currentQuestion.options
-                  .filter((opt) => opt.trim())
-                  .map((option, index) => (
-                    <option key={index} value={option}>
-                      {option}
-                    </option>
-                  ))}
-              </select>
+              <div className="space-y-2">
+                <div className="space-y-2">
+                  {currentQuestion.options
+                    .filter((opt) => opt.trim())
+                    .map((option, index) => (
+                      <label key={index} className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(currentQuestion.correct_answers || []).includes(option)}
+                          onChange={(e) => {
+                            const answers = currentQuestion.correct_answers || [];
+                            if (e.target.checked) {
+                              setCurrentQuestion({
+                                ...currentQuestion,
+                                correct_answers: [...answers, option],
+                                correct_answer: option
+                              });
+                            } else {
+                              const newAnswers = answers.filter(a => a !== option);
+                              setCurrentQuestion({
+                                ...currentQuestion,
+                                correct_answers: newAnswers,
+                                correct_answer: newAnswers[0] || ''
+                              });
+                            }
+                          }}
+                          className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                        />
+                        <span className="text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Sélectionne une ou plusieurs réponses correctes (ex: Capitales d'Afrique du Sud)
+                </p>
+              </div>
             ) : (
               <input
                 type="text"

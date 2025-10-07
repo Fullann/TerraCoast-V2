@@ -5,6 +5,7 @@
 <p align="center">
   <img src="./public/logo.png" alt="Logo Terracoast" height="84" />
 </p>
+
 ## À propos du projet
 
 Terracoast est une plateforme interactive dédiée aux passionnés de géographie et aux curieux souhaitant apprendre en s’amusant.  

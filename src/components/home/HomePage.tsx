@@ -140,7 +140,7 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
             </button>
 
             <button
-              onClick={() => onNavigate('friends')}
+              onClick={() => onNavigate('duels')}
               className="w-full flex items-center justify-between p-4 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors group"
             >
               <div className="flex items-center space-x-3">
@@ -166,7 +166,7 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
                 <div
                   key={quiz.id}
                   className="p-4 border border-gray-200 rounded-lg hover:border-emerald-300 transition-colors cursor-pointer"
-                  onClick={() => onNavigate('quizzes')}
+                  onClick={() => onNavigate('play-quiz', { quizId: quiz.id })}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">

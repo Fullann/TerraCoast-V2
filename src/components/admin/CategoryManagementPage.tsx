@@ -130,7 +130,6 @@ export function CategoryManagementPage() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Ex: flags"
-                disabled={!!editingCategory}
               />
               <p className="text-xs text-gray-500 mt-1">
                 Utilisé dans le code (minuscules, sans espaces)

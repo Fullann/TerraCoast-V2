@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { Navbar } from './components/layout/Navbar';
 import { HomePage } from './components/home/HomePage';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { SettingsPage } from './components/profile/SettingsPage';
 import { QuizzesPage } from './components/quizzes/QuizzesPage';
 import { CreateQuizPage } from './components/quizzes/CreateQuizPage';
 import { EditQuizPage } from './components/quizzes/EditQuizPage';
@@ -17,12 +19,14 @@ import { BadgeManagementPage } from './components/admin/BadgeManagementPage';
 import { TitleManagementPage } from './components/admin/TitleManagementPage';
 import { CategoryManagementPage } from './components/admin/CategoryManagementPage';
 import { DifficultyManagementPage } from './components/admin/DifficultyManagementPage';
+import { QuizValidationPage } from './components/admin/QuizValidationPage';
 import { DuelsPage } from './components/duels/DuelsPage';
 import { ChatPage } from './components/chat/ChatPage';
+import { LandingPage } from './components/landing/LandingPage';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [authView, setAuthView] = useState<'login' | 'register' | 'landing'>('landing');
   const [currentView, setCurrentView] = useState<string>('home');
   const [viewData, setViewData] = useState<any>(null);
 
@@ -43,9 +47,21 @@ function AppContent() {
   }
 
   if (!user) {
+    if (authView === 'landing') {
+      return <LandingPage onNavigate={(view) => setAuthView(view as 'login' | 'register')} />;
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
         <div className="w-full">
+          <div className="max-w-md mx-auto mb-4">
+            <button
+              onClick={() => setAuthView('landing')}
+              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
+            >
+              ← Retour à l'accueil
+            </button>
+          </div>
           {authView === 'login' ? (
             <LoginForm onSwitchToRegister={() => setAuthView('register')} />
           ) : (
@@ -63,6 +79,7 @@ function AppContent() {
       <main className="pb-8">
         {currentView === 'home' && <HomePage onNavigate={handleNavigate} />}
         {currentView === 'profile' && <ProfilePage />}
+        {currentView === 'settings' && <SettingsPage onNavigate={handleNavigate} />}
         {currentView === 'quizzes' && <QuizzesPage onNavigate={handleNavigate} />}
         {currentView === 'create-quiz' && <CreateQuizPage onNavigate={handleNavigate} />}
         {currentView === 'edit-quiz' && viewData?.quizId && (
@@ -92,6 +109,7 @@ function AppContent() {
         {currentView === 'title-management' && <TitleManagementPage />}
         {currentView === 'category-management' && <CategoryManagementPage />}
         {currentView === 'difficulty-management' && <DifficultyManagementPage />}
+        {currentView === 'quiz-validation' && <QuizValidationPage />}
       </main>
     </div>
   );
@@ -100,7 +118,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <NotificationProvider>
+        <AppContent />
+      </NotificationProvider>
     </AuthProvider>
   );
 }

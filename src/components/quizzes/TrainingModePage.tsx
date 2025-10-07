@@ -15,6 +15,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [questionCount, setQuestionCount] = useState(10);
+  const [maxQuestions, setMaxQuestions] = useState(50);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -33,6 +34,18 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
       setQuizzes(data);
     }
     setLoading(false);
+  };
+
+  const handleQuizSelection = async (quiz: Quiz) => {
+    setSelectedQuiz(quiz);
+    const { count } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
+      .eq('quiz_id', quiz.id);
+
+    const quizQuestionCount = count || 10;
+    setMaxQuestions(quizQuestionCount);
+    setQuestionCount(Math.min(10, quizQuestionCount));
   };
 
   const startTraining = () => {
@@ -115,7 +128,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
               .map((quiz) => (
               <button
                 key={quiz.id}
-                onClick={() => setSelectedQuiz(quiz)}
+                onClick={() => handleQuizSelection(quiz)}
                 className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                   selectedQuiz?.id === quiz.id
                     ? 'border-emerald-500 bg-emerald-50'
@@ -157,7 +170,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
             <input
               type="range"
               min="5"
-              max="50"
+              max={maxQuestions}
               step="5"
               value={questionCount}
               onChange={(e) => setQuestionCount(parseInt(e.target.value))}
@@ -171,7 +184,7 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
 
           <div className="flex justify-between text-xs text-gray-500 mt-2">
             <span>5 questions</span>
-            <span>50 questions</span>
+            <span>{maxQuestions} questions (max)</span>
           </div>
         </div>
       )}

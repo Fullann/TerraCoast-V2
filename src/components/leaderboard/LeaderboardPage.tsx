@@ -95,9 +95,25 @@ export function LeaderboardPage() {
   };
 
   const getRankIcon = (index: number) => {
-    if (index === 0) return <Crown className="w-6 h-6 text-yellow-500" />;
-    if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
-    if (index === 2) return <Medal className="w-6 h-6 text-amber-600" />;
+    if (index === 0) {
+      return <Crown className="w-6 h-6 text-yellow-500" />;
+    }
+    if (index === 1) {
+      return (
+        <div className="relative">
+          <Medal className="w-6 h-6 text-gray-400" />
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">2</span>
+        </div>
+      );
+    }
+    if (index === 2) {
+      return (
+        <div className="relative">
+          <Medal className="w-6 h-6 text-amber-600" />
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-800">3</span>
+        </div>
+      );
+    }
     return <span className="text-gray-500 font-semibold">{index + 1}</span>;
   };
 
@@ -166,7 +182,7 @@ export function LeaderboardPage() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Tout le temps
+            Tous les temps
           </button>
         </div>
         {period === 'monthly' && (
@@ -207,7 +223,7 @@ export function LeaderboardPage() {
                         Niveau {entry.level}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {entry.games_played} parties {period === 'monthly' ? 'ce mois' : ''}
+                        {entry.games_played} {entry.games_played <= 1 ? 'partie' : 'parties'} {period === 'monthly' ? 'ce mois' : ''}
                       </span>
                       {entry.top_10_count > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white">

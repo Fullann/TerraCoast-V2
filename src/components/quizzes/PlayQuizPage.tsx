@@ -37,6 +37,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   const [isAnswered, setIsAnswered] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
+  const [xpGained, setXpGained] = useState(0);
 
   useEffect(() => {
     loadQuiz();
@@ -82,7 +83,20 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         .order('order_index');
 
       if (questionsData) {
-        setQuestions(questionsData);
+        let processedQuestions = [...questionsData];
+
+        if (quizData.randomize_questions) {
+          processedQuestions = processedQuestions.sort(() => Math.random() - 0.5);
+        }
+
+        if (quizData.randomize_answers) {
+          processedQuestions = processedQuestions.map(q => ({
+            ...q,
+            options: q.options ? [...q.options].sort(() => Math.random() - 0.5) : q.options
+          }));
+        }
+
+        setQuestions(processedQuestions);
       }
     }
   };
@@ -148,7 +162,13 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       return;
     }
 
-    const isCorrect = answer.toLowerCase().trim() === currentQuestion.correct_answer.toLowerCase().trim();
+    const correctAnswers = currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0
+      ? currentQuestion.correct_answers
+      : [currentQuestion.correct_answer];
+
+    const isCorrect = correctAnswers.some(
+      ca => answer.toLowerCase().trim() === ca.toLowerCase().trim()
+    );
     const pointsEarned = isCorrect ? calculatePoints(timeTaken, currentQuestion.points) : 0;
 
     const answerData = {
@@ -211,10 +231,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     const accuracy = (correctAnswers / questions.length) * 100;
     const totalTime = answers.reduce((sum, a) => sum + a.time_taken, 0);
 
+    const normalizedScore = Math.min(100, Math.round((totalScore / (questions.length * 150)) * 100));
+
     await supabase
       .from('game_sessions')
       .update({
-        score: totalScore,
+        score: normalizedScore,
         accuracy_percentage: accuracy,
         time_taken_seconds: totalTime,
         completed: true,
@@ -228,33 +250,41 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       await updateDuel();
     }
 
-    const xpGained = Math.round(totalScore / 10);
-    const newXP = profile.experience_points + xpGained;
-    const newLevel = Math.floor(newXP / 1000) + 1;
+    const shouldGiveXP = quiz?.is_public || quiz?.is_global || trainingMode === false;
+    let earnedXP = 0;
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const needsReset = profile.last_reset_month !== currentMonth;
+    if (shouldGiveXP && !trainingMode) {
+      earnedXP = Math.round(normalizedScore / 10);
+      setXpGained(earnedXP);
+      const newXP = profile.experience_points + earnedXP;
+      const newLevel = Math.floor(newXP / 1000) + 1;
 
-    await supabase
-      .from('profiles')
-      .update({
-        experience_points: newXP,
-        level: newLevel,
-        monthly_score: needsReset ? totalScore : (profile.monthly_score || 0) + totalScore,
-        monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
-        last_reset_month: currentMonth,
-      })
-      .eq('id', profile.id);
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const needsReset = profile.last_reset_month !== currentMonth;
 
-    if (needsReset && profile.last_reset_month) {
-      await recordMonthlyRanking(profile.last_reset_month);
+      await supabase
+        .from('profiles')
+        .update({
+          experience_points: newXP,
+          level: newLevel,
+          monthly_score: needsReset ? normalizedScore : (profile.monthly_score || 0) + normalizedScore,
+          monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
+          last_reset_month: currentMonth,
+        })
+        .eq('id', profile.id);
+
+      if (needsReset && profile.last_reset_month) {
+        await recordMonthlyRanking(profile.last_reset_month);
+      }
+    } else {
+      setXpGained(0);
     }
 
     await supabase
       .from('quizzes')
       .update({
         total_plays: (quiz?.total_plays || 0) + 1,
-        average_score: ((quiz?.average_score || 0) * (quiz?.total_plays || 0) + totalScore) / ((quiz?.total_plays || 0) + 1),
+        average_score: ((quiz?.average_score || 0) * (quiz?.total_plays || 0) + normalizedScore) / ((quiz?.total_plays || 0) + 1),
       })
       .eq('id', quizId);
 
@@ -391,18 +421,24 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
           <div className="text-center mb-8">
             <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-gray-800 mb-2">{trainingMode ? 'Entraînement terminé!' : 'Quiz terminé!'}</h1>
-            <p className="text-gray-600">{trainingMode ? 'Bon travail! Continuez à vous entraîner' : 'Félicitations pour avoir complété ce quiz'}</p>
+            <p className="text-gray-600">{trainingMode ? 'Bon travail! Continue à t’entraîner' : 'Félicitations pour avoir complété ce quiz'}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {!trainingMode && (
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
-                <p className="text-emerald-100 text-sm mb-2">Score total</p>
-                <p className="text-4xl font-bold">{totalScore}</p>
-              </div>
+              <>
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
+                  <p className="text-emerald-100 text-sm mb-2">Score total</p>
+                  <p className="text-4xl font-bold">{totalScore}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-center">
+                  <p className="text-purple-100 text-sm mb-2">XP gagné</p>
+                  <p className="text-4xl font-bold">+{xpGained}</p>
+                </div>
+              </>
             )}
 
-            <div className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-2' : ''}`}>
+            <div className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-1' : ''}`}>
               <p className="text-blue-100 text-sm mb-2">Précision</p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
@@ -465,10 +501,13 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               onClick={() => onNavigate('quizzes')}
               className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
-              Retour aux quiz
+              Explorer d'autres quiz
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                onNavigate('quizzes');
+                setTimeout(() => onNavigate(`play-quiz-${quizId}`), 100);
+              }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Rejouer

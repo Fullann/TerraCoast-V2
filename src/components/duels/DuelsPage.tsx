@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { Swords, Trophy, Clock, Users, Plus, Target, Zap, Award, TrendingUp, Crown } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -29,6 +30,7 @@ interface DuelsPageProps {
 
 export function DuelsPage({ onNavigate }: DuelsPageProps) {
   const { profile } = useAuth();
+  const { refreshNotifications } = useNotifications();
   const [activeDuels, setActiveDuels] = useState<DuelWithDetails[]>([]);
   const [completedDuels, setCompletedDuels] = useState<DuelWithDetails[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<InvitationWithDetails[]>([]);
@@ -124,6 +126,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
   };
 
   const acceptInvitation = async (invitation: InvitationWithDetails) => {
+    refreshNotifications();
     if (!profile) return;
 
     const { data: duel } = await supabase
@@ -147,6 +150,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
   };
 
   const declineInvitation = async (invitationId: string) => {
+    refreshNotifications();
     await supabase
       .from('duel_invitations')
       .update({ status: 'declined' })

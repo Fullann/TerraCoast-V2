@@ -54,7 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          if (profileData?.is_banned) {
+            await supabase.auth.signOut();
+            alert('Votre compte a été banni. Raison: ' + (profileData.ban_reason || 'Non spécifiée'));
+            setProfile(null);
+          } else {
+            setProfile(profileData);
+          }
         }
 
         setLoading(false);
@@ -68,7 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+          if (profileData?.is_banned) {
+            await supabase.auth.signOut();
+            alert('Votre compte a été banni. Raison: ' + (profileData.ban_reason || 'Non spécifiée'));
+            setProfile(null);
+          } else {
+            setProfile(profileData);
+          }
         } else {
           setProfile(null);
         }

@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
+
 
 interface MessageWithUser extends ChatMessage {
   from_profile: Profile;
@@ -18,6 +20,7 @@ interface ChatPageProps {
 
 export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
   const { profile } = useAuth();
+  const { refreshNotifications } = useNotifications();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Profile | null>(null);
   const [messages, setMessages] = useState<MessageWithUser[]>([]);
@@ -28,7 +31,6 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
   useEffect(() => {
     loadFriends();
   }, [profile]);
-
   useEffect(() => {
     if (friendId) {
       const friend = friends.find(f => f.id === friendId);
@@ -123,6 +125,8 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .eq('to_user_id', profile.id)
       .eq('from_user_id', selectedFriend.id)
       .eq('is_read', false);
+
+    refreshNotifications();
   };
 
   const sendMessage = async () => {
