@@ -116,7 +116,7 @@ export function LeaderboardPage() {
           <Trophy className="w-10 h-10 mr-3 text-emerald-600" />
           Classement
         </h1>
-        <p className="text-gray-600">Les meilleurs joueurs de GeoQuiz</p>
+        <p className="text-gray-600">Les meilleurs joueurs de Terracoast</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-4">

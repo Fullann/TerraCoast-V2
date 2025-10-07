@@ -117,7 +117,7 @@ export function AdminPage({ onNavigate }: AdminPageProps = {}) {
           <Shield className="w-10 h-10 mr-3 text-emerald-600" />
           Administration
         </h1>
-        <p className="text-gray-600">Gestion de la plateforme GeoQuiz</p>
+        <p className="text-gray-600">Gestion de la plateforme Terracoast</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
