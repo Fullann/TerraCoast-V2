@@ -42,15 +42,14 @@ jobs:
           name: dist
           path: dist
 
-      - name: Deploy to server (SFTP password)
-        uses: appleboy/scp-action@v1
+      - name: Deploy via FTP/FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4
         with:
-          host: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USER }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT }}
-          source: "dist/*"
-          target: "/test/"
-          strip_components: 1
-          overwrite: true
-          rm: true
+          server: ${{ secrets.FTP_HOST }}          # ex: ftp.qina3877.odns.fr
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          protocol: ftps                           # ftps si TLS activé (bannière indique [TLS])
+          local-dir: dist/
+          server-dir: /test/
+          dangerous-clean-slate: true   
