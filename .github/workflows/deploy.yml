@@ -45,12 +45,13 @@ jobs:
       - name: Deploy via FTP/FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          server: ${{ secrets.FTP_HOST }}           # ex: ftp.qina3877.odns.fr
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          protocol: ftps                            # la bannière Pure-FTPd indique TLS -> FTPS
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          port: ${{ secrets.SFTP_PORT }}
+          protocol: ftps
           local-dir: dist/
           server-dir: /test/
-          dangerous-clean-slate: true               # remplace/élimine l’ancien contenu
+          dangerous-clean-slate: true
+             # remplace/élimine l’ancien contenu
  
