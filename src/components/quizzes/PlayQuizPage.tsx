@@ -232,13 +232,23 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     const newXP = profile.experience_points + xpGained;
     const newLevel = Math.floor(newXP / 1000) + 1;
 
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const needsReset = profile.last_reset_month !== currentMonth;
+
     await supabase
       .from('profiles')
       .update({
         experience_points: newXP,
         level: newLevel,
+        monthly_score: needsReset ? totalScore : (profile.monthly_score || 0) + totalScore,
+        monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
+        last_reset_month: currentMonth,
       })
       .eq('id', profile.id);
+
+    if (needsReset && profile.last_reset_month) {
+      await recordMonthlyRanking(profile.last_reset_month);
+    }
 
     await supabase
       .from('quizzes')
@@ -300,6 +310,36 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       .from('duels')
       .update(updates)
       .eq('id', duelId);
+  };
+
+  const recordMonthlyRanking = async (lastMonth: string) => {
+    const { data: topPlayers } = await supabase
+      .from('profiles')
+      .select('id, pseudo, monthly_score, top_10_count')
+      .order('monthly_score', { ascending: false })
+      .limit(10);
+
+    if (topPlayers && topPlayers.length > 0) {
+      for (let i = 0; i < topPlayers.length; i++) {
+        const player = topPlayers[i];
+
+        await supabase
+          .from('monthly_rankings_history')
+          .upsert({
+            user_id: player.id,
+            month: lastMonth,
+            final_rank: i + 1,
+            final_score: player.monthly_score || 0,
+          });
+
+        await supabase
+          .from('profiles')
+          .update({
+            top_10_count: (player.top_10_count || 0) + 1,
+          })
+          .eq('id', player.id);
+      }
+    }
   };
 
   const checkAndAwardBadges = async (level: number) => {
