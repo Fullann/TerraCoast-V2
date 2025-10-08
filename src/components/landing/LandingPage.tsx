@@ -13,7 +13,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
             <Trophy className="w-16 h-16 text-emerald-600 animate-pulse" />
           </div>
           <h1 className="text-5xl sm:text-7xl font-bold text-gray-900 mb-6">
-            Bienvenue sur <span className="text-emerald-600">Terracoast</span>
+            Bienvenue sur <span className="text-emerald-600">GeoQuiz</span>
           </h1>
           <p className="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto mb-8">
             La plateforme ultime pour tester et enrichir tes connaissances en géographie
@@ -75,7 +75,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
 
             <div className="space-y-6 text-gray-700 text-lg leading-relaxed">
               <p>
-                <span className="font-bold text-emerald-600">Terracoast</span> est né d'une passion pour la géographie et l'apprentissage ludique.
+                <span className="font-bold text-emerald-600">GeoQuiz</span> est né d'une passion pour la géographie et l'apprentissage ludique.
                 Ce projet a été créé avec l'ambition de rendre l\'apprentissage de la géographie accessible, amusant et compétitif.
               </p>
 
@@ -123,7 +123,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
                 </h3>
                 <p className="text-emerald-50">
                   Que tu sois un passionné de géographie ou simplement curieux d'apprendre,
-                  Terracoast t'offre un environnement stimulant pour développer tes connaissances
+                  GeoQuiz t'offre un environnement stimulant pour développer tes connaissances
                   tout en t'amusant. Crée ton compte maintenant et fais partie de notre communauté grandissante !
                 </p>
               </div>
@@ -166,7 +166,7 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
       <footer className="bg-gray-900 text-white py-8 mt-20">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-gray-400">
-            © 2025 Terracoast - Fait avec passion pour l'apprentissage de la géographie
+            © 2025 GeoQuiz - Fait avec passion pour l'apprentissage de la géographie
           </p>
         </div>
       </footer>

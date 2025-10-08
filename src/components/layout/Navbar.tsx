@@ -28,7 +28,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-2">
               <Trophy className="w-8 h-8 text-emerald-600" />
-              <span className="text-xl font-bold text-gray-800">Terracoast</span>
+              <span className="text-xl font-bold text-gray-800">GeoQuiz</span>
             </div>
 
             <div className="hidden md:flex space-x-1">
