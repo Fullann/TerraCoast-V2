@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { detectUserLanguage } from '../../i18n/translations';
+import { supabase } from '../../lib/supabase';
 import { UserPlus } from 'lucide-react';
 
 export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
@@ -27,7 +29,16 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     setLoading(true);
 
     try {
+      const detectedLang = detectUserLanguage();
       await signUp(email, password, pseudo);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ language: detectedLang })
+          .eq('id', user.id);
+      }
     } catch (err: any) {
       if (err.message.includes('already registered')) {
         setError('Cet email est déjà utilisé');

@@ -8,7 +8,6 @@ import type { Database } from '../../lib/database.types';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
-
 interface MessageWithUser extends ChatMessage {
   from_profile: Profile;
 }
@@ -26,11 +25,41 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
   const [messages, setMessages] = useState<MessageWithUser[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadFriends();
-  }, [profile]);
+
+    if (!profile) return;
+
+    const allMessagesSubscription = supabase
+      .channel('all_messages_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `to_user_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          if (selectedFriend?.id !== newMsg.from_user_id) {
+            setUnreadCounts(prev => ({
+              ...prev,
+              [newMsg.from_user_id]: (prev[newMsg.from_user_id] || 0) + 1
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      allMessagesSubscription.unsubscribe();
+    };
+  }, [profile, selectedFriend]);
+
   useEffect(() => {
     if (friendId) {
       const friend = friends.find(f => f.id === friendId);
@@ -98,6 +127,18 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
     ];
 
     setFriends(allFriends);
+
+    const counts: Record<string, number> = {};
+    for (const friend of allFriends) {
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('from_user_id', friend.id)
+        .eq('to_user_id', profile.id)
+        .eq('is_read', false);
+      counts[friend.id] = count || 0;
+    }
+    setUnreadCounts(counts);
   };
 
   const loadMessages = async () => {
@@ -126,6 +167,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .eq('from_user_id', selectedFriend.id)
       .eq('is_read', false);
 
+    setUnreadCounts(prev => ({ ...prev, [selectedFriend.id]: 0 }));
     refreshNotifications();
   };
 
@@ -186,15 +228,20 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                   <button
                     key={friend.id}
                     onClick={() => setSelectedFriend(friend)}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                       selectedFriend?.id === friend.id ? 'bg-emerald-50' : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center relative">
                         <span className="text-emerald-600 font-bold text-lg">
                           {friend.pseudo.charAt(0).toUpperCase()}
                         </span>
+                        {unreadCounts[friend.id] > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                            {unreadCounts[friend.id]}
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-800 truncate">{friend.pseudo}</p>
@@ -244,6 +291,11 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                                 : 'bg-white border border-gray-200 text-gray-800'
                             }`}
                           >
+                            {!isOwnMessage && message.from_profile && (
+                              <p className="text-xs font-semibold mb-1 text-emerald-600">
+                                {message.from_profile.pseudo}
+                              </p>
+                            )}
                             <p className="break-words">{message.message}</p>
                             <p
                               className={`text-xs mt-1 ${

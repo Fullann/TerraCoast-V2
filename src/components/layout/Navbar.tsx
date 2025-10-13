@@ -10,7 +10,7 @@ interface NavbarProps {
 
 export function Navbar({ currentView, onNavigate }: NavbarProps) {
   const { profile, signOut } = useAuth();
-  const { unreadMessages, pendingDuels } = useNotifications();
+  const { unreadMessages, pendingDuels, pendingFriendRequests } = useNotifications();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -70,7 +70,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
               <button
                 onClick={() => onNavigate('friends')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
                   currentView === 'friends'
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'text-gray-600 hover:bg-gray-100'
@@ -78,6 +78,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               >
                 <Users className="w-5 h-5 inline mr-2" />
                 Amis
+                {pendingFriendRequests > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {pendingFriendRequests}
+                  </span>
+                )}
               </button>
 
               <button
@@ -226,7 +231,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
             <button
               onClick={() => { onNavigate('friends'); setMobileMenuOpen(false); }}
-              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
+              className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors relative ${
                 currentView === 'friends'
                   ? 'bg-emerald-100 text-emerald-700'
                   : 'text-gray-600 hover:bg-gray-100'
@@ -234,6 +239,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             >
               <Users className="w-5 h-5 inline mr-2" />
               Amis
+              {pendingFriendRequests > 0 && (
+                <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {pendingFriendRequests}
+                </span>
+              )}
             </button>
 
             <button

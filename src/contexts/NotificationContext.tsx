@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 interface NotificationContextType {
   unreadMessages: number;
   pendingDuels: number;
+  pendingFriendRequests: number;
   refreshNotifications: () => Promise<void>;
 }
 
@@ -14,6 +15,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [pendingDuels, setPendingDuels] = useState(0);
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0);
 
   const refreshNotifications = async () => {
     if (!profile) return;
@@ -33,6 +35,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       .eq('status', 'pending');
 
     setPendingDuels(duelsCount || 0);
+
+    const { count: friendRequestsCount } = await supabase
+      .from('friendships')
+      .select('*', { count: 'exact', head: true })
+      .eq('friend_id', profile.id)
+      .eq('status', 'pending');
+
+    setPendingFriendRequests(friendRequestsCount || 0);
   };
 
   useEffect(() => {
@@ -72,14 +82,31 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       )
       .subscribe();
 
+    const friendRequestsSubscription = supabase
+      .channel('notifications_friend_requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friendships',
+          filter: `friend_id=eq.${profile.id}`,
+        },
+        () => {
+          refreshNotifications();
+        }
+      )
+      .subscribe();
+
     return () => {
       messagesSubscription.unsubscribe();
       duelsSubscription.unsubscribe();
+      friendRequestsSubscription.unsubscribe();
     };
   }, [profile]);
 
   return (
-    <NotificationContext.Provider value={{ unreadMessages, pendingDuels, refreshNotifications }}>
+    <NotificationContext.Provider value={{ unreadMessages, pendingDuels, pendingFriendRequests, refreshNotifications }}>
       {children}
     </NotificationContext.Provider>
   );

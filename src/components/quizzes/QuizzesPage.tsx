@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell, Trash2 } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell, Trash2, Globe } from 'lucide-react';
 import { ShareQuizModal } from './ShareQuizModal';
 import type { Database } from '../../lib/database.types';
 
@@ -13,6 +14,7 @@ interface QuizzesPageProps {
 
 export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const { profile } = useAuth();
+  const { language, showAllLanguages } = useLanguage();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [myQuizzes, setMyQuizzes] = useState<Quiz[]>([]);
   const [sharedQuizzes, setSharedQuizzes] = useState<Quiz[]>([]);
@@ -24,7 +26,39 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
   useEffect(() => {
     loadQuizzes();
-  }, [profile, categoryFilter, difficultyFilter]);
+  }, [profile, categoryFilter, difficultyFilter, language, showAllLanguages]);
+
+  const requestPublish = async (quizId: string, quizTitle: string) => {
+    if (!confirm(`Demander la publication de "${quizTitle}" ?`)) return;
+
+    const { error } = await supabase
+      .from('quizzes')
+      .update({ pending_validation: true, validation_status: 'pending' })
+      .eq('id', quizId);
+
+    if (error) {
+      alert('Erreur lors de la demande');
+      return;
+    }
+
+    alert('Demande envoyée ! Un administrateur validera votre quiz.');
+    loadQuizzes();
+  };
+
+  const publishQuizDirectly = async (quizId: string) => {
+    const { error } = await supabase
+      .from('quizzes')
+      .update({ is_public: true, is_global: true, published_at: new Date().toISOString() })
+      .eq('id', quizId);
+
+    if (error) {
+      alert('Erreur lors de la publication');
+      return;
+    }
+
+    alert('Quiz publié avec succès !');
+    loadQuizzes();
+  };
 
   const removeSharedQuiz = async (quizId: string) => {
     if (!confirm('Voulez-vous retirer ce quiz de votre liste partagée ?')) return;
@@ -58,6 +92,10 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
     if (difficultyFilter !== 'all') {
       query = query.eq('difficulty', difficultyFilter);
+    }
+
+    if (!showAllLanguages) {
+      query = query.eq('language', language);
     }
 
     const { data } = await query;
@@ -220,6 +258,17 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               key={quiz.id}
               className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
             >
+              {quiz.cover_image_url ? (
+                <img
+                  src={quiz.cover_image_url}
+                  alt={quiz.title}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <BookOpen className="w-20 h-20 text-white opacity-50" />
+                </div>
+              )}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-xl font-bold text-gray-800 flex-1">{quiz.title}</h3>
@@ -277,13 +326,22 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                         <Edit className="w-4 h-4" />
                       </button>
                       {!quiz.is_public && (
-                        <button
-                          onClick={() => setShareQuiz({ id: quiz.id, title: quiz.title })}
-                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          title="Partager avec des amis"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setShareQuiz({ id: quiz.id, title: quiz.title })}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            title="Partager avec des amis"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => profile?.role === 'admin' ? publishQuizDirectly(quiz.id) : requestPublish(quiz.id, quiz.title)}
+                            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            title={profile?.role === 'admin' ? 'Publier directement' : 'Demander la publication'}
+                          >
+                            <Globe className="w-4 h-4" />
+                          </button>
+                        </>
                       )}
                     </>
                   )}

@@ -25,6 +25,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
+  const [quizSearch, setQuizSearch] = useState('');
+  const [quizSearchResults, setQuizSearchResults] = useState<Quiz[]>([]);
 
   useEffect(() => {
     if (profile?.role === 'admin') {
@@ -85,16 +87,24 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
   const toggleUserRole = async (userId: string, currentRole: string) => {
     const newRole = currentRole === 'admin' ? 'user' : 'admin';
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('profiles')
       .update({ role: newRole })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select();
 
     if (error) {
-      alert('Erreur lors de la modification du rôle');
+      console.error('Error updating role:', error);
+      alert(`Erreur lors de la modification du rôle: ${error.message}`);
       return;
     }
 
+    if (!data || data.length === 0) {
+      alert('Aucune ligne mise à jour. Vérifiez les permissions.');
+      return;
+    }
+
+    alert(`Rôle mis à jour avec succès pour ${userId}`);
     loadAdminData();
   };
 
@@ -111,17 +121,41 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       ? { is_banned: false, banned_at: null, ban_reason: null }
       : { is_banned: true, banned_at: new Date().toISOString(), ban_reason: reason || 'Non spécifié' };
 
-    const { error } = await supabase
+    const { error, data } = await supabase
       .from('profiles')
       .update(updateData)
-      .eq('id', userId);
+      .eq('id', userId)
+      .select();
 
     if (error) {
-      alert('Erreur lors de la modification du statut de ban');
+      console.error('Error updating ban status:', error);
+      alert(`Erreur lors de la modification du statut de ban: ${error.message}`);
       return;
     }
 
+    if (!data || data.length === 0) {
+      alert('Aucune ligne mise à jour. Vérifiez les permissions.');
+      return;
+    }
+
+    alert(`Statut de ban mis à jour avec succès`);
     loadAdminData();
+  };
+
+  const searchQuizzes = async (query: string) => {
+    if (query.trim().length < 2) {
+      setQuizSearchResults([]);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('quizzes')
+      .select('*')
+      .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (data) setQuizSearchResults(data);
   };
 
   const deleteQuiz = async (quizId: string) => {
@@ -129,6 +163,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
 
     await supabase.from('quizzes').delete().eq('id', quizId);
     loadAdminData();
+    if (quizSearch) searchQuizzes(quizSearch);
   };
 
   if (profile?.role !== 'admin') {
@@ -303,8 +338,27 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
             Quiz récents
           </h2>
 
+          <div className="mb-4">
+            <input
+              type="text"
+              value={quizSearch}
+              onChange={(e) => {
+                setQuizSearch(e.target.value);
+                searchQuizzes(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setQuizSearch('');
+                  setQuizSearchResults([]);
+                }
+              }}
+              placeholder="Rechercher un quiz..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+            />
+          </div>
+
           <div className="space-y-3">
-            {quizzes.map((quiz) => (
+            {(quizSearch.trim().length >= 2 ? quizSearchResults : quizzes).map((quiz) => (
               <div
                 key={quiz.id}
                 className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Settings, Mail, Lock, User, Trash2, ArrowLeft } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { languageNames, Language } from '../../i18n/translations';
+import { Settings, Mail, Lock, User, Trash2, ArrowLeft, Globe } from 'lucide-react';
 
 interface SettingsPageProps {
   onNavigate: (view: string) => void;
@@ -9,6 +11,7 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const { profile, user, refreshProfile } = useAuth();
+  const { language, setLanguage, showAllLanguages, setShowAllLanguages } = useLanguage();
   const [pseudo, setPseudo] = useState(profile?.pseudo || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -179,6 +182,45 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
       )}
 
       <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-md p-6">
+          <div className="flex items-center mb-4">
+            <Globe className="w-6 h-6 text-emerald-600 mr-2" />
+            <h2 className="text-2xl font-bold text-gray-800">Langue et préférences</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Langue de l'interface
+              </label>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                {Object.entries(languageNames).map(([code, name]) => (
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-start">
+              <input
+                type="checkbox"
+                id="showAllLanguages"
+                checked={showAllLanguages}
+                onChange={(e) => setShowAllLanguages(e.target.checked)}
+                className="mt-1 w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="showAllLanguages" className="ml-2 text-sm text-gray-700">
+                Afficher tous les quiz dans toutes les langues (sinon, uniquement les quiz dans ma langue)
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center mb-4">
             <User className="w-6 h-6 text-blue-600 mr-2" />

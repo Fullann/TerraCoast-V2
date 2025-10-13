@@ -250,10 +250,10 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       await updateDuel();
     }
 
-    const shouldGiveXP = quiz?.is_public || quiz?.is_global || trainingMode === false;
+    const shouldGiveXP = (quiz?.is_public || quiz?.is_global) && !trainingMode;
     let earnedXP = 0;
 
-    if (shouldGiveXP && !trainingMode) {
+    if (shouldGiveXP) {
       earnedXP = Math.round(normalizedScore / 10);
       setXpGained(earnedXP);
       const newXP = profile.experience_points + earnedXP;
@@ -449,8 +449,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
             </div>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Récapitulatif</h2>
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {questions.map((question, index) => {
               const answer = answers[index];
               return (
@@ -494,6 +495,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
                 </div>
               );
             })}
+            </div>
           </div>
 
           <div className="flex space-x-4">
@@ -505,8 +507,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
             </button>
             <button
               onClick={() => {
-                onNavigate('quizzes');
-                setTimeout(() => onNavigate(`play-quiz-${quizId}`), 100);
+                onNavigate('play-quiz', { quizId });
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
@@ -650,6 +651,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isAnswered && handleSubmitAnswer()}
+              autoFocus
               disabled={isAnswered}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
               placeholder="Entrez votre réponse..."

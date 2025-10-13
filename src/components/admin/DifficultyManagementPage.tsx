@@ -125,6 +125,14 @@ export function DifficultyManagementPage() {
       purple: { bg: 'bg-purple-100', text: 'text-purple-600', badge: 'bg-purple-100 text-purple-700' },
       orange: { bg: 'bg-orange-100', text: 'text-orange-600', badge: 'bg-orange-100 text-orange-700' },
       gray: { bg: 'bg-gray-100', text: 'text-gray-600', badge: 'bg-gray-100 text-gray-700' },
+      pink: { bg: 'bg-pink-100', text: 'text-pink-600', badge: 'bg-pink-100 text-pink-700' },
+      teal: { bg: 'bg-teal-100', text: 'text-teal-600', badge: 'bg-teal-100 text-teal-700' },
+      indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
+      cyan: { bg: 'bg-cyan-100', text: 'text-cyan-600', badge: 'bg-cyan-100 text-cyan-700' },
+      lime: { bg: 'bg-lime-100', text: 'text-lime-600', badge: 'bg-lime-100 text-lime-700' },
+      amber: { bg: 'bg-amber-100', text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
+      rose: { bg: 'bg-rose-100', text: 'text-rose-600', badge: 'bg-rose-100 text-rose-700' },
+      emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
     };
     return colorMap[color] || colorMap.gray;
   };
@@ -198,8 +206,8 @@ export function DifficultyManagementPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Couleur *
               </label>
-              <div className="grid grid-cols-4 gap-2">
-                {['green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray'].map((color) => {
+              <div className="grid grid-cols-5 gap-2">
+                {['green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray', 'pink', 'teal', 'indigo', 'cyan', 'lime', 'amber', 'rose', 'emerald'].map((color) => {
                   const colors = getColorClasses(color);
                   return (
                     <button

@@ -25,13 +25,26 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export function CategoryManagementPage() {
   const { profile } = useAuth();
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     label: '',
   });
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .order('label');
+
+    if (data) setCategories(data);
+  };
 
   const startCreating = () => {
     setFormData({
@@ -60,28 +73,53 @@ export function CategoryManagementPage() {
     });
   };
 
-  const saveCategory = () => {
-    if (editingCategory) {
-      setCategories(categories.map(cat =>
-        cat.id === editingCategory.id
-          ? { ...cat, name: formData.name, label: formData.label }
-          : cat
-      ));
-    } else {
-      const newCategory: Category = {
-        id: formData.name.toLowerCase().replace(/\s+/g, '_'),
-        name: formData.name.toLowerCase().replace(/\s+/g, '_'),
-        label: formData.label,
-      };
-      setCategories([...categories, newCategory]);
+  const saveCategory = async () => {
+    if (!formData.name.trim() || !formData.label.trim()) {
+      alert('Veuillez remplir tous les champs');
+      return;
     }
 
+    const categoryName = formData.name.toLowerCase().replace(/\s+/g, '_');
+
+    if (editingCategory) {
+      const { error } = await supabase
+        .from('categories')
+        .update({ name: categoryName, label: formData.label })
+        .eq('id', editingCategory.id);
+
+      if (error) {
+        alert('Erreur lors de la mise à jour');
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from('categories')
+        .insert({ name: categoryName, label: formData.label });
+
+      if (error) {
+        alert('Erreur lors de la création');
+        return;
+      }
+    }
+
+    await loadCategories();
     cancelEditing();
   };
 
-  const deleteCategory = (categoryId: string) => {
+  const deleteCategory = async (categoryId: string) => {
     if (!confirm('Voulez-vous vraiment supprimer cette catégorie?')) return;
-    setCategories(categories.filter(cat => cat.id !== categoryId));
+
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) {
+      alert('Erreur lors de la suppression');
+      return;
+    }
+
+    await loadCategories();
   };
 
   if (profile?.role !== 'admin') {

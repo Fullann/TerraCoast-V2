@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { Navbar } from './components/layout/Navbar';
@@ -87,7 +88,7 @@ function AppContent() {
         )}
         {currentView === 'training-mode' && <TrainingModePage onNavigate={handleNavigate} />}
         {currentView === 'play-quiz' && viewData?.quizId && (
-          <PlayQuizPage quizId={viewData.quizId} onNavigate={handleNavigate} />
+          <PlayQuizPage key={`play-${viewData.quizId}-${Date.now()}`} quizId={viewData.quizId} onNavigate={handleNavigate} />
         )}
         {currentView === 'play-training' && viewData?.quizId && (
           <PlayQuizPage
@@ -118,9 +119,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <AppContent />
-      </NotificationProvider>
+      <LanguageProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

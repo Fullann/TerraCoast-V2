@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { languageNames, Language } from '../../i18n/translations';
 import { Plus, Trash2, Save, ArrowLeft, Image } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -26,16 +28,38 @@ interface CreateQuizPageProps {
 
 export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const { profile } = useAuth();
+  const { language: userLanguage } = useLanguage();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<QuizCategory>('capitals');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [quizLanguage, setQuizLanguage] = useState<Language>(userLanguage);
+  const [categories, setCategories] = useState<{name: string; label: string}[]>([]);
+  const [difficulties, setDifficulties] = useState<{name: string; label: string}[]>([]);
   const [isPublic, setIsPublic] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [randomizeAnswers, setRandomizeAnswers] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      const { data: categoriesData } = await supabase.from('categories').select('name, label').order('label');
+      const { data: difficultiesData } = await supabase.from('difficulties').select('name, label').order('multiplier');
+
+      if (categoriesData && categoriesData.length > 0) {
+        setCategories(categoriesData);
+        setCategory(categoriesData[0].name as QuizCategory);
+      }
+      if (difficultiesData && difficultiesData.length > 0) {
+        setDifficulties(difficultiesData);
+        setDifficulty(difficultiesData[0].name as Difficulty);
+      }
+    };
+    loadOptions();
+  }, []);
+
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
     question_text: '',
     question_type: 'mcq',
@@ -141,6 +165,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         cover_image_url: coverImageUrl || null,
         randomize_questions: randomizeQuestions,
         randomize_answers: randomizeAnswers,
+        language: quizLanguage,
       };
 
       if (profile.role === 'admin') {
@@ -254,25 +279,50 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             />
           </div>
 
-          {isPublic && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Image de couverture (URL)
+            </label>
+            <input
+              type="text"
+              value={coverImageUrl}
+              onChange={(e) => setCoverImageUrl(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              placeholder="https://exemple.com/image.jpg"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Optionnel : Ajoute une image de présentation pour ton quiz
+            </p>
+            {coverImageUrl && (
+              <div className="mt-2">
+                <img
+                  src={coverImageUrl}
+                  alt="Aperçu"
+                  className="w-full max-w-md h-32 object-cover rounded-lg border-2 border-gray-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image de couverture (URL)
+                Langue *
               </label>
-              <input
-                type="text"
-                value={coverImageUrl}
-                onChange={(e) => setCoverImageUrl(e.target.value)}
+              <select
+                value={quizLanguage}
+                onChange={(e) => setQuizLanguage(e.target.value as Language)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                placeholder="https://exemple.com/image.jpg"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Optionnel : Ajoute une image de présentation pour ton quiz public
-              </p>
+              >
+                {Object.entries(languageNames).map(([code, name]) => (
+                  <option key={code} value={code}>{name}</option>
+                ))}
+              </select>
             </div>
-          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Catégorie *
@@ -282,12 +332,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 onChange={(e) => setCategory(e.target.value as QuizCategory)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="flags">Drapeaux</option>
-                <option value="capitals">Capitales</option>
-                <option value="maps">Cartes</option>
-                <option value="borders">Frontières</option>
-                <option value="regions">Régions</option>
-                <option value="mixed">Mixte</option>
+                {categories.map((cat) => (
+                  <option key={cat.name} value={cat.name}>{cat.label}</option>
+                ))}
               </select>
             </div>
 
@@ -300,9 +347,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 onChange={(e) => setDifficulty(e.target.value as Difficulty)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="easy">Facile</option>
-                <option value="medium">Moyen</option>
-                <option value="hard">Difficile</option>
+                {difficulties.map((diff) => (
+                  <option key={diff.name} value={diff.name}>{diff.label}</option>
+                ))}
               </select>
             </div>
 
@@ -364,11 +411,6 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 )}
               </label>
             </div>
-            {profile?.role !== 'admin' && isPublic && (
-              <p className="text-xs text-gray-500">
-                Ton quiz sera examiné par un administrateur avant d'être publié
-              </p>
-            )}
           </div>
         </div>
       </div>
