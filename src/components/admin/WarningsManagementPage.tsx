@@ -160,6 +160,52 @@ export function WarningsManagementPage() {
     loadWarnings();
   };
 
+  const handleCancelSentence = async (warning: Warning) => {
+    if (!warning.reported_user_id || !warning.action_taken) return;
+
+    if (!confirm('Êtes-vous sûr de vouloir annuler cette sanction ?')) {
+      return;
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        is_banned: false,
+        ban_until: null,
+        ban_reason: null,
+        force_username_change: false,
+      })
+      .eq('id', warning.reported_user_id);
+
+    if (profileError) {
+      console.error('Erreur annulation sanction:', profileError);
+      alert(`Erreur lors de l'annulation: ${JSON.stringify(profileError)}`);
+      return;
+    }
+
+    const { error: warningError } = await supabase
+      .from('warnings')
+      .update({
+        action_taken: 'none',
+        admin_notes: (warning.admin_notes || '') + '\n[SANCTION ANNULÉE]'
+      })
+      .eq('id', warning.id);
+
+    if (warningError) {
+      console.error('Erreur mise à jour warning:', warningError);
+    }
+
+    await supabase.from('notifications').insert({
+      user_id: warning.reported_user_id,
+      type: 'info',
+      message: 'Votre sanction a été annulée par un administrateur.',
+      related_id: warning.id,
+    });
+
+    alert('Sanction annulée avec succès');
+    loadWarnings();
+  };
+
   const getStatusBadge = (status: string) => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -280,6 +326,16 @@ export function WarningsManagementPage() {
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Traiter
+                  </button>
+                )}
+                {warning.action_taken && warning.action_taken !== 'none' && warning.status !== 'pending' && (
+                  <button
+                    onClick={() => handleCancelSentence(warning)}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center"
+                    title="Annuler la sanction"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Annuler
                   </button>
                 )}
               </div>

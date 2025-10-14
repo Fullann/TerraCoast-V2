@@ -37,13 +37,15 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .from('friendships')
       .select('*, friend_profile:profiles!friendships_friend_id_fkey(*)')
       .eq('user_id', profile.id)
-      .eq('status', 'accepted');
+      .eq('status', 'accepted')
+      .eq('friend_profile.is_banned', false);
 
     const { data: friendshipsAsReceiver } = await supabase
       .from('friendships')
       .select('*, user_profile:profiles!friendships_user_id_fkey(*)')
       .eq('friend_id', profile.id)
-      .eq('status', 'accepted');
+      .eq('status', 'accepted')
+      .eq('user_profile.is_banned', false);
 
     const allFriends = [
       ...(friendshipsAsSender || []),
@@ -56,7 +58,8 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .from('friendships')
       .select('*, user_profile:profiles!friendships_user_id_fkey(*)')
       .eq('friend_id', profile.id)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .eq('user_profile.is_banned', false);
 
     setPendingRequests((pending as FriendData[]) || []);
 
@@ -78,6 +81,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .from('profiles')
       .select('*')
       .neq('id', profile.id)
+      .eq('is_banned', false)
       .limit(50);
 
     if (data) {
@@ -94,6 +98,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       .select('*')
       .ilike('pseudo', `%${searchTerm}%`)
       .neq('id', profile.id)
+      .eq('is_banned', false)
       .limit(10);
 
     const filtered = (data || []).filter(u => !existingFriendIds.has(u.id));

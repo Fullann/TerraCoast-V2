@@ -36,6 +36,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
       const { data } = await supabase
         .from('profiles')
         .select('*')
+        .eq('is_banned', false)
         .order(orderBy, { ascending: false })
         .limit(100);
 
@@ -45,13 +46,15 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
         .from('friendships')
         .select('friend_profile:profiles!friendships_friend_id_fkey(*)')
         .eq('user_id', profile.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .eq('friend_profile.is_banned', false);
 
       const { data: friendshipsAsReceiver } = await supabase
         .from('friendships')
         .select('user_profile:profiles!friendships_user_id_fkey(*)')
         .eq('friend_id', profile.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .eq('user_profile.is_banned', false);
 
       const friendProfiles: Profile[] = [
         ...(friendshipsAsSender?.map((f: any) => f.friend_profile) || []),

@@ -329,7 +329,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => onNavigate?.('profile', { userId: user.id })}
+                    onClick={() => onNavigate?.('view-profile', { userId: user.id })}
                     className="px-4 py-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg font-medium text-sm"
                   >
                     Voir profil

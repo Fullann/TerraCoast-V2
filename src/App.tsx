@@ -26,9 +26,11 @@ import { QuizTypeManagementPage } from './components/admin/QuizTypeManagementPag
 import { DuelsPage } from './components/duels/DuelsPage';
 import { ChatPage } from './components/chat/ChatPage';
 import { LandingPage } from './components/landing/LandingPage';
+import { BannedPage } from './components/auth/BannedPage';
+import { ForceUsernamePage } from './components/auth/ForceUsernamePage';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const [authView, setAuthView] = useState<'login' | 'register' | 'landing'>('landing');
   const [currentView, setCurrentView] = useState<string>('home');
   const [viewData, setViewData] = useState<any>(null);
@@ -47,6 +49,21 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  if (user && profile) {
+    const now = new Date();
+    const isBanned = profile.is_banned;
+    const banUntil = profile.ban_until ? new Date(profile.ban_until) : null;
+    const isStillBanned = isBanned && (!banUntil || banUntil > now);
+
+    if (isStillBanned) {
+      return <BannedPage />;
+    }
+
+    if (profile.force_username_change) {
+      return <ForceUsernamePage />;
+    }
   }
 
   if (!user) {
