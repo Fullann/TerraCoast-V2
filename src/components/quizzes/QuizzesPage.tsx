@@ -7,6 +7,11 @@ import { ShareQuizModal } from './ShareQuizModal';
 import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
+type QuizType = Database['public']['Tables']['quiz_types']['Row'];
+
+interface QuizWithType extends Quiz {
+  quiz_types?: QuizType | null;
+}
 
 interface QuizzesPageProps {
   onNavigate: (view: string, data?: any) => void;
@@ -14,19 +19,32 @@ interface QuizzesPageProps {
 
 export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const { profile } = useAuth();
-  const { language, showAllLanguages } = useLanguage();
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [myQuizzes, setMyQuizzes] = useState<Quiz[]>([]);
-  const [sharedQuizzes, setSharedQuizzes] = useState<Quiz[]>([]);
+  const { language, showAllLanguages, t } = useLanguage();
+  const [quizzes, setQuizzes] = useState<QuizWithType[]>([]);
+  const [myQuizzes, setMyQuizzes] = useState<QuizWithType[]>([]);
+  const [sharedQuizzes, setSharedQuizzes] = useState<QuizWithType[]>([]);
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'public' | 'my' | 'shared'>('public');
   const [shareQuiz, setShareQuiz] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     loadQuizzes();
-  }, [profile, categoryFilter, difficultyFilter, language, showAllLanguages]);
+    loadQuizTypes();
+  }, [profile, categoryFilter, difficultyFilter, typeFilter, language, showAllLanguages]);
+
+  const loadQuizTypes = async () => {
+    const { data } = await supabase
+      .from('quiz_types')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+
+    if (data) setQuizTypes(data);
+  };
 
   const requestPublish = async (quizId: string, quizTitle: string) => {
     if (!confirm(`Demander la publication de "${quizTitle}" ?`)) return;
@@ -82,7 +100,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
     let query = supabase
       .from('quizzes')
-      .select('*')
+      .select('*, quiz_types(*)')
       .or('is_public.eq.true,is_global.eq.true')
       .order('total_plays', { ascending: false });
 
@@ -94,20 +112,24 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       query = query.eq('difficulty', difficultyFilter);
     }
 
+    if (typeFilter !== 'all') {
+      query = query.eq('quiz_type_id', typeFilter);
+    }
+
     if (!showAllLanguages) {
       query = query.eq('language', language);
     }
 
     const { data } = await query;
-    if (data) setQuizzes(data);
+    if (data) setQuizzes(data as QuizWithType[]);
 
     const { data: myData } = await supabase
       .from('quizzes')
-      .select('*')
+      .select('*, quiz_types(*)')
       .eq('creator_id', profile.id)
       .order('created_at', { ascending: false });
 
-    if (myData) setMyQuizzes(myData);
+    if (myData) setMyQuizzes(myData as QuizWithType[]);
 
     const { data: sharedData } = await supabase
       .from('quiz_shares')
@@ -194,6 +216,19 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             <option value="medium">Moyen</option>
             <option value="hard">Difficile</option>
           </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+          >
+            <option value="all">Tous types</option>
+            {quizTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -206,7 +241,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             }`}
           >
             <BookOpen className="w-4 h-4 inline mr-2" />
-            Quiz publics
+            {t('quiz.publicQuizzes')}
           </button>
           <button
             onClick={() => setActiveTab('my')}
@@ -216,7 +251,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Mes quiz
+            {t('quiz.myQuizzes')}
           </button>
           <button
             onClick={() => setActiveTab('shared')}
@@ -227,14 +262,14 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             }`}
           >
             <Share2 className="w-4 h-4 inline mr-2" />
-            Partagés ({sharedQuizzes.length})
+            {t('quiz.sharedQuizzes')} ({sharedQuizzes.length})
           </button>
           <button
             onClick={() => onNavigate('create-quiz')}
             className="ml-auto px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
           >
             <Plus className="w-4 h-4 inline mr-2" />
-            Créer un quiz
+            {t('quiz.create')}
           </button>
         </div>
       </div>
@@ -292,6 +327,17 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                     {quiz.difficulty === 'medium' && 'Moyen'}
                     {quiz.difficulty === 'hard' && 'Difficile'}
                   </span>
+                  {quiz.quiz_types && (
+                    <span
+                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      style={{
+                        backgroundColor: `${quiz.quiz_types.color}20`,
+                        color: quiz.quiz_types.color,
+                      }}
+                    >
+                      {quiz.quiz_types.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">

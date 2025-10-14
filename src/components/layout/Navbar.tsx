@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Trophy, User, LogOut, Home, BookOpen, Users, Shield, Swords, MessageCircle, Menu, X, Settings } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { Trophy, User, LogOut, Home, BookOpen, Users, Shield, Swords, MessageCircle, Menu, X } from 'lucide-react';
 
 interface NavbarProps {
   currentView: string;
@@ -11,6 +12,7 @@ interface NavbarProps {
 export function Navbar({ currentView, onNavigate }: NavbarProps) {
   const { profile, signOut } = useAuth();
   const { unreadMessages, pendingDuels, pendingFriendRequests } = useNotifications();
+  const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -28,7 +30,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-2">
               <Trophy className="w-8 h-8 text-emerald-600" />
-              <span className="text-xl font-bold text-gray-800">GeoQuiz</span>
+              <span className="text-xl font-bold text-gray-800">TerraCoast</span>
             </div>
 
             <div className="hidden md:flex space-x-1">
@@ -41,7 +43,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Home className="w-5 h-5 inline mr-2" />
-                Accueil
+                {t('nav.home')}
               </button>
 
               <button
@@ -53,7 +55,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <BookOpen className="w-5 h-5 inline mr-2" />
-                Quiz
+                {t('nav.quizzes')}
               </button>
 
               <button
@@ -65,7 +67,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Trophy className="w-5 h-5 inline mr-2" />
-                Classement
+                {t('nav.leaderboard')}
               </button>
 
               <button
@@ -77,7 +79,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Users className="w-5 h-5 inline mr-2" />
-                Amis
+                {t('nav.friends')}
                 {pendingFriendRequests > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {pendingFriendRequests}
@@ -94,7 +96,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Swords className="w-5 h-5 inline mr-2" />
-                Duels
+                {t('nav.duels')}
                 {pendingDuels > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {pendingDuels}
@@ -111,24 +113,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <MessageCircle className="w-5 h-5 inline mr-2" />
-                Chat
+                {t('nav.chat')}
                 {unreadMessages > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {unreadMessages}
                   </span>
                 )}
-              </button>
-
-              <button
-                onClick={() => onNavigate('settings')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'settings'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <Settings className="w-5 h-5 inline mr-2" />
-                Paramètres
               </button>
 
               {profile?.role === 'admin' && (
@@ -141,7 +131,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   }`}
                 >
                   <Shield className="w-5 h-5 inline mr-2" />
-                  Admin
+                  {t('nav.admin')}
                 </button>
               )}
             </div>
@@ -153,7 +143,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               className="hidden md:block text-right hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
               <p className="text-sm font-medium text-gray-800">{profile?.pseudo}</p>
-              <p className="text-xs text-gray-500">Niveau {profile?.level}</p>
+              <p className="text-xs text-gray-500">{t('profile.level')} {profile?.level}</p>
             </button>
 
             <button
@@ -170,7 +160,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <button
               onClick={handleSignOut}
               className="hidden md:block p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              title="Déconnexion"
+              title={t('nav.logout')}
             >
               <LogOut className="w-6 h-6" />
             </button>
@@ -190,7 +180,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           <div className="px-4 py-2 space-y-1">
             <div className="py-3 border-b border-gray-200">
               <p className="text-sm font-medium text-gray-800">{profile?.pseudo}</p>
-              <p className="text-xs text-gray-500">Niveau {profile?.level}</p>
+              <p className="text-xs text-gray-500">{t('profile.level')} {profile?.level}</p>
             </div>
 
             <button
@@ -202,7 +192,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <Home className="w-5 h-5 inline mr-2" />
-              Accueil
+              {t('nav.home')}
             </button>
 
             <button
@@ -214,7 +204,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <BookOpen className="w-5 h-5 inline mr-2" />
-              Quiz
+              {t('nav.quizzes')}
             </button>
 
             <button
@@ -226,7 +216,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <Trophy className="w-5 h-5 inline mr-2" />
-              Classement
+              {t('nav.leaderboard')}
             </button>
 
             <button
@@ -238,7 +228,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <Users className="w-5 h-5 inline mr-2" />
-              Amis
+              {t('nav.friends')}
               {pendingFriendRequests > 0 && (
                 <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {pendingFriendRequests}
@@ -255,7 +245,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <Swords className="w-5 h-5 inline mr-2" />
-              Duels
+              {t('nav.duels')}
             </button>
 
             <button
@@ -267,7 +257,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
-              Chat
+              {t('nav.chat')}
             </button>
 
             {profile?.role === 'admin' && (
@@ -280,7 +270,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 }`}
               >
                 <Shield className="w-5 h-5 inline mr-2" />
-                Admin
+                {t('nav.admin')}
               </button>
             )}
 
@@ -293,7 +283,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               }`}
             >
               <User className="w-5 h-5 inline mr-2" />
-              Profil
+              {t('nav.profile')}
             </button>
 
             <button
@@ -301,7 +291,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-5 h-5 inline mr-2" />
-              Déconnexion
+              {t('nav.logout')}
             </button>
           </div>
         </div>

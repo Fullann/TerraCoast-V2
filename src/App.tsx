@@ -21,6 +21,8 @@ import { TitleManagementPage } from './components/admin/TitleManagementPage';
 import { CategoryManagementPage } from './components/admin/CategoryManagementPage';
 import { DifficultyManagementPage } from './components/admin/DifficultyManagementPage';
 import { QuizValidationPage } from './components/admin/QuizValidationPage';
+import { WarningsManagementPage } from './components/admin/WarningsManagementPage';
+import { QuizTypeManagementPage } from './components/admin/QuizTypeManagementPage';
 import { DuelsPage } from './components/duels/DuelsPage';
 import { ChatPage } from './components/chat/ChatPage';
 import { LandingPage } from './components/landing/LandingPage';
@@ -79,7 +81,10 @@ function AppContent() {
 
       <main className="pb-8">
         {currentView === 'home' && <HomePage onNavigate={handleNavigate} />}
-        {currentView === 'profile' && <ProfilePage />}
+        {currentView === 'profile' && <ProfilePage onNavigate={handleNavigate} />}
+        {currentView === 'view-profile' && viewData?.userId && (
+          <ProfilePage userId={viewData.userId} onNavigate={handleNavigate} />
+        )}
         {currentView === 'settings' && <SettingsPage onNavigate={handleNavigate} />}
         {currentView === 'quizzes' && <QuizzesPage onNavigate={handleNavigate} />}
         {currentView === 'create-quiz' && <CreateQuizPage onNavigate={handleNavigate} />}
@@ -101,7 +106,7 @@ function AppContent() {
         {currentView === 'play-duel' && viewData?.duelId && (
           <PlayQuizPage quizId={viewData.quizId} mode="duel" duelId={viewData.duelId} onNavigate={handleNavigate} />
         )}
-        {currentView === 'leaderboard' && <LeaderboardPage />}
+        {currentView === 'leaderboard' && <LeaderboardPage onNavigate={handleNavigate} />}
         {currentView === 'friends' && <FriendsPage onNavigate={handleNavigate} />}
         {currentView === 'duels' && <DuelsPage onNavigate={handleNavigate} />}
         {currentView === 'chat' && <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />}
@@ -111,6 +116,8 @@ function AppContent() {
         {currentView === 'category-management' && <CategoryManagementPage />}
         {currentView === 'difficulty-management' && <DifficultyManagementPage />}
         {currentView === 'quiz-validation' && <QuizValidationPage />}
+        {currentView === 'warnings-management' && <WarningsManagementPage />}
+        {currentView === 'quiz-type-management' && <QuizTypeManagementPage />}
       </main>
     </div>
   );

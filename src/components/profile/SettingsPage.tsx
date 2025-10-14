@@ -11,7 +11,7 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onNavigate }: SettingsPageProps) {
   const { profile, user, refreshProfile } = useAuth();
-  const { language, setLanguage, showAllLanguages, setShowAllLanguages } = useLanguage();
+  const { language, setLanguage, showAllLanguages, setShowAllLanguages, t } = useLanguage();
   const [pseudo, setPseudo] = useState(profile?.pseudo || '');
   const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -160,11 +160,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour au profil
+          {t('settings.backToProfile')}
         </button>
         <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
           <Settings className="w-10 h-10 mr-3 text-gray-700" />
-          Paramètres du compte
+          {t('settings.accountSettings')}
         </h1>
         <p className="text-gray-600">Gère tes informations personnelles</p>
       </div>

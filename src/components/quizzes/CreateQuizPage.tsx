@@ -3,12 +3,13 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { languageNames, Language } from '../../i18n/translations';
-import { Plus, Trash2, Save, ArrowLeft, Image } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Image, Edit, X } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
-type QuestionType = 'mcq' | 'single_answer' | 'map_click' | 'text_free';
+type QuestionType = 'mcq' | 'single_answer' | 'map_click' | 'text_free' | 'true_false';
 type QuizCategory = 'flags' | 'capitals' | 'maps' | 'borders' | 'regions' | 'mixed';
 type Difficulty = 'easy' | 'medium' | 'hard';
+type QuizType = Database['public']['Tables']['quiz_types']['Row'];
 
 interface Question {
   question_text: string;
@@ -36,6 +37,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [quizLanguage, setQuizLanguage] = useState<Language>(userLanguage);
   const [categories, setCategories] = useState<{name: string; label: string}[]>([]);
   const [difficulties, setDifficulties] = useState<{name: string; label: string}[]>([]);
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
+  const [selectedQuizType, setSelectedQuizType] = useState<string>('');
   const [isPublic, setIsPublic] = useState(false);
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
@@ -47,6 +50,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     const loadOptions = async () => {
       const { data: categoriesData } = await supabase.from('categories').select('name, label').order('label');
       const { data: difficultiesData } = await supabase.from('difficulties').select('name, label').order('multiplier');
+      const { data: quizTypesData } = await supabase.from('quiz_types').select('*').eq('is_active', true).order('name');
 
       if (categoriesData && categoriesData.length > 0) {
         setCategories(categoriesData);
@@ -55,6 +59,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       if (difficultiesData && difficultiesData.length > 0) {
         setDifficulties(difficultiesData);
         setDifficulty(difficultiesData[0].name as Difficulty);
+      }
+      if (quizTypesData) {
+        setQuizTypes(quizTypesData);
       }
     };
     loadOptions();
@@ -71,6 +78,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     points: 100,
     order_index: 0,
   });
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -97,17 +105,48 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       }
     }
 
-    setQuestions([...questions, { ...currentQuestion, order_index: questions.length }]);
+    if (editingIndex !== null) {
+      const updatedQuestions = [...questions];
+      updatedQuestions[editingIndex] = { ...currentQuestion, order_index: editingIndex };
+      setQuestions(updatedQuestions);
+      setEditingIndex(null);
+    } else {
+      setQuestions([...questions, { ...currentQuestion, order_index: questions.length }]);
+    }
+
     setCurrentQuestion({
       question_text: '',
       question_type: 'mcq',
       correct_answer: '',
+      correct_answers: [],
       options: ['', '', '', ''],
       image_url: '',
       option_images: {},
       points: 100,
       order_index: 0,
     });
+    setError('');
+  };
+
+  const editQuestion = (index: number) => {
+    setCurrentQuestion(questions[index]);
+    setEditingIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setCurrentQuestion({
+      question_text: '',
+      question_type: 'mcq',
+      correct_answer: '',
+      correct_answers: [],
+      options: ['', '', '', ''],
+      image_url: '',
+      option_images: {},
+      points: 100,
+      order_index: 0,
+    });
+    setEditingIndex(null);
     setError('');
   };
 
@@ -166,6 +205,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         randomize_questions: randomizeQuestions,
         randomize_answers: randomizeAnswers,
         language: quizLanguage,
+        quiz_type_id: selectedQuizType || null,
       };
 
       if (profile.role === 'admin') {
@@ -355,6 +395,22 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type de quiz
+              </label>
+              <select
+                value={selectedQuizType}
+                onChange={(e) => setSelectedQuizType(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                <option value="">Aucun type</option>
+                {quizTypes.map((type) => (
+                  <option key={type.id} value={type.id}>{type.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Temps par question (sec)
               </label>
               <input
@@ -460,17 +516,28 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               </label>
               <select
                 value={currentQuestion.question_type}
-                onChange={(e) =>
-                  setCurrentQuestion({
-                    ...currentQuestion,
-                    question_type: e.target.value as QuestionType,
-                  })
-                }
+                onChange={(e) => {
+                  const newType = e.target.value as QuestionType;
+                  if (newType === 'true_false') {
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      question_type: newType,
+                      options: ['Vrai', 'Faux'],
+                      correct_answer: 'Vrai',
+                    });
+                  } else {
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      question_type: newType,
+                    });
+                  }
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 <option value="mcq">QCM (Choix multiples)</option>
                 <option value="single_answer">Réponse unique</option>
                 <option value="text_free">Texte libre</option>
+                <option value="true_false">Vrai / Faux</option>
                 <option value="map_click">Clic sur carte</option>
               </select>
             </div>
@@ -495,6 +562,15 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               />
             </div>
           </div>
+
+          {currentQuestion.question_type === 'true_false' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-700">
+                Pour les questions Vrai/Faux, les options sont automatiquement définies.
+                Sélectionnez simplement la bonne réponse ci-dessous.
+              </p>
+            </div>
+          )}
 
           {currentQuestion.question_type === 'mcq' && (
             <div>
@@ -533,7 +609,32 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Réponse(s) correcte(s) *
             </label>
-            {currentQuestion.question_type === 'mcq' ? (
+            {currentQuestion.question_type === 'true_false' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentQuestion({ ...currentQuestion, correct_answer: 'Vrai' })}
+                  className={`p-4 rounded-lg border-2 transition-all font-medium ${
+                    currentQuestion.correct_answer === 'Vrai'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-200 hover:border-green-300'
+                  }`}
+                >
+                  ✓ Vrai
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentQuestion({ ...currentQuestion, correct_answer: 'Faux' })}
+                  className={`p-4 rounded-lg border-2 transition-all font-medium ${
+                    currentQuestion.correct_answer === 'Faux'
+                      ? 'border-red-500 bg-red-50 text-red-700'
+                      : 'border-gray-200 hover:border-red-300'
+                  }`}
+                >
+                  ✗ Faux
+                </button>
+              </div>
+            ) : currentQuestion.question_type === 'mcq' ? (
               <div className="space-y-2">
                 <div className="space-y-2">
                   {currentQuestion.options
@@ -571,25 +672,107 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 </p>
               </div>
             ) : (
-              <input
-                type="text"
-                value={currentQuestion.correct_answer}
-                onChange={(e) =>
-                  setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                placeholder="Ex: Paris"
-              />
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={currentQuestion.correct_answer}
+                  onChange={(e) =>
+                    setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  placeholder="Ex: Paris"
+                />
+
+                {(currentQuestion.question_type === 'text_free' || currentQuestion.question_type === 'single_answer') && (
+                  <>
+                    <p className="text-xs text-gray-600 font-medium">Variantes acceptées (optionnel)</p>
+                    {(currentQuestion.correct_answers || []).map((variant, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={variant}
+                          onChange={(e) => {
+                            const newAnswers = [...(currentQuestion.correct_answers || [])];
+                            newAnswers[index] = e.target.value;
+                            setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
+                          }}
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          placeholder={`Variante ${index + 1} (ex: paris, PARIS)`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newAnswers = (currentQuestion.correct_answers || []).filter((_, i) => i !== index);
+                            setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAnswers = [...(currentQuestion.correct_answers || []), ''];
+                        setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
+                      }}
+                      className="px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Ajouter une variante
+                    </button>
+                    <p className="text-xs text-gray-500">
+                      Ajoutez plusieurs variantes acceptées (ex: "Paris", "paris", "La capitale de la France")
+                    </p>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
-          <button
-            onClick={addQuestion}
-            className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Ajouter cette question
-          </button>
+          {editingIndex !== null && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+              <p className="text-blue-700 font-medium">
+                Modification de la question #{editingIndex + 1}
+              </p>
+              <button
+                onClick={cancelEdit}
+                className="px-3 py-1 text-blue-600 hover:bg-blue-100 rounded transition-colors flex items-center text-sm"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Annuler
+              </button>
+            </div>
+          )}
+
+          <div className="flex space-x-3">
+            {editingIndex !== null && (
+              <button
+                onClick={cancelEdit}
+                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center"
+              >
+                <X className="w-5 h-5 mr-2" />
+                Annuler
+              </button>
+            )}
+            <button
+              onClick={addQuestion}
+              className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
+            >
+              {editingIndex !== null ? (
+                <>
+                  <Save className="w-5 h-5 mr-2" />
+                  Mettre à jour
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Ajouter cette question
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -615,6 +798,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                         {q.question_type === 'mcq' && 'QCM'}
                         {q.question_type === 'single_answer' && 'Réponse unique'}
                         {q.question_type === 'text_free' && 'Texte libre'}
+                        {q.question_type === 'true_false' && 'Vrai / Faux'}
                         {q.question_type === 'map_click' && 'Clic sur carte'}
                       </span>
                       <span>{q.points} pts</span>
@@ -623,12 +807,22 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       Réponse: {q.correct_answer}
                     </p>
                   </div>
-                  <button
-                    onClick={() => removeQuestion(index)}
-                    className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <button
+                      onClick={() => editQuestion(index)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      title="Modifier"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => removeQuestion(index)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

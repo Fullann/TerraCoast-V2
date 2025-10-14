@@ -258,14 +258,17 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
             {selectedFriend ? (
               <>
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center space-x-3">
+                  <div
+                    className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => onNavigate?.('view-profile', { userId: selectedFriend.id })}
+                  >
                     <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                       <span className="text-emerald-600 font-bold">
                         {selectedFriend.pseudo.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-800">{selectedFriend.pseudo}</h3>
+                      <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">{selectedFriend.pseudo}</h3>
                       <p className="text-sm text-gray-600">Niveau {selectedFriend.level}</p>
                     </div>
                   </div>

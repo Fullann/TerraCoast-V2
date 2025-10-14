@@ -11,7 +11,11 @@ interface LeaderboardEntry extends Profile {
   games_played: number;
 }
 
-export function LeaderboardPage() {
+interface LeaderboardPageProps {
+  onNavigate?: (view: string, data?: any) => void;
+}
+
+export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
   const { profile } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +136,7 @@ export function LeaderboardPage() {
           <Trophy className="w-10 h-10 mr-3 text-emerald-600" />
           Classement
         </h1>
-        <p className="text-gray-600">Les meilleurs joueurs de GeoQuiz</p>
+        <p className="text-gray-600">Les meilleurs joueurs de TerraCoast</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-4">
@@ -208,7 +212,8 @@ export function LeaderboardPage() {
           {leaderboard.map((entry, index) => (
             <div
               key={entry.id}
-              className={`${getRankBackground(index)} rounded-xl border-2 p-6 transition-all hover:shadow-lg`}
+              onClick={() => onNavigate?.('view-profile', { userId: entry.id })}
+              className={`${getRankBackground(index)} rounded-xl border-2 p-6 transition-all hover:shadow-lg cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">

@@ -185,7 +185,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <Shield className="w-10 h-10 mr-3 text-emerald-600" />
           Administration
         </h1>
-        <p className="text-gray-600">Gestion de la plateforme GeoQuiz</p>
+        <p className="text-gray-600">Gestion de la plateforme TerraCoast</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -253,6 +253,24 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <Target className="w-10 h-10 mb-3" />
           <p className="text-orange-100 text-sm">Gestion des difficultés</p>
           <p className="text-xs text-orange-100 mt-2">Gérer les niveaux de difficulté →</p>
+        </button>
+
+        <button
+          onClick={() => onNavigate?.('warnings-management')}
+          className="bg-gradient-to-br from-red-400 to-red-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <AlertTriangle className="w-10 h-10 mb-3" />
+          <p className="text-red-100 text-sm">Gestion des signalements</p>
+          <p className="text-xs text-red-100 mt-2">Traiter les avertissements →</p>
+        </button>
+
+        <button
+          onClick={() => onNavigate?.('quiz-type-management')}
+          className="bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
+          <Tag className="w-10 h-10 mb-3" />
+          <p className="text-indigo-100 text-sm">Types de quiz</p>
+          <p className="text-xs text-indigo-100 mt-2">QCM, Texte, Mixte... →</p>
         </button>
       </div>
 

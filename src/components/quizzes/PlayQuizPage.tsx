@@ -155,7 +155,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
     const currentQuestion = questions[currentQuestionIndex];
-    const answer = currentQuestion.question_type === 'mcq' ? selectedOption : userAnswer;
+    const answer = (currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? selectedOption : userAnswer;
 
     if (!answer.trim()) {
       alert('Veuillez sélectionner ou entrer une réponse');
@@ -288,7 +288,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       })
       .eq('id', quizId);
 
-    await checkAndAwardBadges(newLevel);
+    if (shouldGiveXP) {
+      await checkAndAwardBadges(profile.level);
+    }
     await refreshProfile();
   };
 
@@ -601,6 +603,41 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         )}
 
         <div className="mb-6">
+          {currentQuestion.question_type === 'true_false' && (
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedOption('Vrai')}
+                disabled={isAnswered}
+                className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
+                  isAnswered && currentQuestion.correct_answer === 'Vrai'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : isAnswered && selectedOption === 'Vrai' && currentQuestion.correct_answer !== 'Vrai'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : selectedOption === 'Vrai'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 hover:border-emerald-300'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                ✓ Vrai
+              </button>
+              <button
+                onClick={() => setSelectedOption('Faux')}
+                disabled={isAnswered}
+                className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
+                  isAnswered && currentQuestion.correct_answer === 'Faux'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : isAnswered && selectedOption === 'Faux' && currentQuestion.correct_answer !== 'Faux'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : selectedOption === 'Faux'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 hover:border-emerald-300'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                ✗ Faux
+              </button>
+            </div>
+          )}
+
           {currentQuestion.question_type === 'mcq' && currentQuestion.options && (
             <div className={`grid gap-4 ${
               currentQuestion.option_images && Object.keys(currentQuestion.option_images).length > 0
@@ -617,9 +654,17 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
                     onClick={() => setSelectedOption(option)}
                     disabled={isAnswered}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      isAnswered && option === currentQuestion.correct_answer
+                      isAnswered && (
+                        (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
+                          ? currentQuestion.correct_answers.includes(option)
+                          : option === currentQuestion.correct_answer
+                      )
                         ? 'border-green-500 bg-green-50'
-                        : isAnswered && option === selectedOption && option !== currentQuestion.correct_answer
+                        : isAnswered && option === selectedOption && !(
+                          (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
+                            ? currentQuestion.correct_answers.includes(option)
+                            : option === currentQuestion.correct_answer
+                        )
                         ? 'border-red-500 bg-red-50'
                         : selectedOption === option
                         ? 'border-emerald-500 bg-emerald-50'
@@ -702,7 +747,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         {!isAnswered && (
           <button
             onClick={handleSubmitAnswer}
-            disabled={currentQuestion.question_type === 'mcq' ? !selectedOption : !userAnswer.trim()}
+            disabled={(currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? !selectedOption : !userAnswer.trim()}
             className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Valider

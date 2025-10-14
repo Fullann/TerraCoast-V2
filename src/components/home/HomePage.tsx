@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Target, Zap, Users, BookOpen, Award, Dumbbell } from 'lucide-react';
+import { Trophy, Target, Flame, Users, BookOpen, Award, Dumbbell } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
@@ -71,13 +71,16 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
           <p className="text-emerald-100 text-sm">Total de vos sessions</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <Zap className="w-10 h-10" />
-            <span className="text-3xl font-bold">{Math.round(stats.averageScore)}</span>
+            <Flame className="w-10 h-10" />
+            <div className="flex items-center space-x-2">
+              <span className="text-3xl font-bold">{profile?.current_streak || 0}</span>
+              <Flame className={`w-8 h-8 ${(profile?.current_streak || 0) > 0 ? 'animate-pulse' : 'opacity-50'}`} />
+            </div>
           </div>
-          <h3 className="text-lg font-semibold">Score moyen</h3>
-          <p className="text-blue-100 text-sm">Sur toutes vos parties</p>
+          <h3 className="text-lg font-semibold">Série en cours</h3>
+          <p className="text-orange-100 text-sm">Record: {profile?.longest_streak || 0} jours</p>
         </div>
 
         <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">

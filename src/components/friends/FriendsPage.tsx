@@ -306,14 +306,17 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   key={friendship.id}
                   className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-300 transition-colors"
                 >
-                  <div className="flex items-center space-x-3 flex-1">
+                  <div
+                    className="flex items-center space-x-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => onNavigate?.('view-profile', { userId: friendProfile.id })}
+                  >
                     <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
                       <span className="text-emerald-600 font-bold text-lg">
                         {friendProfile.pseudo.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-800">{friendProfile.pseudo}</p>
+                      <p className="font-semibold text-gray-800 hover:text-emerald-600 transition-colors">{friendProfile.pseudo}</p>
                       <p className="text-sm text-gray-600">Niveau {friendProfile.level}</p>
                     </div>
                   </div>
