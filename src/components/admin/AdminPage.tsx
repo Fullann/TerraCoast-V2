@@ -43,8 +43,8 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
       .from('quizzes')
       .select('*', { count: 'exact', head: true });
 
-    const { count: reportsCount } = await supabase
-      .from('reports')
+    const { count: warningsCount } = await supabase
+      .from('warnings')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'pending');
 
@@ -55,7 +55,7 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
     setStats({
       totalUsers: usersCount || 0,
       totalQuizzes: quizzesCount || 0,
-      pendingReports: reportsCount || 0,
+      pendingReports: warningsCount || 0,
       totalBadges: badgesCount || 0,
     });
 
@@ -201,11 +201,15 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <p className="text-4xl font-bold">{stats.totalQuizzes}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
+        <button
+          onClick={() => onNavigate?.('warnings-management')}
+          className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+        >
           <AlertTriangle className="w-10 h-10 mb-3" />
-          <p className="text-amber-100 text-sm">Signalements</p>
-          <p className="text-4xl font-bold">{stats.pendingReports}</p>
-        </div>
+          <p className="text-amber-100 text-sm">Signalements en attente</p>
+          <p className="text-4xl font-bold mb-2">{stats.pendingReports}</p>
+          <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
+        </button>
 
         <button
           onClick={() => onNavigate?.('badge-management')}
@@ -324,6 +328,12 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
                   )}
                 </div>
                 <div className="flex space-x-2">
+                  <button
+                    onClick={() => onNavigate?.('profile', { userId: user.id })}
+                    className="px-4 py-2 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg font-medium text-sm"
+                  >
+                    Voir profil
+                  </button>
                   <button
                     onClick={() => toggleUserRole(user.id, user.role)}
                     className={`px-4 py-2 rounded-lg font-medium text-sm ${

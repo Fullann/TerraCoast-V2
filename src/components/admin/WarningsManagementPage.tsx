@@ -95,7 +95,8 @@ export function WarningsManagementPage() {
       .eq('id', warningId);
 
     if (error) {
-      alert('Erreur lors de la mise à jour');
+      console.error('Erreur mise à jour warning:', error);
+      alert(`Erreur lors de la mise à jour du warning: ${JSON.stringify(error)}`);
       return;
     }
 
@@ -115,10 +116,38 @@ export function WarningsManagementPage() {
       }
 
       if (Object.keys(profileUpdate).length > 0) {
-        await supabase
+        const { error: profileError } = await supabase
           .from('profiles')
           .update(profileUpdate)
           .eq('id', selectedWarning.reported_user_id);
+
+        if (profileError) {
+          console.error('Erreur mise à jour profil:', profileError);
+          alert(`Erreur lors de la mise à jour du profil: ${JSON.stringify(profileError)}`);
+          return;
+        }
+      }
+    }
+
+    if (action !== 'none' && selectedWarning?.reported_user_id) {
+      let notificationMessage = '';
+      if (action === 'warning') {
+        notificationMessage = `Vous avez reçu un avertissement. Raison: ${selectedWarning.reason}`;
+      } else if (action === 'temporary_ban') {
+        notificationMessage = `Vous avez été banni temporairement jusqu'au ${new Date(tempBanUntil).toLocaleString()}. Raison: ${banReason}`;
+      } else if (action === 'permanent_ban') {
+        notificationMessage = `Votre compte a été banni de manière permanente. Raison: ${banReason}`;
+      } else if (action === 'force_username_change') {
+        notificationMessage = `Vous devez changer votre pseudo au prochain login.`;
+      }
+
+      if (notificationMessage) {
+        await supabase.from('notifications').insert({
+          user_id: selectedWarning.reported_user_id,
+          type: 'warning',
+          message: notificationMessage,
+          related_id: warningId,
+        });
       }
     }
 
@@ -147,6 +176,7 @@ export function WarningsManagementPage() {
       warning: 'bg-yellow-100 text-yellow-800',
       temporary_ban: 'bg-orange-100 text-orange-800',
       permanent_ban: 'bg-red-100 text-red-800',
+      force_username_change: 'bg-purple-100 text-purple-800',
     };
     return styles[action as keyof typeof styles] || styles.none;
   };

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { supabase } from '../../lib/supabase';
-import { Award, Trophy, Star, Calendar, TrendingUp, AlertTriangle, Settings, ArrowLeft, Flame, UserPlus, UserCheck, Clock } from 'lucide-react';
+import { Award, Trophy, Star, Calendar, TrendingUp, AlertTriangle, Settings, ArrowLeft, Flame, UserPlus, UserCheck, Clock, History, X } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -34,9 +34,12 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const [warnReason, setWarnReason] = useState('');
   const [sending, setSending] = useState(false);
   const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'friends' | 'blocked'>('none');
+  const [showWarningHistory, setShowWarningHistory] = useState(false);
+  const [warningHistory, setWarningHistory] = useState<any[]>([]);
 
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
+  const isAdmin = currentUserProfile?.role === 'admin';
 
   useEffect(() => {
     loadProfileData();
@@ -116,7 +119,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     const { data: friendship } = await supabase
       .from('friendships')
       .select('status')
-      .or(`and(user1_id.eq.${currentUserProfile.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${currentUserProfile.id})`)
+      .or(`and(user_id.eq.${currentUserProfile.id},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserProfile.id})`)
       .maybeSingle();
 
     if (friendship) {
@@ -132,8 +135,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     const { error } = await supabase
       .from('friendships')
       .insert({
-        user1_id: currentUserProfile.id,
-        user2_id: targetUserId,
+        user_id: currentUserProfile.id,
+        friend_id: targetUserId,
         status: 'pending',
       });
 
@@ -144,6 +147,25 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
     alert('Demande d\'ami envoyée !');
     setFriendshipStatus('pending');
+  };
+
+  const loadWarningHistory = async () => {
+    if (!targetUserId) return;
+
+    const { data } = await supabase
+      .from('warnings')
+      .select(`
+        *,
+        reported_user:profiles!warnings_reported_user_id_fkey(pseudo),
+        reporter_user:profiles!warnings_reporter_user_id_fkey(pseudo)
+      `)
+      .eq('reported_user_id', targetUserId)
+      .order('created_at', { ascending: false });
+
+    if (data) {
+      setWarningHistory(data);
+      setShowWarningHistory(true);
+    }
   };
 
   const handleSendWarning = async () => {
@@ -260,6 +282,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               >
                 <UserCheck className="w-5 h-5 mr-2" />
                 Ami
+              </button>
+            )}
+
+            {!isOwnProfile && isAdmin && (
+              <button
+                onClick={loadWarningHistory}
+                className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+              >
+                <History className="w-5 h-5 mr-2" />
+                Historique
               </button>
             )}
 
@@ -490,6 +522,95 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 {sending ? 'Envoi...' : 'Envoyer'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showWarningHistory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-800">
+                Historique des avertissements - {profile.pseudo}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowWarningHistory(false);
+                  setWarningHistory([]);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            {warningHistory.length === 0 ? (
+              <p className="text-center text-gray-600 py-8">Aucun avertissement trouvé</p>
+            ) : (
+              <div className="space-y-4">
+                {warningHistory.map((warning, index) => (
+                  <div key={warning.id} className="border-2 border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-bold text-lg text-gray-700">#{index + 1}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          warning.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          warning.status === 'action_taken' ? 'bg-red-100 text-red-800' :
+                          warning.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {warning.status}
+                        </span>
+                        {warning.action_taken && warning.action_taken !== 'none' && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            warning.action_taken === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                            warning.action_taken === 'temporary_ban' ? 'bg-orange-100 text-orange-800' :
+                            warning.action_taken === 'permanent_ban' ? 'bg-red-100 text-red-800' :
+                            warning.action_taken === 'force_username_change' ? 'bg-purple-100 text-purple-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {warning.action_taken}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {new Date(warning.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Signalé par: <span className="font-medium">{warning.reporter_user?.pseudo || 'Inconnu'}</span>
+                    </p>
+                    <div className="bg-gray-50 rounded p-3 mb-2">
+                      <p className="text-xs font-medium text-gray-600 mb-1">Raison:</p>
+                      <p className="text-sm text-gray-800">{warning.reason}</p>
+                    </div>
+                    {warning.admin_notes && (
+                      <div className="bg-blue-50 rounded p-3 mb-2">
+                        <p className="text-xs font-medium text-blue-700 mb-1">Notes admin:</p>
+                        <p className="text-sm text-blue-900">{warning.admin_notes}</p>
+                      </div>
+                    )}
+                    {warning.temp_ban_until && (
+                      <div className="bg-red-50 rounded p-3">
+                        <p className="text-xs font-medium text-red-700">
+                          Ban temporaire jusqu'au: {new Date(warning.temp_ban_until).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                setShowWarningHistory(false);
+                setWarningHistory([]);
+              }}
+              className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+            >
+              Fermer
+            </button>
           </div>
         </div>
       )}

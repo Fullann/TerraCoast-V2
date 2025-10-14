@@ -93,7 +93,7 @@ function AppContent() {
         )}
         {currentView === 'training-mode' && <TrainingModePage onNavigate={handleNavigate} />}
         {currentView === 'play-quiz' && viewData?.quizId && (
-          <PlayQuizPage key={`play-${viewData.quizId}-${Date.now()}`} quizId={viewData.quizId} onNavigate={handleNavigate} />
+          <PlayQuizPage key={`play-${viewData.quizId}`} quizId={viewData.quizId} onNavigate={handleNavigate} />
         )}
         {currentView === 'play-training' && viewData?.quizId && (
           <PlayQuizPage
