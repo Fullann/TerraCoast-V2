@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { Navbar } from './components/layout/Navbar';
 import { HomePage } from './components/home/HomePage';
 import { ProfilePage } from './components/profile/ProfilePage';
+import { SettingsPage } from './components/profile/SettingsPage';
 import { QuizzesPage } from './components/quizzes/QuizzesPage';
 import { CreateQuizPage } from './components/quizzes/CreateQuizPage';
 import { EditQuizPage } from './components/quizzes/EditQuizPage';
@@ -17,12 +20,18 @@ import { BadgeManagementPage } from './components/admin/BadgeManagementPage';
 import { TitleManagementPage } from './components/admin/TitleManagementPage';
 import { CategoryManagementPage } from './components/admin/CategoryManagementPage';
 import { DifficultyManagementPage } from './components/admin/DifficultyManagementPage';
+import { QuizValidationPage } from './components/admin/QuizValidationPage';
+import { WarningsManagementPage } from './components/admin/WarningsManagementPage';
+import { QuizTypeManagementPage } from './components/admin/QuizTypeManagementPage';
 import { DuelsPage } from './components/duels/DuelsPage';
 import { ChatPage } from './components/chat/ChatPage';
+import { LandingPage } from './components/landing/LandingPage';
+import { BannedPage } from './components/auth/BannedPage';
+import { ForceUsernamePage } from './components/auth/ForceUsernamePage';
 
 function AppContent() {
-  const { user, loading } = useAuth();
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const { user, profile, loading } = useAuth();
+  const [authView, setAuthView] = useState<'login' | 'register' | 'landing'>('landing');
   const [currentView, setCurrentView] = useState<string>('home');
   const [viewData, setViewData] = useState<any>(null);
 
@@ -42,10 +51,37 @@ function AppContent() {
     );
   }
 
+  if (user && profile) {
+    const now = new Date();
+    const isBanned = profile.is_banned;
+    const banUntil = profile.ban_until ? new Date(profile.ban_until) : null;
+    const isStillBanned = isBanned && (!banUntil || banUntil > now);
+
+    if (isStillBanned) {
+      return <BannedPage />;
+    }
+
+    if (profile.force_username_change) {
+      return <ForceUsernamePage />;
+    }
+  }
+
   if (!user) {
+    if (authView === 'landing') {
+      return <LandingPage onNavigate={(view) => setAuthView(view as 'login' | 'register')} />;
+    }
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 flex items-center justify-center p-4">
         <div className="w-full">
+          <div className="max-w-md mx-auto mb-4">
+            <button
+              onClick={() => setAuthView('landing')}
+              className="text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
+            >
+              ← Retour à l'accueil
+            </button>
+          </div>
           {authView === 'login' ? (
             <LoginForm onSwitchToRegister={() => setAuthView('register')} />
           ) : (
@@ -62,7 +98,11 @@ function AppContent() {
 
       <main className="pb-8">
         {currentView === 'home' && <HomePage onNavigate={handleNavigate} />}
-        {currentView === 'profile' && <ProfilePage />}
+        {currentView === 'profile' && <ProfilePage onNavigate={handleNavigate} />}
+        {currentView === 'view-profile' && viewData?.userId && (
+          <ProfilePage userId={viewData.userId} onNavigate={handleNavigate} />
+        )}
+        {currentView === 'settings' && <SettingsPage onNavigate={handleNavigate} />}
         {currentView === 'quizzes' && <QuizzesPage onNavigate={handleNavigate} />}
         {currentView === 'create-quiz' && <CreateQuizPage onNavigate={handleNavigate} />}
         {currentView === 'edit-quiz' && viewData?.quizId && (
@@ -70,7 +110,7 @@ function AppContent() {
         )}
         {currentView === 'training-mode' && <TrainingModePage onNavigate={handleNavigate} />}
         {currentView === 'play-quiz' && viewData?.quizId && (
-          <PlayQuizPage quizId={viewData.quizId} onNavigate={handleNavigate} />
+          <PlayQuizPage key={`play-${viewData.quizId}`} quizId={viewData.quizId} onNavigate={handleNavigate} />
         )}
         {currentView === 'play-training' && viewData?.quizId && (
           <PlayQuizPage
@@ -83,7 +123,7 @@ function AppContent() {
         {currentView === 'play-duel' && viewData?.duelId && (
           <PlayQuizPage quizId={viewData.quizId} mode="duel" duelId={viewData.duelId} onNavigate={handleNavigate} />
         )}
-        {currentView === 'leaderboard' && <LeaderboardPage />}
+        {currentView === 'leaderboard' && <LeaderboardPage onNavigate={handleNavigate} />}
         {currentView === 'friends' && <FriendsPage onNavigate={handleNavigate} />}
         {currentView === 'duels' && <DuelsPage onNavigate={handleNavigate} />}
         {currentView === 'chat' && <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />}
@@ -92,6 +132,9 @@ function AppContent() {
         {currentView === 'title-management' && <TitleManagementPage />}
         {currentView === 'category-management' && <CategoryManagementPage />}
         {currentView === 'difficulty-management' && <DifficultyManagementPage />}
+        {currentView === 'quiz-validation' && <QuizValidationPage />}
+        {currentView === 'warnings-management' && <WarningsManagementPage />}
+        {currentView === 'quiz-type-management' && <QuizTypeManagementPage />}
       </main>
     </div>
   );
@@ -100,7 +143,11 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <LanguageProvider>
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

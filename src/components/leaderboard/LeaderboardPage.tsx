@@ -11,7 +11,11 @@ interface LeaderboardEntry extends Profile {
   games_played: number;
 }
 
-export function LeaderboardPage() {
+interface LeaderboardPageProps {
+  onNavigate?: (view: string, data?: any) => void;
+}
+
+export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
   const { profile } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,7 @@ export function LeaderboardPage() {
       const { data } = await supabase
         .from('profiles')
         .select('*')
+        .eq('is_banned', false)
         .order(orderBy, { ascending: false })
         .limit(100);
 
@@ -41,13 +46,15 @@ export function LeaderboardPage() {
         .from('friendships')
         .select('friend_profile:profiles!friendships_friend_id_fkey(*)')
         .eq('user_id', profile.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .eq('friend_profile.is_banned', false);
 
       const { data: friendshipsAsReceiver } = await supabase
         .from('friendships')
         .select('user_profile:profiles!friendships_user_id_fkey(*)')
         .eq('friend_id', profile.id)
-        .eq('status', 'accepted');
+        .eq('status', 'accepted')
+        .eq('user_profile.is_banned', false);
 
       const friendProfiles: Profile[] = [
         ...(friendshipsAsSender?.map((f: any) => f.friend_profile) || []),
@@ -95,9 +102,25 @@ export function LeaderboardPage() {
   };
 
   const getRankIcon = (index: number) => {
-    if (index === 0) return <Crown className="w-6 h-6 text-yellow-500" />;
-    if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
-    if (index === 2) return <Medal className="w-6 h-6 text-amber-600" />;
+    if (index === 0) {
+      return <Crown className="w-6 h-6 text-yellow-500" />;
+    }
+    if (index === 1) {
+      return (
+        <div className="relative">
+          <Medal className="w-6 h-6 text-gray-400" />
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">2</span>
+        </div>
+      );
+    }
+    if (index === 2) {
+      return (
+        <div className="relative">
+          <Medal className="w-6 h-6 text-amber-600" />
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-amber-800">3</span>
+        </div>
+      );
+    }
     return <span className="text-gray-500 font-semibold">{index + 1}</span>;
   };
 
@@ -116,7 +139,7 @@ export function LeaderboardPage() {
           <Trophy className="w-10 h-10 mr-3 text-emerald-600" />
           Classement
         </h1>
-        <p className="text-gray-600">Les meilleurs joueurs de Terracoast</p>
+        <p className="text-gray-600">Les meilleurs joueurs de TerraCoast</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-4">
@@ -166,7 +189,7 @@ export function LeaderboardPage() {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Tout le temps
+            Tous les temps
           </button>
         </div>
         {period === 'monthly' && (
@@ -192,7 +215,8 @@ export function LeaderboardPage() {
           {leaderboard.map((entry, index) => (
             <div
               key={entry.id}
-              className={`${getRankBackground(index)} rounded-xl border-2 p-6 transition-all hover:shadow-lg`}
+              onClick={() => onNavigate?.('view-profile', { userId: entry.id })}
+              className={`${getRankBackground(index)} rounded-xl border-2 p-6 transition-all hover:shadow-lg cursor-pointer`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -207,7 +231,7 @@ export function LeaderboardPage() {
                         Niveau {entry.level}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {entry.games_played} parties {period === 'monthly' ? 'ce mois' : ''}
+                        {entry.games_played} {entry.games_played <= 1 ? 'partie' : 'parties'} {period === 'monthly' ? 'ce mois' : ''}
                       </span>
                       {entry.top_10_count > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white">

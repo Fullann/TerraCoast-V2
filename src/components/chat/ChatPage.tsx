@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -18,16 +19,46 @@ interface ChatPageProps {
 
 export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
   const { profile } = useAuth();
+  const { refreshNotifications } = useNotifications();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Profile | null>(null);
   const [messages, setMessages] = useState<MessageWithUser[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadFriends();
-  }, [profile]);
+
+    if (!profile) return;
+
+    const allMessagesSubscription = supabase
+      .channel('all_messages_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `to_user_id=eq.${profile.id}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          if (selectedFriend?.id !== newMsg.from_user_id) {
+            setUnreadCounts(prev => ({
+              ...prev,
+              [newMsg.from_user_id]: (prev[newMsg.from_user_id] || 0) + 1
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      allMessagesSubscription.unsubscribe();
+    };
+  }, [profile, selectedFriend]);
 
   useEffect(() => {
     if (friendId) {
@@ -82,13 +113,15 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .from('friendships')
       .select('friend_profile:profiles!friendships_friend_id_fkey(*)')
       .eq('user_id', profile.id)
-      .eq('status', 'accepted');
+      .eq('status', 'accepted')
+      .eq('friend_profile.is_banned', false);
 
     const { data: friendshipsAsReceiver } = await supabase
       .from('friendships')
       .select('user_profile:profiles!friendships_user_id_fkey(*)')
       .eq('friend_id', profile.id)
-      .eq('status', 'accepted');
+      .eq('status', 'accepted')
+      .eq('user_profile.is_banned', false);
 
     const allFriends: Profile[] = [
       ...(friendshipsAsSender?.map((f: any) => f.friend_profile) || []),
@@ -96,6 +129,18 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
     ];
 
     setFriends(allFriends);
+
+    const counts: Record<string, number> = {};
+    for (const friend of allFriends) {
+      const { count } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('from_user_id', friend.id)
+        .eq('to_user_id', profile.id)
+        .eq('is_read', false);
+      counts[friend.id] = count || 0;
+    }
+    setUnreadCounts(counts);
   };
 
   const loadMessages = async () => {
@@ -123,6 +168,9 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .eq('to_user_id', profile.id)
       .eq('from_user_id', selectedFriend.id)
       .eq('is_read', false);
+
+    setUnreadCounts(prev => ({ ...prev, [selectedFriend.id]: 0 }));
+    refreshNotifications();
   };
 
   const sendMessage = async () => {
@@ -182,15 +230,20 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                   <button
                     key={friend.id}
                     onClick={() => setSelectedFriend(friend)}
-                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                    className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                       selectedFriend?.id === friend.id ? 'bg-emerald-50' : ''
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center relative">
                         <span className="text-emerald-600 font-bold text-lg">
                           {friend.pseudo.charAt(0).toUpperCase()}
                         </span>
+                        {unreadCounts[friend.id] > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                            {unreadCounts[friend.id]}
+                          </span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-800 truncate">{friend.pseudo}</p>
@@ -207,14 +260,17 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
             {selectedFriend ? (
               <>
                 <div className="p-4 border-b border-gray-200 bg-gray-50">
-                  <div className="flex items-center space-x-3">
+                  <div
+                    className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => onNavigate?.('view-profile', { userId: selectedFriend.id })}
+                  >
                     <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                       <span className="text-emerald-600 font-bold">
                         {selectedFriend.pseudo.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-800">{selectedFriend.pseudo}</h3>
+                      <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">{selectedFriend.pseudo}</h3>
                       <p className="text-sm text-gray-600">Niveau {selectedFriend.level}</p>
                     </div>
                   </div>
@@ -240,6 +296,11 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                                 : 'bg-white border border-gray-200 text-gray-800'
                             }`}
                           >
+                            {!isOwnMessage && message.from_profile && (
+                              <p className="text-xs font-semibold mb-1 text-emerald-600">
+                                {message.from_profile.pseudo}
+                              </p>
+                            )}
                             <p className="break-words">{message.message}</p>
                             <p
                               className={`text-xs mt-1 ${

@@ -139,11 +139,29 @@ export function TitleManagementPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
-          <Star className="w-10 h-10 mr-3 text-amber-600" />
-          Gestion des Titres
-        </h1>
-        <p className="text-gray-600">Créez et gérez les titres et leurs conditions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
+              <Star className="w-10 h-10 mr-3 text-amber-600" />
+              Gestion des Titres
+            </h1>
+            <p className="text-gray-600">Créez et gérez les titres et leurs conditions</p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!confirm('Attribuer tous les titres mérités à tous les utilisateurs ? Cela peut prendre du temps.')) return;
+              const { error } = await supabase.rpc('assign_titles_to_all_users');
+              if (error) {
+                alert('Erreur: ' + error.message);
+              } else {
+                alert('Titres attribués avec succès !');
+              }
+            }}
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium"
+          >
+            Attribuer les titres à tous
+          </button>
+        </div>
       </div>
 
       {isCreating ? (
@@ -203,6 +221,11 @@ export function TitleManagementPage() {
                   <option value="wins">Victoires</option>
                   <option value="quizzes_completed">Quiz complétés</option>
                   <option value="perfect_scores">Scores parfaits</option>
+                  <option value="published_quizzes">Quiz publiés</option>
+                  <option value="monthly_rank">Classement mensuel (top X)</option>
+                  <option value="badges_earned">Badges gagnés</option>
+                  <option value="total_score">Score total</option>
+                  <option value="friends_count">Nombre d'amis</option>
                 </select>
               </div>
 

@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { detectUserLanguage } from '../../i18n/translations';
+import { supabase } from '../../lib/supabase';
 import { UserPlus } from 'lucide-react';
 
 export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void }) {
   const { signUp } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pseudo, setPseudo] = useState('');
@@ -27,7 +31,16 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     setLoading(true);
 
     try {
+      const detectedLang = detectUserLanguage();
       await signUp(email, password, pseudo);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ language: detectedLang })
+          .eq('id', user.id);
+      }
     } catch (err: any) {
       if (err.message.includes('already registered')) {
         setError('Cet email est déjà utilisé');
@@ -45,7 +58,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
       <div className="flex items-center justify-center mb-6">
         <UserPlus className="w-8 h-8 text-emerald-600 mr-2" />
-        <h2 className="text-2xl font-bold text-gray-800">Inscription</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('auth.register')}</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,7 +70,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
 
         <div>
           <label htmlFor="pseudo" className="block text-sm font-medium text-gray-700 mb-1">
-            Pseudo
+            {t('auth.pseudo')}
           </label>
           <input
             id="pseudo"
@@ -73,7 +86,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
+            {t('auth.email')}
           </label>
           <input
             id="email"
@@ -88,7 +101,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Mot de passe
+            {t('auth.password')}
           </label>
           <input
             id="password"
@@ -108,7 +121,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           disabled={loading}
           className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {loading ? 'Inscription...' : 'S\'inscrire'}
+          {loading ? t('common.loading') : t('auth.signUp')}
         </button>
       </form>
 
@@ -117,7 +130,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
           onClick={onSwitchToLogin}
           className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
         >
-          Déjà un compte ? Se connecter
+          {t('auth.alreadyAccount')} {t('auth.signIn')}
         </button>
       </div>
     </div>

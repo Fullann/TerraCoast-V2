@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { languageNames, Language } from '../../i18n/translations';
 import { Plus, Trash2, Save, ArrowLeft, CreditCard as Edit, Image } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -23,6 +24,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [category, setCategory] = useState<QuizCategory>('capitals');
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [quizLanguage, setQuizLanguage] = useState<Language>('fr');
   const [questions, setQuestions] = useState<(Question & { isNew?: boolean })[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,6 +50,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       setCategory(quizData.category);
       setDifficulty(quizData.difficulty);
       setTimeLimitSeconds(quizData.time_limit_seconds || 30);
+      setCoverImageUrl(quizData.cover_image_url || '');
+      setQuizLanguage((quizData.language as Language) || 'fr');
 
       const { data: questionsData } = await supabase
         .from('questions')
@@ -140,6 +145,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           category,
           difficulty,
           time_limit_seconds: timeLimitSeconds,
+          cover_image_url: coverImageUrl || null,
+          language: quizLanguage,
         })
         .eq('id', quizId);
 
@@ -241,7 +248,50 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Image de couverture (URL)
+            </label>
+            <input
+              type="text"
+              value={coverImageUrl}
+              onChange={(e) => setCoverImageUrl(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              placeholder="https://exemple.com/image.jpg"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Optionnel : Ajoute une image de présentation pour ton quiz
+            </p>
+            {coverImageUrl && (
+              <div className="mt-2">
+                <img
+                  src={coverImageUrl}
+                  alt="Aperçu"
+                  className="w-full max-w-md h-32 object-cover rounded-lg border-2 border-gray-200"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Langue *
+              </label>
+              <select
+                value={quizLanguage}
+                onChange={(e) => setQuizLanguage(e.target.value as Language)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              >
+                {Object.entries(languageNames).map(([code, name]) => (
+                  <option key={code} value={code}>{name}</option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Catégorie *

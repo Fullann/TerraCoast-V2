@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { Trophy, Target, Zap, Users, BookOpen, Award, Dumbbell } from 'lucide-react';
+import { Trophy, Target, Flame, Users, BookOpen, Award, Dumbbell, AlertTriangle, Ban } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
 type GameSession = Database['public']['Tables']['game_sessions']['Row'];
+type Warning = Database['public']['Tables']['warnings']['Row'];
 
 export function HomePage({ onNavigate }: { onNavigate: (view: string) => void }) {
   const { profile } = useAuth();
   const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
   const [recentSessions, setRecentSessions] = useState<GameSession[]>([]);
+  const [warnings, setWarnings] = useState<Warning[]>([]);
   const [stats, setStats] = useState({
     totalPlays: 0,
     averageScore: 0,
-    bestScore: 0,
+    dailyPoints: 0,
+    maxDailyPoints: 0,
   });
 
   useEffect(() => {
@@ -46,10 +49,52 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
 
       const totalPlays = sessions.length;
       const averageScore = sessions.reduce((acc, s) => acc + s.score, 0) / totalPlays || 0;
-      const bestScore = Math.max(...sessions.map(s => s.score), 0);
 
-      setStats({ totalPlays, averageScore, bestScore });
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayISO = today.toISOString();
+
+      const { data: todaySessions } = await supabase
+        .from('game_sessions')
+        .select('score')
+        .eq('player_id', profile.id)
+        .eq('completed', true)
+        .gte('completed_at', todayISO);
+
+      let dailyPoints = 0;
+      if (todaySessions) {
+        dailyPoints = todaySessions.reduce((sum, s) => sum + s.score, 0);
+      }
+
+      const { data: allCompletedSessions } = await supabase
+        .from('game_sessions')
+        .select('score, completed_at')
+        .eq('player_id', profile.id)
+        .eq('completed', true)
+        .order('completed_at', { ascending: false });
+
+      let maxDailyPoints = 0;
+      if (allCompletedSessions) {
+        const dailyPointsMap = new Map<string, number>();
+        allCompletedSessions.forEach(s => {
+          const date = new Date(s.completed_at).toISOString().split('T')[0];
+          dailyPointsMap.set(date, (dailyPointsMap.get(date) || 0) + s.score);
+        });
+        maxDailyPoints = Math.max(...dailyPointsMap.values(), 0);
+      }
+
+      setStats({ totalPlays, averageScore, dailyPoints, maxDailyPoints });
     }
+
+    const { data: userWarnings } = await supabase
+      .from('warnings')
+      .select('*')
+      .eq('reported_user_id', profile.id)
+      .in('status', ['action_taken'])
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    if (userWarnings) setWarnings(userWarnings);
   };
 
   return (
@@ -61,6 +106,71 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
         <p className="text-gray-600">Prêt à tester vos connaissances en géographie?</p>
       </div>
 
+      {profile?.is_banned && (
+        <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6 mb-8">
+          <div className="flex items-start">
+            <Ban className="w-8 h-8 text-red-600 mr-4 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-red-800 mb-2">Compte banni</h3>
+              {profile.ban_until ? (
+                <>
+                  <p className="text-red-700 mb-2">
+                    Votre compte est temporairement banni jusqu'au:{' '}
+                    <span className="font-bold">{new Date(profile.ban_until).toLocaleString()}</span>
+                  </p>
+                  <p className="text-red-700">
+                    Raison: <span className="font-semibold">{profile.ban_reason || 'Non spécifiée'}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-red-700 mb-2 font-bold">Votre compte est banni de manière permanente.</p>
+                  <p className="text-red-700">
+                    Raison: <span className="font-semibold">{profile.ban_reason || 'Non spécifiée'}</span>
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {warnings.length > 0 && !profile?.is_banned && (
+        <div className="bg-yellow-50 border-2 border-yellow-500 rounded-xl p-6 mb-8">
+          <div className="flex items-start">
+            <AlertTriangle className="w-8 h-8 text-yellow-600 mr-4 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-yellow-800 mb-3">Avertissements reçus</h3>
+              <div className="space-y-3">
+                {warnings.map((warning, index) => (
+                  <div key={warning.id} className="bg-white rounded-lg p-4 border border-yellow-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-sm font-bold text-gray-700">
+                        Avertissement #{warnings.length - index}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(warning.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-800 mb-2">
+                      <span className="font-medium">Raison:</span> {warning.reason}
+                    </p>
+                    {warning.admin_notes && (
+                      <p className="text-sm text-blue-700 bg-blue-50 rounded p-2">
+                        <span className="font-medium">Note:</span> {warning.admin_notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-yellow-700 mt-3">
+                Veuillez respecter les règles de la communauté pour éviter d'autres sanctions.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
@@ -71,22 +181,25 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
           <p className="text-emerald-100 text-sm">Total de vos sessions</p>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <Zap className="w-10 h-10" />
-            <span className="text-3xl font-bold">{Math.round(stats.averageScore)}</span>
+            <Flame className="w-10 h-10" />
+            <div className="flex items-center space-x-2">
+              <span className="text-3xl font-bold">{profile?.current_streak || 0}</span>
+              <Flame className={`w-8 h-8 ${(profile?.current_streak || 0) > 0 ? 'animate-pulse' : 'opacity-50'}`} />
+            </div>
           </div>
-          <h3 className="text-lg font-semibold">Score moyen</h3>
-          <p className="text-blue-100 text-sm">Sur toutes vos parties</p>
+          <h3 className="text-lg font-semibold">Série en cours</h3>
+          <p className="text-orange-100 text-sm">Record: {profile?.longest_streak || 0} jours</p>
         </div>
 
         <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <Trophy className="w-10 h-10" />
-            <span className="text-3xl font-bold">{stats.bestScore}</span>
+            <span className="text-3xl font-bold">{stats.dailyPoints}</span>
           </div>
-          <h3 className="text-lg font-semibold">Meilleur score</h3>
-          <p className="text-amber-100 text-sm">Votre record personnel</p>
+          <h3 className="text-lg font-semibold">Points du jour</h3>
+          <p className="text-amber-100 text-sm">Record: {stats.maxDailyPoints} pts</p>
         </div>
       </div>
 
@@ -140,7 +253,7 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
             </button>
 
             <button
-              onClick={() => onNavigate('friends')}
+              onClick={() => onNavigate('duels')}
               className="w-full flex items-center justify-between p-4 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors group"
             >
               <div className="flex items-center space-x-3">
@@ -166,7 +279,7 @@ export function HomePage({ onNavigate }: { onNavigate: (view: string) => void })
                 <div
                   key={quiz.id}
                   className="p-4 border border-gray-200 rounded-lg hover:border-emerald-300 transition-colors cursor-pointer"
-                  onClick={() => onNavigate('quizzes')}
+                  onClick={() => onNavigate('play-quiz', { quizId: quiz.id })}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">

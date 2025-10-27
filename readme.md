@@ -1,18 +1,19 @@
 
 
-# Terracoast 🌍  
+# TerraCoast 🌍  
 *Apprends la géographie de manière ludique, sociale et gratuite.*
 <p align="center">
-  <img src="./public/logo.png" alt="Logo Terracoast" height="84" />
+  <img src="./public/logo.png" alt="Logo TerraCoast" height="84" />
 </p>
+
 ## À propos du projet
 
-Terracoast est une plateforme interactive dédiée aux passionnés de géographie et aux curieux souhaitant apprendre en s’amusant.  
+TerraCoast est une plateforme interactive dédiée aux passionnés de géographie et aux curieux souhaitant apprendre en s’amusant.  
 Le projet est né de la rencontre entre deux étudiants en informatique : l’un passionné par le développement web, l’autre par la géographie. Ensemble, nous avons voulu créer une expérience moderne, gratuite et sans publicité.
 
 ### Notre vision
 
-Nous croyons que la connaissance géographique doit être **accessible à tous**, sans abonnement ni contrainte. Terracoast te permet non seulement de tester tes connaissances, mais aussi de créer et partager tes propres quiz avec la communauté.
+Nous croyons que la connaissance géographique doit être **accessible à tous**, sans abonnement ni contrainte. TerraCoast te permet non seulement de tester tes connaissances, mais aussi de créer et partager tes propres quiz avec la communauté.
 
 ### Fonctionnalités principales
 
@@ -23,11 +24,11 @@ Nous croyons que la connaissance géographique doit être **accessible à tous**
 - **Mode créateur** : crée, modifie et partage tes propres quiz  
 
 Le projet évolue continuellement grâce aux retours de la communauté.  
-Chaque quiz, duel ou suggestion contribue à rendre Terracoast toujours plus engageant.
+Chaque quiz, duel ou suggestion contribue à rendre TerraCoast toujours plus engageant.
 
 ## Lien du site
 
-👉 [Découvre Terracoast](https://terracoast.ch)
+👉 [Découvre TerraCoast](https://TerraCoast.ch)
 
 ## Démarrage du projet
 
@@ -106,7 +107,7 @@ Si tu souhaites proposer une amélioration, corriger un bug ou ajouter une fonct
 ## Captures d’écran
 
 <p align="center">
-  <img src="./screenshots/home.png" alt="Accueil Terracoast" width="820" />
+  <img src="./screenshots/home.png" alt="Accueil TerraCoast" width="820" />
 </p>
 
 <p align="center">

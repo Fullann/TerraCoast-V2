@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { BookOpen, Search, Filter, Play, Plus, Share2, CreditCard as Edit, Dumbbell, Trash2, Globe } from 'lucide-react';
 import { ShareQuizModal } from './ShareQuizModal';
 import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
+type QuizType = Database['public']['Tables']['quiz_types']['Row'];
+
+interface QuizWithType extends Quiz {
+  quiz_types?: QuizType | null;
+}
 
 interface QuizzesPageProps {
   onNavigate: (view: string, data?: any) => void;
@@ -13,25 +19,88 @@ interface QuizzesPageProps {
 
 export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const { profile } = useAuth();
-  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
-  const [myQuizzes, setMyQuizzes] = useState<Quiz[]>([]);
-  const [sharedQuizzes, setSharedQuizzes] = useState<Quiz[]>([]);
+  const { language, showAllLanguages, t } = useLanguage();
+  const [quizzes, setQuizzes] = useState<QuizWithType[]>([]);
+  const [myQuizzes, setMyQuizzes] = useState<QuizWithType[]>([]);
+  const [sharedQuizzes, setSharedQuizzes] = useState<QuizWithType[]>([]);
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<'public' | 'my' | 'shared'>('public');
   const [shareQuiz, setShareQuiz] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     loadQuizzes();
-  }, [profile, categoryFilter, difficultyFilter]);
+    loadQuizTypes();
+  }, [profile, categoryFilter, difficultyFilter, typeFilter, language, showAllLanguages]);
+
+  const loadQuizTypes = async () => {
+    const { data } = await supabase
+      .from('quiz_types')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+
+    if (data) setQuizTypes(data);
+  };
+
+  const requestPublish = async (quizId: string, quizTitle: string) => {
+    if (!confirm(`Demander la publication de "${quizTitle}" ?`)) return;
+
+    const { error } = await supabase
+      .from('quizzes')
+      .update({ pending_validation: true, validation_status: 'pending' })
+      .eq('id', quizId);
+
+    if (error) {
+      alert('Erreur lors de la demande');
+      return;
+    }
+
+    alert('Demande envoyée ! Un administrateur validera votre quiz.');
+    loadQuizzes();
+  };
+
+  const publishQuizDirectly = async (quizId: string) => {
+    const { error } = await supabase
+      .from('quizzes')
+      .update({ is_public: true, is_global: true, published_at: new Date().toISOString() })
+      .eq('id', quizId);
+
+    if (error) {
+      alert('Erreur lors de la publication');
+      return;
+    }
+
+    alert('Quiz publié avec succès !');
+    loadQuizzes();
+  };
+
+  const removeSharedQuiz = async (quizId: string) => {
+    if (!confirm('Voulez-vous retirer ce quiz de votre liste partagée ?')) return;
+
+    const { error } = await supabase
+      .from('quiz_shares')
+      .delete()
+      .eq('quiz_id', quizId)
+      .eq('shared_with_user_id', profile?.id);
+
+    if (error) {
+      alert('Erreur lors de la suppression');
+      return;
+    }
+
+    loadQuizzes();
+  };
 
   const loadQuizzes = async () => {
     if (!profile) return;
 
     let query = supabase
       .from('quizzes')
-      .select('*')
+      .select('*, quiz_types(*)')
       .or('is_public.eq.true,is_global.eq.true')
       .order('total_plays', { ascending: false });
 
@@ -43,16 +112,24 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       query = query.eq('difficulty', difficultyFilter);
     }
 
+    if (typeFilter !== 'all') {
+      query = query.eq('quiz_type_id', typeFilter);
+    }
+
+    if (!showAllLanguages) {
+      query = query.eq('language', language);
+    }
+
     const { data } = await query;
-    if (data) setQuizzes(data);
+    if (data) setQuizzes(data as QuizWithType[]);
 
     const { data: myData } = await supabase
       .from('quizzes')
-      .select('*')
+      .select('*, quiz_types(*)')
       .eq('creator_id', profile.id)
       .order('created_at', { ascending: false });
 
-    if (myData) setMyQuizzes(myData);
+    if (myData) setMyQuizzes(myData as QuizWithType[]);
 
     const { data: sharedData } = await supabase
       .from('quiz_shares')
@@ -139,6 +216,19 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             <option value="medium">Moyen</option>
             <option value="hard">Difficile</option>
           </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+          >
+            <option value="all">Tous types</option>
+            {quizTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -151,7 +241,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             }`}
           >
             <BookOpen className="w-4 h-4 inline mr-2" />
-            Quiz publics
+            {t('quiz.publicQuizzes')}
           </button>
           <button
             onClick={() => setActiveTab('my')}
@@ -161,7 +251,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            Mes quiz
+            {t('quiz.myQuizzes')}
           </button>
           <button
             onClick={() => setActiveTab('shared')}
@@ -172,14 +262,14 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             }`}
           >
             <Share2 className="w-4 h-4 inline mr-2" />
-            Partagés ({sharedQuizzes.length})
+            {t('quiz.sharedQuizzes')} ({sharedQuizzes.length})
           </button>
           <button
             onClick={() => onNavigate('create-quiz')}
             className="ml-auto px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
           >
             <Plus className="w-4 h-4 inline mr-2" />
-            Créer un quiz
+            {t('quiz.create')}
           </button>
         </div>
       </div>
@@ -203,6 +293,17 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
               key={quiz.id}
               className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
             >
+              {quiz.cover_image_url ? (
+                <img
+                  src={quiz.cover_image_url}
+                  alt={quiz.title}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
+                  <BookOpen className="w-20 h-20 text-white opacity-50" />
+                </div>
+              )}
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-xl font-bold text-gray-800 flex-1">{quiz.title}</h3>
@@ -214,7 +315,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                 </div>
 
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {quiz.description || 'Pas de description'}
+                  {quiz.description || ''}
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -226,6 +327,17 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                     {quiz.difficulty === 'medium' && 'Moyen'}
                     {quiz.difficulty === 'hard' && 'Difficile'}
                   </span>
+                  {quiz.quiz_types && (
+                    <span
+                      className="text-xs px-3 py-1 rounded-full font-medium"
+                      style={{
+                        backgroundColor: `${quiz.quiz_types.color}20`,
+                        color: quiz.quiz_types.color,
+                      }}
+                    >
+                      {quiz.quiz_types.name}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
@@ -260,15 +372,33 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                         <Edit className="w-4 h-4" />
                       </button>
                       {!quiz.is_public && (
-                        <button
-                          onClick={() => setShareQuiz({ id: quiz.id, title: quiz.title })}
-                          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          title="Partager avec des amis"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setShareQuiz({ id: quiz.id, title: quiz.title })}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            title="Partager avec des amis"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => profile?.role === 'admin' ? publishQuizDirectly(quiz.id) : requestPublish(quiz.id, quiz.title)}
+                            className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                            title={profile?.role === 'admin' ? 'Publier directement' : 'Demander la publication'}
+                          >
+                            <Globe className="w-4 h-4" />
+                          </button>
+                        </>
                       )}
                     </>
+                  )}
+                  {activeTab === 'shared' && (
+                    <button
+                      onClick={() => removeSharedQuiz(quiz.id)}
+                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      title="Retirer de ma liste"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>

@@ -16,15 +16,9 @@ interface DifficultyFormData {
   color: string;
 }
 
-const DEFAULT_DIFFICULTIES: Difficulty[] = [
-  { id: 'easy', name: 'easy', label: 'Facile', color: 'green' },
-  { id: 'medium', name: 'medium', label: 'Moyen', color: 'yellow' },
-  { id: 'hard', name: 'hard', label: 'Difficile', color: 'red' },
-];
-
 export function DifficultyManagementPage() {
   const { profile } = useAuth();
-  const [difficulties, setDifficulties] = useState<Difficulty[]>(DEFAULT_DIFFICULTIES);
+  const [difficulties, setDifficulties] = useState<Difficulty[]>([]);
   const [editingDifficulty, setEditingDifficulty] = useState<Difficulty | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<DifficultyFormData>({
@@ -53,6 +47,21 @@ export function DifficultyManagementPage() {
     setIsCreating(true);
   };
 
+  useEffect(() => {
+    loadDifficulties();
+  }, []);
+
+  const loadDifficulties = async () => {
+    const { data } = await supabase
+      .from('difficulties')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (data) {
+      setDifficulties(data);
+    }
+  };
+
   const cancelEditing = () => {
     setIsCreating(false);
     setEditingDifficulty(null);
@@ -63,29 +72,48 @@ export function DifficultyManagementPage() {
     });
   };
 
-  const saveDifficulty = () => {
+  const saveDifficulty = async () => {
     if (editingDifficulty) {
-      setDifficulties(difficulties.map(diff =>
-        diff.id === editingDifficulty.id
-          ? { ...diff, name: formData.name, label: formData.label, color: formData.color }
-          : diff
-      ));
+      const { error } = await supabase
+        .from('difficulties')
+        .update({
+          name: formData.name.toLowerCase().replace(/\s+/g, '_'),
+          label: formData.label,
+          color: formData.color,
+        })
+        .eq('id', editingDifficulty.id);
+
+      if (!error) {
+        await loadDifficulties();
+      }
     } else {
-      const newDifficulty: Difficulty = {
-        id: formData.name.toLowerCase().replace(/\s+/g, '_'),
-        name: formData.name.toLowerCase().replace(/\s+/g, '_'),
-        label: formData.label,
-        color: formData.color,
-      };
-      setDifficulties([...difficulties, newDifficulty]);
+      const { error } = await supabase
+        .from('difficulties')
+        .insert({
+          name: formData.name.toLowerCase().replace(/\s+/g, '_'),
+          label: formData.label,
+          color: formData.color,
+        });
+
+      if (!error) {
+        await loadDifficulties();
+      }
     }
 
     cancelEditing();
   };
 
-  const deleteDifficulty = (difficultyId: string) => {
-    if (!confirm('Voulez-vous vraiment supprimer cette difficulté?')) return;
-    setDifficulties(difficulties.filter(diff => diff.id !== difficultyId));
+  const deleteDifficulty = async (difficultyId: string) => {
+    if (!confirm('Veux-tu vraiment supprimer cette difficulté?')) return;
+
+    const { error } = await supabase
+      .from('difficulties')
+      .delete()
+      .eq('id', difficultyId);
+
+    if (!error) {
+      await loadDifficulties();
+    }
   };
 
   const getColorClasses = (color: string) => {
@@ -97,6 +125,14 @@ export function DifficultyManagementPage() {
       purple: { bg: 'bg-purple-100', text: 'text-purple-600', badge: 'bg-purple-100 text-purple-700' },
       orange: { bg: 'bg-orange-100', text: 'text-orange-600', badge: 'bg-orange-100 text-orange-700' },
       gray: { bg: 'bg-gray-100', text: 'text-gray-600', badge: 'bg-gray-100 text-gray-700' },
+      pink: { bg: 'bg-pink-100', text: 'text-pink-600', badge: 'bg-pink-100 text-pink-700' },
+      teal: { bg: 'bg-teal-100', text: 'text-teal-600', badge: 'bg-teal-100 text-teal-700' },
+      indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
+      cyan: { bg: 'bg-cyan-100', text: 'text-cyan-600', badge: 'bg-cyan-100 text-cyan-700' },
+      lime: { bg: 'bg-lime-100', text: 'text-lime-600', badge: 'bg-lime-100 text-lime-700' },
+      amber: { bg: 'bg-amber-100', text: 'text-amber-600', badge: 'bg-amber-100 text-amber-700' },
+      rose: { bg: 'bg-rose-100', text: 'text-rose-600', badge: 'bg-rose-100 text-rose-700' },
+      emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700' },
     };
     return colorMap[color] || colorMap.gray;
   };
@@ -147,7 +183,6 @@ export function DifficultyManagementPage() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
                 placeholder="Ex: easy"
-                disabled={!!editingDifficulty}
               />
               <p className="text-xs text-gray-500 mt-1">
                 Utilisé dans le code (minuscules, sans espaces)
@@ -171,8 +206,8 @@ export function DifficultyManagementPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Couleur *
               </label>
-              <div className="grid grid-cols-4 gap-2">
-                {['green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray'].map((color) => {
+              <div className="grid grid-cols-5 gap-2">
+                {['green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray', 'pink', 'teal', 'indigo', 'cyan', 'lime', 'amber', 'rose', 'emerald'].map((color) => {
                   const colors = getColorClasses(color);
                   return (
                     <button

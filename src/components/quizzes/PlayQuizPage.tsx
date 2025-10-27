@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from 'lucide-react';
@@ -37,16 +37,25 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   const [isAnswered, setIsAnswered] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
+  const [xpGained, setXpGained] = useState(0);
+  const isCompletingRef = useRef(false);
+  const isCreatingSessionRef = useRef(false);
 
   useEffect(() => {
+    console.log('[useEffect-loadQuiz] Loading quiz:', quizId);
+    isCompletingRef.current = false;
+    isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
 
   useEffect(() => {
-    if (quiz && questions.length > 0 && !sessionId) {
+    console.log('[useEffect-session] quiz:', !!quiz, 'questions:', questions.length, 'sessionId:', !!sessionId, 'gameComplete:', gameComplete, 'isCreatingSession:', isCreatingSessionRef.current);
+    if (quiz && questions.length > 0 && !sessionId && !gameComplete && !isCreatingSessionRef.current) {
+      console.log('[useEffect-session] Creating new session');
+      isCreatingSessionRef.current = true;
       createSession();
     }
-  }, [quiz, questions]);
+  }, [quiz, questions, gameComplete]);
 
   useEffect(() => {
     if (gameComplete || isAnswered || trainingMode) return;
@@ -82,15 +91,33 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         .order('order_index');
 
       if (questionsData) {
-        setQuestions(questionsData);
+        let processedQuestions = [...questionsData];
+
+        if (quizData.randomize_questions) {
+          processedQuestions = processedQuestions.sort(() => Math.random() - 0.5);
+        }
+
+        if (quizData.randomize_answers) {
+          processedQuestions = processedQuestions.map(q => ({
+            ...q,
+            options: q.options ? [...q.options].sort(() => Math.random() - 0.5) : q.options
+          }));
+        }
+
+        setQuestions(processedQuestions);
       }
     }
   };
 
   const createSession = async () => {
-    if (!profile || trainingMode) return;
+    console.log('[createSession] Starting session creation');
+    if (!profile || trainingMode) {
+      console.log('[createSession] Skipping (no profile or training mode)');
+      isCreatingSessionRef.current = false;
+      return;
+    }
 
-    const { data: session } = await supabase
+    const { data: session, error } = await supabase
       .from('game_sessions')
       .insert({
         quiz_id: quizId,
@@ -100,8 +127,16 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       .select()
       .single();
 
+    if (error) {
+      console.error('[createSession] Error creating session:', error);
+      isCreatingSessionRef.current = false;
+      return;
+    }
+
     if (session) {
+      console.log('[createSession] Session created:', session.id);
       setSessionId(session.id);
+      isCreatingSessionRef.current = false;
     }
   };
 
@@ -112,6 +147,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   };
 
   const handleTimeout = () => {
+    console.log('[handleTimeout] Called. isAnswered:', isAnswered, 'gameComplete:', gameComplete);
     if (isAnswered || gameComplete) return;
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
@@ -126,14 +162,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     };
 
     setAnswers([...answers, answerData]);
-    setShowResult(true);
     setIsAnswered(true);
 
     saveAnswer(answerData);
 
-    setTimeout(() => {
-      moveToNextQuestion();
-    }, 1500);
+    console.log('[handleTimeout] Moving to next question immediately');
+    moveToNextQuestion();
   };
 
   const handleSubmitAnswer = () => {
@@ -141,14 +175,20 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
     const currentQuestion = questions[currentQuestionIndex];
-    const answer = currentQuestion.question_type === 'mcq' ? selectedOption : userAnswer;
+    const answer = (currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? selectedOption : userAnswer;
 
     if (!answer.trim()) {
       alert('Veuillez sélectionner ou entrer une réponse');
       return;
     }
 
-    const isCorrect = answer.toLowerCase().trim() === currentQuestion.correct_answer.toLowerCase().trim();
+    const correctAnswers = currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0
+      ? currentQuestion.correct_answers
+      : [currentQuestion.correct_answer];
+
+    const isCorrect = correctAnswers.some(
+      ca => answer.toLowerCase().trim() === ca.toLowerCase().trim()
+    );
     const pointsEarned = isCorrect ? calculatePoints(timeTaken, currentQuestion.points) : 0;
 
     const answerData = {
@@ -185,7 +225,15 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   };
 
   const moveToNextQuestion = () => {
+    console.log('[moveToNextQuestion] Called. gameComplete:', gameComplete, 'currentQuestionIndex:', currentQuestionIndex, 'questions.length:', questions.length);
+
+    if (gameComplete) {
+      console.log('[moveToNextQuestion] Game already complete, exiting');
+      return;
+    }
+
     if (currentQuestionIndex < questions.length - 1) {
+      console.log('[moveToNextQuestion] Moving to next question');
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setUserAnswer('');
       setSelectedOption('');
@@ -194,11 +242,21 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       setTimeLeft(quiz?.time_limit_seconds || 30);
       setQuestionStartTime(Date.now());
     } else {
+      console.log('[moveToNextQuestion] Last question reached, calling completeGame');
       completeGame();
     }
   };
 
   const completeGame = async () => {
+    console.log('[completeGame] Called. gameComplete:', gameComplete, 'isCompletingRef:', isCompletingRef.current);
+
+    if (gameComplete || isCompletingRef.current) {
+      console.log('[completeGame] Already completing or complete, exiting');
+      return;
+    }
+
+    console.log('[completeGame] Starting game completion');
+    isCompletingRef.current = true;
     setGameComplete(true);
 
     if (trainingMode) {
@@ -211,10 +269,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     const accuracy = (correctAnswers / questions.length) * 100;
     const totalTime = answers.reduce((sum, a) => sum + a.time_taken, 0);
 
+    const normalizedScore = Math.min(100, Math.round((totalScore / (questions.length * 150)) * 100));
+
     await supabase
       .from('game_sessions')
       .update({
-        score: totalScore,
+        score: normalizedScore,
         accuracy_percentage: accuracy,
         time_taken_seconds: totalTime,
         completed: true,
@@ -228,37 +288,47 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       await updateDuel();
     }
 
-    const xpGained = Math.round(totalScore / 10);
-    const newXP = profile.experience_points + xpGained;
-    const newLevel = Math.floor(newXP / 1000) + 1;
+    const shouldGiveXP = (quiz?.is_public || quiz?.is_global) && !trainingMode;
+    let earnedXP = 0;
 
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const needsReset = profile.last_reset_month !== currentMonth;
+    if (shouldGiveXP) {
+      earnedXP = Math.round(normalizedScore / 10);
+      setXpGained(earnedXP);
+      const newXP = profile.experience_points + earnedXP;
+      const newLevel = Math.floor(newXP / 1000) + 1;
 
-    await supabase
-      .from('profiles')
-      .update({
-        experience_points: newXP,
-        level: newLevel,
-        monthly_score: needsReset ? totalScore : (profile.monthly_score || 0) + totalScore,
-        monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
-        last_reset_month: currentMonth,
-      })
-      .eq('id', profile.id);
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const needsReset = profile.last_reset_month !== currentMonth;
 
-    if (needsReset && profile.last_reset_month) {
-      await recordMonthlyRanking(profile.last_reset_month);
+      await supabase
+        .from('profiles')
+        .update({
+          experience_points: newXP,
+          level: newLevel,
+          monthly_score: needsReset ? normalizedScore : (profile.monthly_score || 0) + normalizedScore,
+          monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
+          last_reset_month: currentMonth,
+        })
+        .eq('id', profile.id);
+
+      if (needsReset && profile.last_reset_month) {
+        await recordMonthlyRanking(profile.last_reset_month);
+      }
+    } else {
+      setXpGained(0);
     }
 
     await supabase
       .from('quizzes')
       .update({
         total_plays: (quiz?.total_plays || 0) + 1,
-        average_score: ((quiz?.average_score || 0) * (quiz?.total_plays || 0) + totalScore) / ((quiz?.total_plays || 0) + 1),
+        average_score: ((quiz?.average_score || 0) * (quiz?.total_plays || 0) + normalizedScore) / ((quiz?.total_plays || 0) + 1),
       })
       .eq('id', quizId);
 
-    await checkAndAwardBadges(newLevel);
+    if (shouldGiveXP) {
+      await checkAndAwardBadges(profile.level);
+    }
     await refreshProfile();
   };
 
@@ -391,18 +461,24 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
           <div className="text-center mb-8">
             <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-gray-800 mb-2">{trainingMode ? 'Entraînement terminé!' : 'Quiz terminé!'}</h1>
-            <p className="text-gray-600">{trainingMode ? 'Bon travail! Continuez à vous entraîner' : 'Félicitations pour avoir complété ce quiz'}</p>
+            <p className="text-gray-600">{trainingMode ? 'Bon travail! Continue à t’entraîner' : 'Félicitations pour avoir complété ce quiz'}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {!trainingMode && (
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
-                <p className="text-emerald-100 text-sm mb-2">Score total</p>
-                <p className="text-4xl font-bold">{totalScore}</p>
-              </div>
+              <>
+                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
+                  <p className="text-emerald-100 text-sm mb-2">Score total</p>
+                  <p className="text-4xl font-bold">{totalScore}</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-center">
+                  <p className="text-purple-100 text-sm mb-2">XP gagné</p>
+                  <p className="text-4xl font-bold">+{xpGained}</p>
+                </div>
+              </>
             )}
 
-            <div className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-2' : ''}`}>
+            <div className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-1' : ''}`}>
               <p className="text-blue-100 text-sm mb-2">Précision</p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
@@ -413,8 +489,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
             </div>
           </div>
 
-          <div className="space-y-3 mb-8">
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Récapitulatif</h2>
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
             {questions.map((question, index) => {
               const answer = answers[index];
               return (
@@ -458,6 +535,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
                 </div>
               );
             })}
+            </div>
           </div>
 
           <div className="flex space-x-4">
@@ -465,10 +543,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               onClick={() => onNavigate('quizzes')}
               className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
-              Retour aux quiz
+              Explorer d'autres quiz
             </button>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                onNavigate('play-quiz', { quizId });
+              }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Rejouer
@@ -479,7 +559,19 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     );
   }
 
+  if (currentQuestionIndex >= questions.length && !gameComplete) {
+    console.log('[Render] Index out of bounds, calling completeGame');
+    completeGame();
+    return null;
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
+
+  if (!currentQuestion) {
+    console.error('[Render] Current question is undefined!', { currentQuestionIndex, questionsLength: questions.length, gameComplete });
+    return null;
+  }
+
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   return (
@@ -561,6 +653,41 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         )}
 
         <div className="mb-6">
+          {currentQuestion.question_type === 'true_false' && (
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedOption('Vrai')}
+                disabled={isAnswered}
+                className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
+                  isAnswered && currentQuestion.correct_answer === 'Vrai'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : isAnswered && selectedOption === 'Vrai' && currentQuestion.correct_answer !== 'Vrai'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : selectedOption === 'Vrai'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 hover:border-emerald-300'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                ✓ Vrai
+              </button>
+              <button
+                onClick={() => setSelectedOption('Faux')}
+                disabled={isAnswered}
+                className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
+                  isAnswered && currentQuestion.correct_answer === 'Faux'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : isAnswered && selectedOption === 'Faux' && currentQuestion.correct_answer !== 'Faux'
+                    ? 'border-red-500 bg-red-50 text-red-700'
+                    : selectedOption === 'Faux'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 hover:border-emerald-300'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                ✗ Faux
+              </button>
+            </div>
+          )}
+
           {currentQuestion.question_type === 'mcq' && currentQuestion.options && (
             <div className={`grid gap-4 ${
               currentQuestion.option_images && Object.keys(currentQuestion.option_images).length > 0
@@ -577,9 +704,17 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
                     onClick={() => setSelectedOption(option)}
                     disabled={isAnswered}
                     className={`p-4 rounded-lg border-2 transition-all ${
-                      isAnswered && option === currentQuestion.correct_answer
+                      isAnswered && (
+                        (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
+                          ? currentQuestion.correct_answers.includes(option)
+                          : option === currentQuestion.correct_answer
+                      )
                         ? 'border-green-500 bg-green-50'
-                        : isAnswered && option === selectedOption && option !== currentQuestion.correct_answer
+                        : isAnswered && option === selectedOption && !(
+                          (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
+                            ? currentQuestion.correct_answers.includes(option)
+                            : option === currentQuestion.correct_answer
+                        )
                         ? 'border-red-500 bg-red-50'
                         : selectedOption === option
                         ? 'border-emerald-500 bg-emerald-50'
@@ -611,6 +746,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !isAnswered && handleSubmitAnswer()}
+              autoFocus
               disabled={isAnswered}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
               placeholder="Entrez votre réponse..."
@@ -661,7 +797,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         {!isAnswered && (
           <button
             onClick={handleSubmitAnswer}
-            disabled={currentQuestion.question_type === 'mcq' ? !selectedOption : !userAnswer.trim()}
+            disabled={(currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? !selectedOption : !userAnswer.trim()}
             className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Valider

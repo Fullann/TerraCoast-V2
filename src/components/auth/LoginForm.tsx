@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { LogIn } from 'lucide-react';
 
 export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const { signIn } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,7 +29,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
     <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
       <div className="flex items-center justify-center mb-6">
         <LogIn className="w-8 h-8 text-emerald-600 mr-2" />
-        <h2 className="text-2xl font-bold text-gray-800">Connexion</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{t('auth.login')}</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -39,7 +41,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email
+            {t('auth.email')}
           </label>
           <input
             id="email"
@@ -54,7 +56,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Mot de passe
+            {t('auth.password')}
           </label>
           <input
             id="password"
@@ -72,7 +74,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           disabled={loading}
           className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {loading ? 'Connexion...' : 'Se connecter'}
+          {loading ? `${t('common.loading')}` : t('auth.signIn')}
         </button>
       </form>
 
@@ -81,7 +83,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           onClick={onSwitchToRegister}
           className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
         >
-          Pas encore de compte ? S'inscrire
+          {t('auth.noAccount')} {t('auth.signUp')}
         </button>
       </div>
     </div>
