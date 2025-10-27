@@ -1,15 +1,27 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { languageNames, Language } from '../../i18n/translations';
-import { Plus, Trash2, Save, ArrowLeft, Image, Edit, X } from 'lucide-react';
-import type { Database } from '../../lib/database.types';
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { languageNames, Language } from "../../i18n/translations";
+import { Plus, Trash2, Save, ArrowLeft, Image, Edit, X } from "lucide-react";
+import type { Database } from "../../lib/database.types";
+import { ImageDropzone } from "./ImageDropzone";
 
-type QuestionType = 'mcq' | 'single_answer' | 'map_click' | 'text_free' | 'true_false';
-type QuizCategory = 'flags' | 'capitals' | 'maps' | 'borders' | 'regions' | 'mixed';
-type Difficulty = 'easy' | 'medium' | 'hard';
-type QuizType = Database['public']['Tables']['quiz_types']['Row'];
+type QuestionType =
+  | "mcq"
+  | "single_answer"
+  | "map_click"
+  | "text_free"
+  | "true_false";
+type QuizCategory =
+  | "flags"
+  | "capitals"
+  | "maps"
+  | "borders"
+  | "regions"
+  | "mixed";
+type Difficulty = "easy" | "medium" | "hard";
+type QuizType = Database["public"]["Tables"]["quiz_types"]["Row"];
 
 interface Question {
   question_text: string;
@@ -30,17 +42,21 @@ interface CreateQuizPageProps {
 export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const { profile } = useAuth();
   const { language: userLanguage } = useLanguage();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<QuizCategory>('capitals');
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState<QuizCategory>("capitals");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [quizLanguage, setQuizLanguage] = useState<Language>(userLanguage);
-  const [categories, setCategories] = useState<{name: string; label: string}[]>([]);
-  const [difficulties, setDifficulties] = useState<{name: string; label: string}[]>([]);
+  const [categories, setCategories] = useState<
+    { name: string; label: string }[]
+  >([]);
+  const [difficulties, setDifficulties] = useState<
+    { name: string; label: string }[]
+  >([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
-  const [selectedQuizType, setSelectedQuizType] = useState<string>('');
+  const [selectedQuizType, setSelectedQuizType] = useState<string>("");
   const [isPublic, setIsPublic] = useState(false);
-  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [randomizeAnswers, setRandomizeAnswers] = useState(false);
@@ -48,9 +64,19 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
   useEffect(() => {
     const loadOptions = async () => {
-      const { data: categoriesData } = await supabase.from('categories').select('name, label').order('label');
-      const { data: difficultiesData } = await supabase.from('difficulties').select('name, label').order('multiplier');
-      const { data: quizTypesData } = await supabase.from('quiz_types').select('*').eq('is_active', true).order('name');
+      const { data: categoriesData } = await supabase
+        .from("categories")
+        .select("name, label")
+        .order("label");
+      const { data: difficultiesData } = await supabase
+        .from("difficulties")
+        .select("name, label")
+        .order("multiplier");
+      const { data: quizTypesData } = await supabase
+        .from("quiz_types")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
 
       if (categoriesData && categoriesData.length > 0) {
         setCategories(categoriesData);
@@ -68,86 +94,92 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   }, []);
 
   const [currentQuestion, setCurrentQuestion] = useState<Question>({
-    question_text: '',
-    question_type: 'mcq',
-    correct_answer: '',
+    question_text: "",
+    question_type: "mcq",
+    correct_answer: "",
     correct_answers: [],
-    options: ['', '', '', ''],
-    image_url: '',
+    options: ["", "", "", ""],
+    image_url: "",
     option_images: {},
     points: 100,
     order_index: 0,
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const addQuestion = () => {
     if (!currentQuestion.question_text.trim()) {
-      setError('La question ne peut pas être vide');
+      setError("La question ne peut pas être vide");
       return;
     }
 
     if (!currentQuestion.correct_answer.trim()) {
-      setError('La réponse correcte ne peut pas être vide');
+      setError("La réponse correcte ne peut pas être vide");
       return;
     }
 
-    if (currentQuestion.question_type === 'mcq') {
-      const validOptions = currentQuestion.options.filter(opt => opt.trim());
+    if (currentQuestion.question_type === "mcq") {
+      const validOptions = currentQuestion.options.filter((opt) => opt.trim());
       if (validOptions.length < 2) {
-        setError('Il faut au moins 2 options pour un QCM');
+        setError("Il faut au moins 2 options pour un QCM");
         return;
       }
       if (!validOptions.includes(currentQuestion.correct_answer)) {
-        setError('La réponse correcte doit être dans les options');
+        setError("La réponse correcte doit être dans les options");
         return;
       }
     }
 
     if (editingIndex !== null) {
       const updatedQuestions = [...questions];
-      updatedQuestions[editingIndex] = { ...currentQuestion, order_index: editingIndex };
+      updatedQuestions[editingIndex] = {
+        ...currentQuestion,
+        order_index: editingIndex,
+      };
       setQuestions(updatedQuestions);
       setEditingIndex(null);
     } else {
-      setQuestions([...questions, { ...currentQuestion, order_index: questions.length }]);
+      setQuestions([
+        ...questions,
+        { ...currentQuestion, order_index: questions.length },
+      ]);
     }
 
     setCurrentQuestion({
-      question_text: '',
-      question_type: 'mcq',
-      correct_answer: '',
+      question_text: "",
+      question_type: "mcq",
+      correct_answer: "",
       correct_answers: [],
-      options: ['', '', '', ''],
-      image_url: '',
+      options: ["", "", "", ""],
+      image_url: "",
       option_images: {},
       points: 100,
       order_index: 0,
     });
-    setError('');
+    setError("");
   };
 
   const editQuestion = (index: number) => {
     setCurrentQuestion(questions[index]);
     setEditingIndex(index);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const cancelEdit = () => {
     setCurrentQuestion({
-      question_text: '',
-      question_type: 'mcq',
-      correct_answer: '',
+      question_text: "",
+      question_type: "mcq",
+      correct_answer: "",
       correct_answers: [],
-      options: ['', '', '', ''],
-      image_url: '',
+      options: ["", "", "", ""],
+      image_url: "",
       option_images: {},
       points: 100,
       order_index: 0,
     });
     setEditingIndex(null);
-    setError('');
+    setError("");
   };
 
   const removeQuestion = (index: number) => {
@@ -174,25 +206,25 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     if (!profile) return;
 
     if (!title.trim()) {
-      setError('Le titre ne peut pas être vide');
+      setError("Le titre ne peut pas être vide");
       return;
     }
 
     if (questions.length === 0) {
-      setError('Ajoutez au moins une question');
+      setError("Ajoutez au moins une question");
       return;
     }
 
     if (isPublic && profile.published_quiz_count >= 10) {
-      setError('Vous avez atteint la limite de 10 quiz publics');
+      setError("Vous avez atteint la limite de 10 quiz publics");
       return;
     }
 
     setSaving(true);
-    setError('');
+    setError("");
 
     try {
-      const isGlobal = profile.role === 'admin' && isPublic;
+      const isGlobal = profile.role === "admin" && isPublic;
 
       const quizData: any = {
         creator_id: profile.id,
@@ -208,26 +240,26 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         quiz_type_id: selectedQuizType || null,
       };
 
-      if (profile.role === 'admin') {
+      if (profile.role === "admin") {
         quizData.is_public = isPublic;
         quizData.is_global = isGlobal;
-        quizData.validation_status = 'approved';
+        quizData.validation_status = "approved";
         quizData.pending_validation = false;
         quizData.published_at = isPublic ? new Date().toISOString() : null;
       } else if (isPublic) {
         quizData.is_public = false;
-        quizData.validation_status = 'pending';
+        quizData.validation_status = "pending";
         quizData.pending_validation = true;
         quizData.published_at = null;
       } else {
         quizData.is_public = false;
-        quizData.validation_status = 'approved';
+        quizData.validation_status = "approved";
         quizData.pending_validation = false;
         quizData.published_at = null;
       }
 
       const { data: quiz, error: quizError } = await supabase
-        .from('quizzes')
+        .from("quizzes")
         .insert(quizData)
         .select()
         .single();
@@ -239,31 +271,40 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         question_text: q.question_text,
         question_type: q.question_type,
         correct_answer: q.correct_answer,
-        correct_answers: q.correct_answers && q.correct_answers.length > 0 ? q.correct_answers : null,
-        options: q.question_type === 'mcq' ? q.options.filter(opt => opt.trim()) : null,
+        correct_answers:
+          q.correct_answers && q.correct_answers.length > 0
+            ? q.correct_answers
+            : null,
+        options:
+          q.question_type === "mcq"
+            ? q.options.filter((opt) => opt.trim())
+            : null,
         image_url: q.image_url || null,
-        option_images: q.option_images && Object.keys(q.option_images).length > 0 ? q.option_images : null,
+        option_images:
+          q.option_images && Object.keys(q.option_images).length > 0
+            ? q.option_images
+            : null,
         points: q.points,
         order_index: q.order_index,
       }));
 
       const { error: questionsError } = await supabase
-        .from('questions')
+        .from("questions")
         .insert(questionsToInsert);
 
       if (questionsError) throw questionsError;
 
       if (isPublic) {
         await supabase
-          .from('profiles')
+          .from("profiles")
           .update({ published_quiz_count: profile.published_quiz_count + 1 })
-          .eq('id', profile.id);
+          .eq("id", profile.id);
       }
 
-      alert('Quiz créé avec succès!');
-      onNavigate('quizzes');
+      alert("Quiz créé avec succès!");
+      onNavigate("quizzes");
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la création du quiz');
+      setError(err.message || "Erreur lors de la création du quiz");
     } finally {
       setSaving(false);
     }
@@ -273,7 +314,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
         <button
-          onClick={() => onNavigate('quizzes')}
+          onClick={() => onNavigate("quizzes")}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -290,7 +331,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       )}
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Informations du quiz</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          Informations du quiz
+        </h2>
 
         <div className="space-y-4">
           <div>
@@ -320,31 +363,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image de couverture (URL)
-            </label>
-            <input
-              type="text"
-              value={coverImageUrl}
-              onChange={(e) => setCoverImageUrl(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              placeholder="https://exemple.com/image.jpg"
+            <ImageDropzone
+              label="Image de couverture"
+              currentImageUrl={coverImageUrl}
+              onImageUploaded={(url) => setCoverImageUrl(url)}
+              bucketName="quiz-images"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Optionnel : Ajoute une image de présentation pour ton quiz
-            </p>
-            {coverImageUrl && (
-              <div className="mt-2">
-                <img
-                  src={coverImageUrl}
-                  alt="Aperçu"
-                  className="w-full max-w-md h-32 object-cover rounded-lg border-2 border-gray-200"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -358,7 +382,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 {Object.entries(languageNames).map(([code, name]) => (
-                  <option key={code} value={code}>{name}</option>
+                  <option key={code} value={code}>
+                    {name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -373,7 +399,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 {categories.map((cat) => (
-                  <option key={cat.name} value={cat.name}>{cat.label}</option>
+                  <option key={cat.name} value={cat.name}>
+                    {cat.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -388,7 +416,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
                 {difficulties.map((diff) => (
-                  <option key={diff.name} value={diff.name}>{diff.label}</option>
+                  <option key={diff.name} value={diff.name}>
+                    {diff.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -404,7 +434,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               >
                 <option value="">Aucun type</option>
                 {quizTypes.map((type) => (
-                  <option key={type.id} value={type.id}>{type.name}</option>
+                  <option key={type.id} value={type.id}>
+                    {type.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -416,7 +448,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               <input
                 type="number"
                 value={timeLimitSeconds}
-                onChange={(e) => setTimeLimitSeconds(parseInt(e.target.value) || 30)}
+                onChange={(e) =>
+                  setTimeLimitSeconds(parseInt(e.target.value) || 30)
+                }
                 min="5"
                 max="120"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
@@ -433,7 +467,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 onChange={(e) => setRandomizeQuestions(e.target.checked)}
                 className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
-              <label htmlFor="randomizeQuestions" className="text-sm text-gray-700">
+              <label
+                htmlFor="randomizeQuestions"
+                className="text-sm text-gray-700"
+              >
                 Mélanger l'ordre des questions
               </label>
             </div>
@@ -446,7 +483,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 onChange={(e) => setRandomizeAnswers(e.target.checked)}
                 className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
-              <label htmlFor="randomizeAnswers" className="text-sm text-gray-700">
+              <label
+                htmlFor="randomizeAnswers"
+                className="text-sm text-gray-700"
+              >
                 Mélanger l'ordre des réponses (QCM)
               </label>
             </div>
@@ -460,11 +500,11 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <label htmlFor="isPublic" className="text-sm text-gray-700">
-                {profile?.role === 'admin' ? (
-                  'Quiz public - En tant qu\'admin, ce sera un quiz global approuvé immédiatement'
-                ) : (
-                  `Soumettre pour validation (${profile?.published_quiz_count || 0}/10 quiz publiés)`
-                )}
+                {profile?.role === "admin"
+                  ? "Quiz public - En tant qu'admin, ce sera un quiz global approuvé immédiatement"
+                  : `Soumettre pour validation (${
+                      profile?.published_quiz_count || 0
+                    }/10 quiz publiés)`}
               </label>
             </div>
           </div>
@@ -472,7 +512,9 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Ajouter une question</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          Ajouter une question
+        </h2>
 
         <div className="space-y-4">
           <div>
@@ -483,7 +525,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               type="text"
               value={currentQuestion.question_text}
               onChange={(e) =>
-                setCurrentQuestion({ ...currentQuestion, question_text: e.target.value })
+                setCurrentQuestion({
+                  ...currentQuestion,
+                  question_text: e.target.value,
+                })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               placeholder="Ex: Quelle est la capitale de la France?"
@@ -491,22 +536,19 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Image (URL) - Optionnel
-            </label>
             <div className="flex space-x-2">
-              <input
-                type="text"
-                value={currentQuestion.image_url}
-                onChange={(e) =>
-                  setCurrentQuestion({ ...currentQuestion, image_url: e.target.value })
+              <ImageDropzone
+                label="Image de la question (optionnel)"
+                currentImageUrl={currentQuestion.image_url || ""}
+                onImageUploaded={(url) =>
+                  setCurrentQuestion({ ...currentQuestion, image_url: url })
                 }
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                placeholder="https://example.com/image.jpg"
+                bucketName="quiz-images"
               />
-              <Image className="w-10 h-10 p-2 text-gray-400" />
             </div>
-            <p className="text-xs text-gray-500 mt-1">Ajoutez une image pour illustrer votre question</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Ajoutez une image pour illustrer votre question
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -518,12 +560,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 value={currentQuestion.question_type}
                 onChange={(e) => {
                   const newType = e.target.value as QuestionType;
-                  if (newType === 'true_false') {
+                  if (newType === "true_false") {
                     setCurrentQuestion({
                       ...currentQuestion,
                       question_type: newType,
-                      options: ['Vrai', 'Faux'],
-                      correct_answer: 'Vrai',
+                      options: ["Vrai", "Faux"],
+                      correct_answer: "Vrai",
                     });
                   } else {
                     setCurrentQuestion({
@@ -563,16 +605,16 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             </div>
           </div>
 
-          {currentQuestion.question_type === 'true_false' && (
+          {currentQuestion.question_type === "true_false" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-700">
-                Pour les questions Vrai/Faux, les options sont automatiquement définies.
-                Sélectionnez simplement la bonne réponse ci-dessous.
+                Pour les questions Vrai/Faux, les options sont automatiquement
+                définies. Sélectionnez simplement la bonne réponse ci-dessous.
               </p>
             </div>
           )}
 
-          {currentQuestion.question_type === 'mcq' && (
+          {currentQuestion.question_type === "mcq" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Options (2 minimum)
@@ -588,19 +630,23 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       placeholder={`Option ${index + 1}`}
                     />
                     {option.trim() && (
-                      <input
-                        type="text"
-                        value={currentQuestion.option_images?.[option] || ''}
-                        onChange={(e) => updateOptionImage(option, e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
-                        placeholder={`URL image pour "${option}" (optionnel)`}
+                      <ImageDropzone
+                        label={`Image pour "${option}"`}
+                        currentImageUrl={
+                          currentQuestion.option_images?.[option] || ""
+                        }
+                        onImageUploaded={(url) =>
+                          updateOptionImage(option, url)
+                        }
+                        bucketName="quiz-images"
                       />
                     )}
                   </div>
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Ajoutez des images pour chaque option (ex: drapeaux). Parfait pour les quiz visuels!
+                Ajoutez des images pour chaque option (ex: drapeaux). Parfait
+                pour les quiz visuels!
               </p>
             </div>
           )}
@@ -609,55 +655,73 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Réponse(s) correcte(s) *
             </label>
-            {currentQuestion.question_type === 'true_false' ? (
+            {currentQuestion.question_type === "true_false" ? (
               <div className="grid grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => setCurrentQuestion({ ...currentQuestion, correct_answer: 'Vrai' })}
+                  onClick={() =>
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      correct_answer: "Vrai",
+                    })
+                  }
                   className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    currentQuestion.correct_answer === 'Vrai'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-gray-200 hover:border-green-300'
+                    currentQuestion.correct_answer === "Vrai"
+                      ? "border-green-500 bg-green-50 text-green-700"
+                      : "border-gray-200 hover:border-green-300"
                   }`}
                 >
                   ✓ Vrai
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrentQuestion({ ...currentQuestion, correct_answer: 'Faux' })}
+                  onClick={() =>
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      correct_answer: "Faux",
+                    })
+                  }
                   className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    currentQuestion.correct_answer === 'Faux'
-                      ? 'border-red-500 bg-red-50 text-red-700'
-                      : 'border-gray-200 hover:border-red-300'
+                    currentQuestion.correct_answer === "Faux"
+                      ? "border-red-500 bg-red-50 text-red-700"
+                      : "border-gray-200 hover:border-red-300"
                   }`}
                 >
                   ✗ Faux
                 </button>
               </div>
-            ) : currentQuestion.question_type === 'mcq' ? (
+            ) : currentQuestion.question_type === "mcq" ? (
               <div className="space-y-2">
                 <div className="space-y-2">
                   {currentQuestion.options
                     .filter((opt) => opt.trim())
                     .map((option, index) => (
-                      <label key={index} className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <label
+                        key={index}
+                        className="flex items-center space-x-2 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
                         <input
                           type="checkbox"
-                          checked={(currentQuestion.correct_answers || []).includes(option)}
+                          checked={(
+                            currentQuestion.correct_answers || []
+                          ).includes(option)}
                           onChange={(e) => {
-                            const answers = currentQuestion.correct_answers || [];
+                            const answers =
+                              currentQuestion.correct_answers || [];
                             if (e.target.checked) {
                               setCurrentQuestion({
                                 ...currentQuestion,
                                 correct_answers: [...answers, option],
-                                correct_answer: option
+                                correct_answer: option,
                               });
                             } else {
-                              const newAnswers = answers.filter(a => a !== option);
+                              const newAnswers = answers.filter(
+                                (a) => a !== option
+                              );
                               setCurrentQuestion({
                                 ...currentQuestion,
                                 correct_answers: newAnswers,
-                                correct_answer: newAnswers[0] || ''
+                                correct_answer: newAnswers[0] || "",
                               });
                             }
                           }}
@@ -668,7 +732,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Sélectionne une ou plusieurs réponses correctes (ex: Capitales d'Afrique du Sud)
+                  Sélectionne une ou plusieurs réponses correctes (ex: Capitales
+                  d'Afrique du Sud)
                 </p>
               </div>
             ) : (
@@ -677,45 +742,74 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                   type="text"
                   value={currentQuestion.correct_answer}
                   onChange={(e) =>
-                    setCurrentQuestion({ ...currentQuestion, correct_answer: e.target.value })
+                    setCurrentQuestion({
+                      ...currentQuestion,
+                      correct_answer: e.target.value,
+                    })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   placeholder="Ex: Paris"
                 />
 
-                {(currentQuestion.question_type === 'text_free' || currentQuestion.question_type === 'single_answer') && (
+                {(currentQuestion.question_type === "text_free" ||
+                  currentQuestion.question_type === "single_answer") && (
                   <>
-                    <p className="text-xs text-gray-600 font-medium">Variantes acceptées (optionnel)</p>
-                    {(currentQuestion.correct_answers || []).map((variant, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={variant}
-                          onChange={(e) => {
-                            const newAnswers = [...(currentQuestion.correct_answers || [])];
-                            newAnswers[index] = e.target.value;
-                            setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
-                          }}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                          placeholder={`Variante ${index + 1} (ex: paris, PARIS)`}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newAnswers = (currentQuestion.correct_answers || []).filter((_, i) => i !== index);
-                            setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    <p className="text-xs text-gray-600 font-medium">
+                      Variantes acceptées (optionnel)
+                    </p>
+                    {(currentQuestion.correct_answers || []).map(
+                      (variant, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-2"
                         >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ))}
+                          <input
+                            type="text"
+                            value={variant}
+                            onChange={(e) => {
+                              const newAnswers = [
+                                ...(currentQuestion.correct_answers || []),
+                              ];
+                              newAnswers[index] = e.target.value;
+                              setCurrentQuestion({
+                                ...currentQuestion,
+                                correct_answers: newAnswers,
+                              });
+                            }}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                            placeholder={`Variante ${
+                              index + 1
+                            } (ex: paris, PARIS)`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newAnswers = (
+                                currentQuestion.correct_answers || []
+                              ).filter((_, i) => i !== index);
+                              setCurrentQuestion({
+                                ...currentQuestion,
+                                correct_answers: newAnswers,
+                              });
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )
+                    )}
                     <button
                       type="button"
                       onClick={() => {
-                        const newAnswers = [...(currentQuestion.correct_answers || []), ''];
-                        setCurrentQuestion({ ...currentQuestion, correct_answers: newAnswers });
+                        const newAnswers = [
+                          ...(currentQuestion.correct_answers || []),
+                          "",
+                        ];
+                        setCurrentQuestion({
+                          ...currentQuestion,
+                          correct_answers: newAnswers,
+                        });
                       }}
                       className="px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center"
                     >
@@ -723,7 +817,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       Ajouter une variante
                     </button>
                     <p className="text-xs text-gray-500">
-                      Ajoutez plusieurs variantes acceptées (ex: "Paris", "paris", "La capitale de la France")
+                      Ajoutez plusieurs variantes acceptées (ex: "Paris",
+                      "paris", "La capitale de la France")
                     </p>
                   </>
                 )}
@@ -795,11 +890,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     </p>
                     <div className="flex items-center space-x-3 text-sm text-gray-600">
                       <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {q.question_type === 'mcq' && 'QCM'}
-                        {q.question_type === 'single_answer' && 'Réponse unique'}
-                        {q.question_type === 'text_free' && 'Texte libre'}
-                        {q.question_type === 'true_false' && 'Vrai / Faux'}
-                        {q.question_type === 'map_click' && 'Clic sur carte'}
+                        {q.question_type === "mcq" && "QCM"}
+                        {q.question_type === "single_answer" &&
+                          "Réponse unique"}
+                        {q.question_type === "text_free" && "Texte libre"}
+                        {q.question_type === "true_false" && "Vrai / Faux"}
+                        {q.question_type === "map_click" && "Clic sur carte"}
                       </span>
                       <span>{q.points} pts</span>
                     </div>
@@ -832,7 +928,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
       <div className="flex space-x-4">
         <button
-          onClick={() => onNavigate('quizzes')}
+          onClick={() => onNavigate("quizzes")}
           className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
           Annuler
@@ -843,7 +939,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           <Save className="w-5 h-5 mr-2" />
-          {saving ? 'Enregistrement...' : 'Enregistrer le quiz'}
+          {saving ? "Enregistrement..." : "Enregistrer le quiz"}
         </button>
       </div>
     </div>
