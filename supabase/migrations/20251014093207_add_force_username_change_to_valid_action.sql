@@ -13,3 +13,4 @@ ALTER TABLE warnings DROP CONSTRAINT IF EXISTS valid_action;
 
 ALTER TABLE warnings ADD CONSTRAINT valid_action 
   CHECK (action_taken IN ('none', 'warning', 'temporary_ban', 'permanent_ban', 'force_username_change'));
+
