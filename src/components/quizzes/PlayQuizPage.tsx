@@ -119,10 +119,13 @@ export function PlayQuizPage({
       if (questionsData) {
         let processedQuestions = [...questionsData];
 
-        if (quizData.randomize_questions) {
+        if (trainingMode || quizData.randomize_questions) {
           processedQuestions = processedQuestions.sort(
             () => Math.random() - 0.5
           );
+        }
+        if (trainingMode && questionCount && questionCount > 0) {
+          processedQuestions = processedQuestions.slice(0, questionCount);
         }
 
         if (quizData.randomize_answers) {
@@ -639,7 +642,7 @@ export function PlayQuizPage({
               onClick={() => {
                 onNavigate("play-quiz", {
                   quizId,
-                  resetKey: Date.now(), 
+                  resetKey: Date.now(),
                 });
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"

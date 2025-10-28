@@ -169,9 +169,9 @@ export function TrainingModePage({ onNavigate }: TrainingModePageProps) {
           <div className="flex items-center space-x-4">
             <input
               type="range"
-              min="5"
+              min="1"
               max={maxQuestions}
-              step="5"
+              step="1"
               value={questionCount}
               onChange={(e) => setQuestionCount(parseInt(e.target.value))}
               className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
