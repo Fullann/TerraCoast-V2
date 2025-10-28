@@ -153,6 +153,42 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       t("quizzes.removeSuccess") || "Quiz retiré de votre liste avec succès !"
     );
   };
+  const deleteQuiz = async (quizId: string, quizTitle: string) => {
+    if (!confirm(t("quizzes.confirmDelete").replace("{title}", quizTitle)))
+      return;
+
+    // Supprimer d'abord les questions associées
+    const { error: questionsError } = await supabase
+      .from("questions")
+      .delete()
+      .eq("quiz_id", quizId);
+
+    if (questionsError) {
+      console.error("Error deleting questions:", questionsError);
+      alert(t("quizzes.deleteQuestionsError"));
+      return;
+    }
+
+    // Supprimer les partages associés
+    await supabase.from("quiz_shares").delete().eq("quiz_id", quizId);
+
+    // Supprimer le quiz
+    const { error: quizError } = await supabase
+      .from("quizzes")
+      .delete()
+      .eq("id", quizId);
+
+    if (quizError) {
+      console.error("Error deleting quiz:", quizError);
+      alert(t("quizzes.deleteError"));
+      return;
+    }
+
+    // Mettre à jour la liste locale
+    setMyQuizzes(myQuizzes.filter((q) => q.id !== quizId));
+
+    alert(t("quizzes.deleteSuccess"));
+  };
 
   const loadQuizzes = async () => {
     if (!profile) return;
@@ -476,6 +512,13 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                             }
                           >
                             <Globe className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteQuiz(quiz.id, quiz.title)}
+                            className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            title={t("quizzes.deleteQuiz")}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </>
                       )}
