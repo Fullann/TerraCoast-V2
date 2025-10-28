@@ -144,6 +144,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "Quiz publié avec succès !",
     "quizzes.confirmRemoveShared":
       "Voulez-vous retirer ce quiz de votre liste partagée ?",
+    "quizzes.removeSuccess": "Quiz retiré de votre liste avec succès !",
     "quizzes.removeError": "Erreur lors de la suppression",
     "leaderboard.title": "Classement",
     "leaderboard.subtitle": "Les meilleurs joueurs de TerraCoast",
@@ -442,7 +443,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.correctAnswerWas": "La bonne réponse était",
     "playQuiz.validate": "Valider",
     "playQuiz.variants": "Variantes",
-"playQuiz.acceptedVariants": "Variantes acceptées",
+    "playQuiz.acceptedVariants": "Variantes acceptées",
   },
   en: {
     "app.title": "TerraCoast",
@@ -586,6 +587,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "Quiz published successfully!",
     "quizzes.confirmRemoveShared":
       "Do you want to remove this quiz from your shared list?",
+    "quizzes.removeSuccess": "Quiz successfully removed from your list!",
     "quizzes.removeError": "Error during deletion",
     "leaderboard.title": "Leaderboard",
     "leaderboard.subtitle": "The best TerraCoast players",
@@ -878,7 +880,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.correctAnswerWas": "The correct answer was",
     "playQuiz.validate": "Validate",
     "playQuiz.variants": "Variants",
-"playQuiz.acceptedVariants": "Accepted variants",
+    "playQuiz.acceptedVariants": "Accepted variants",
   },
   es: {
     "app.title": "TerraCoast",
@@ -1024,6 +1026,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "¡Cuestionario publicado con éxito!",
     "quizzes.confirmRemoveShared":
       "¿Quieres eliminar este cuestionario de tu lista compartida?",
+    "quizzes.removeSuccess": "¡Cuestionario eliminado con éxito de tu lista!",
     "quizzes.removeError": "Error durante la eliminación",
     "leaderboard.title": "Clasificación",
     "leaderboard.subtitle": "Los mejores jugadores de TerraCoast",
@@ -1467,6 +1470,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "Quiz erfolgreich veröffentlicht!",
     "quizzes.confirmRemoveShared":
       "Möchtest du dieses Quiz aus deiner geteilten Liste entfernen?",
+    "quizzes.removeSuccess": "Quiz erfolgreich aus deiner Liste entfernt!",
     "quizzes.removeError": "Fehler beim Löschen",
     "leaderboard.title": "Rangliste",
     "leaderboard.subtitle": "Die besten TerraCoast-Spieler",
@@ -1911,6 +1915,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "Quiz pubblicato con successo!",
     "quizzes.confirmRemoveShared":
       "Vuoi rimuovere questo quiz dalla tua lista condivisa?",
+    "quizzes.removeSuccess": "Quiz rimosso con successo dalla tua lista!",
     "quizzes.removeError": "Errore durante l'eliminazione",
     "leaderboard.title": "Classifica",
     "leaderboard.subtitle": "I migliori giocatori di TerraCoast",
@@ -2352,6 +2357,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.publishSuccess": "Questionário publicado com sucesso!",
     "quizzes.confirmRemoveShared":
       "Deseja remover este questionário da sua lista compartilhada?",
+    "quizzes.removeSuccess": "Questionário removido com sucesso da sua lista!",
     "quizzes.removeError": "Erro durante a exclusão",
     "leaderboard.title": "Classificação",
     "leaderboard.subtitle": "Os melhores jogadores do TerraCoast",

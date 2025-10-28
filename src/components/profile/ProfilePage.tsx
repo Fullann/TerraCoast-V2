@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
 import {
-  Award,
+   Award,
   Trophy,
   Star,
   Calendar,
@@ -63,7 +63,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
   const isAdmin = currentUserProfile?.role === "admin";
-  
+
   const getDayText = (count: number) => {
     return count > 1 ? t("common.days") : t("common.day");
   };
@@ -90,14 +90,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     const { data: userBadges } = await supabase
       .from("user_badges")
       .select("*, badges(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (userBadges) setBadges(userBadges as UserBadge[]);
 
     const { data: userTitles } = await supabase
       .from("user_titles")
       .select("*, titles(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (userTitles) setTitles(userTitles as UserTitle[]);
 
@@ -408,41 +410,60 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <Star className="w-6 h-6 mr-2 text-amber-500" />
+            <Award className="w-6 h-6 mr-2 text-purple-500" />
             {t("profile.titles")} ({titles.length})
           </h2>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {titles.map((userTitle) => (
               <div
                 key={userTitle.id}
-                className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+                className={`relative overflow-hidden p-4 rounded-xl border-2 transition-all hover:scale-105 ${
                   userTitle.is_active
-                    ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300"
-                    : "bg-gray-50 border-gray-200"
+                    ? "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-purple-400 shadow-lg"
+                    : "bg-gradient-to-br from-gray-50 to-slate-100 border-gray-300"
                 }`}
               >
+                {userTitle.is_active && (
+                  <div className="absolute top-2 right-2">
+                    <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full font-bold shadow-md flex items-center">
+                      <Star className="w-3 h-3 mr-1" />
+                      {t("profile.active")}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{userTitle.titles.emoji}</span>
-                  <div>
-                    <p className="font-semibold text-gray-800">
+                  <div
+                    className={`text-4xl ${
+                      userTitle.is_active ? "animate-bounce" : ""
+                    }`}
+                  >
+                    {userTitle.titles.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`font-bold ${
+                        userTitle.is_active
+                          ? "text-purple-900"
+                          : "text-gray-800"
+                      }`}
+                    >
                       {userTitle.titles.name}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 line-clamp-2">
                       {userTitle.titles.description}
                     </p>
                   </div>
                 </div>
                 {userTitle.is_active && (
-                  <span className="px-2 py-1 bg-amber-500 text-white text-xs rounded-full font-medium">
-                    {t("profile.active")}
-                  </span>
+                  <div className="absolute -bottom-1 -right-1 w-20 h-20 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-xl"></div>
                 )}
               </div>
             ))}
             {titles.length === 0 && (
-              <p className="text-center text-gray-500 py-8">
-                {t("profile.noTitles")}
-              </p>
+              <div className="col-span-2 text-center py-12">
+                <Award className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">{t("profile.noTitles")}</p>
+              </div>
             )}
           </div>
         </div>
@@ -507,25 +528,59 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <Award className="w-6 h-6 mr-2 text-yellow-500" />
+            <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
             {t("profile.badges")} ({badges.length})
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {badges.map((userBadge) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {badges.map((userBadge, index) => (
               <div
                 key={userBadge.id}
-                className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200"
+                className="group relative"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <span className="text-4xl mb-2">{userBadge.badges.emoji}</span>
-                <p className="text-xs font-medium text-gray-700 text-center leading-tight">
-                  {userBadge.badges.name}
-                </p>
+                <div className="relative flex flex-col items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-110 hover:shadow-xl cursor-pointer">
+                  {/* Icône du badge basée sur le type */}
+                  <div className="absolute top-1 right-1">
+                    {userBadge.badges.requirement_type === "level" && (
+                      <Trophy className="w-4 h-4 text-yellow-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "games_played" && (
+                      <Star className="w-4 h-4 text-blue-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "streak" && (
+                      <Flame className="w-4 h-4 text-orange-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "wins" && (
+                      <Award className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+
+                  {/* Emoji du badge avec effet brillant */}
+                  <div className="relative">
+                    <span className="text-5xl mb-2 filter drop-shadow-lg">
+                      {userBadge.badges.emoji}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 to-amber-200 rounded-full opacity-0 group-hover:opacity-30 blur-xl transition-opacity"></div>
+                  </div>
+
+                  {/* Nom du badge */}
+                  <p className="text-xs font-bold text-gray-800 text-center leading-tight mt-2">
+                    {userBadge.badges.name}
+                  </p>
+
+                  {/* Tooltip au survol */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                    {userBadge.badges.description}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
               </div>
             ))}
             {badges.length === 0 && (
-              <p className="col-span-3 text-center text-gray-500 py-8">
-                {t("profile.noBadges")}
-              </p>
+              <div className="col-span-full text-center py-12">
+                <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">{t("profile.noBadges")}</p>
+              </div>
             )}
           </div>
         </div>
@@ -547,7 +602,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                       {t("profile.score")}: {session.score} {t("home.pts")}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {t("profile.accuracy")}: {session.accuracy_percentage.toFixed(1)}%
+                      {t("profile.accuracy")}:{" "}
+                      {session.accuracy_percentage.toFixed(1)}%
                     </p>
                   </div>
                   <div className="text-right">
