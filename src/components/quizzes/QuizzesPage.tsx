@@ -8,6 +8,8 @@ import type { Database } from '../../lib/database.types';
 
 type Quiz = Database['public']['Tables']['quizzes']['Row'];
 type QuizType = Database['public']['Tables']['quiz_types']['Row'];
+type Category = Database['public']['Tables']['categories']['Row'];
+type Difficulty = Database['public']['Tables']['difficulties']['Row'];
 
 interface QuizWithType extends Quiz {
   quiz_types?: QuizType | null;
@@ -24,6 +26,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const [myQuizzes, setMyQuizzes] = useState<QuizWithType[]>([]);
   const [sharedQuizzes, setSharedQuizzes] = useState<QuizWithType[]>([]);
   const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [difficulties, setDifficulties] = useState<Difficulty[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
@@ -34,6 +38,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   useEffect(() => {
     loadQuizzes();
     loadQuizTypes();
+    loadCategories();
+    loadDifficulties();
   }, [profile, categoryFilter, difficultyFilter, typeFilter, language, showAllLanguages]);
 
   const loadQuizTypes = async () => {
@@ -44,6 +50,24 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       .order('name');
 
     if (data) setQuizTypes(data);
+  };
+
+  const loadCategories = async () => {
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .order('label');
+
+    if (data) setCategories(data);
+  };
+
+  const loadDifficulties = async () => {
+    const { data } = await supabase
+      .from('difficulties')
+      .select('*')
+      .order('multiplier');
+
+    if (data) setDifficulties(data);
   };
 
   const requestPublish = async (quizId: string, quizTitle: string) => {
@@ -151,23 +175,21 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
     quiz.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getCategoryLabel = (category: string) => {
-    const categoryKey = `quizzes.category.${category}` as any;
-    return t(categoryKey);
+  const getCategoryLabel = (categoryName: string) => {
+    const category = categories.find(c => c.name === categoryName);
+    return category ? category.label : categoryName;
   };
 
-  const getDifficultyLabel = (difficulty: string) => {
-    const difficultyKey = `quizzes.difficulty.${difficulty}` as any;
-    return t(difficultyKey);
+  const getDifficultyLabel = (difficultyName: string) => {
+    const difficulty = difficulties.find(d => d.name === difficultyName);
+    return difficulty ? difficulty.label : difficultyName;
   };
 
-  const getDifficultyColor = (difficulty: string) => {
-    const colors: Record<string, string> = {
-      easy: 'bg-green-100 text-green-700',
-      medium: 'bg-yellow-100 text-yellow-700',
-      hard: 'bg-red-100 text-red-700',
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-700';
+  const getDifficultyColor = (difficultyName: string) => {
+    const difficulty = difficulties.find(d => d.name === difficultyName);
+    if (!difficulty) return 'bg-gray-100 text-gray-700';
+    
+    return `bg-${difficulty.color}-100 text-${difficulty.color}-700`;
   };
 
   return (
@@ -196,12 +218,11 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
           >
             <option value="all">{t('quizzes.allCategories')}</option>
-            <option value="flags">{t('quizzes.category.flags')}</option>
-            <option value="capitals">{t('quizzes.category.capitals')}</option>
-            <option value="maps">{t('quizzes.category.maps')}</option>
-            <option value="borders">{t('quizzes.category.borders')}</option>
-            <option value="regions">{t('quizzes.category.regions')}</option>
-            <option value="mixed">{t('quizzes.category.mixed')}</option>
+            {categories.map((category) => (
+              <option key={category.name} value={category.name}>
+                {category.label}
+              </option>
+            ))}
           </select>
 
           <select
@@ -210,9 +231,11 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
           >
             <option value="all">{t('quizzes.allDifficulties')}</option>
-            <option value="easy">{t('quizzes.difficulty.easy')}</option>
-            <option value="medium">{t('quizzes.difficulty.medium')}</option>
-            <option value="hard">{t('quizzes.difficulty.hard')}</option>
+            {difficulties.map((difficulty) => (
+              <option key={difficulty.name} value={difficulty.name}>
+                {difficulty.label}
+              </option>
+            ))}
           </select>
 
           <select
