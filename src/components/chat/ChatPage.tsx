@@ -9,7 +9,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
 interface MessageWithUser extends ChatMessage {
-  from_profile: Profile;
+  from_profile: Profile | null; // Permettre null
 }
 
 interface ChatPageProps {
@@ -124,8 +124,8 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .eq('user_profile.is_banned', false);
 
     const allFriends: Profile[] = [
-      ...(friendshipsAsSender?.map((f: any) => f.friend_profile) || []),
-      ...(friendshipsAsReceiver?.map((f: any) => f.user_profile) || []),
+      ...(friendshipsAsSender?.map((f: any) => f.friend_profile).filter(Boolean) || []),
+      ...(friendshipsAsReceiver?.map((f: any) => f.user_profile).filter(Boolean) || []),
     ];
 
     setFriends(allFriends);
@@ -155,6 +155,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .order('created_at', { ascending: true });
 
     if (data) {
+      // Filtrer les messages avec des profils valides
       setMessages(data as MessageWithUser[]);
     }
   };
@@ -237,7 +238,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                     <div className="flex items-center space-x-3">
                       <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center relative">
                         <span className="text-emerald-600 font-bold text-lg">
-                          {friend.pseudo.charAt(0).toUpperCase()}
+                          {friend.pseudo?.charAt(0).toUpperCase() || '?'}
                         </span>
                         {unreadCounts[friend.id] > 0 && (
                           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
@@ -246,8 +247,8 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">{friend.pseudo}</p>
-                        <p className="text-sm text-gray-600">Niveau {friend.level}</p>
+                        <p className="font-semibold text-gray-800 truncate">{friend.pseudo || 'Utilisateur'}</p>
+                        <p className="text-sm text-gray-600">Niveau {friend.level || 1}</p>
                       </div>
                     </div>
                   </button>
@@ -266,12 +267,14 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                   >
                     <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                       <span className="text-emerald-600 font-bold">
-                        {selectedFriend.pseudo.charAt(0).toUpperCase()}
+                        {selectedFriend.pseudo?.charAt(0).toUpperCase() || '?'}
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">{selectedFriend.pseudo}</h3>
-                      <p className="text-sm text-gray-600">Niveau {selectedFriend.level}</p>
+                      <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">
+                        {selectedFriend.pseudo || 'Utilisateur'}
+                      </h3>
+                      <p className="text-sm text-gray-600">Niveau {selectedFriend.level || 1}</p>
                     </div>
                   </div>
                 </div>
@@ -284,6 +287,9 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                   ) : (
                     messages.map((message) => {
                       const isOwnMessage = message.from_user_id === profile?.id;
+                      // Vérification de sécurité pour from_profile
+                      const senderName = message.from_profile?.pseudo || 'Utilisateur supprimé';
+                      
                       return (
                         <div
                           key={message.id}
@@ -296,9 +302,9 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                                 : 'bg-white border border-gray-200 text-gray-800'
                             }`}
                           >
-                            {!isOwnMessage && message.from_profile && (
+                            {!isOwnMessage && (
                               <p className="text-xs font-semibold mb-1 text-emerald-600">
-                                {message.from_profile.pseudo}
+                                {senderName}
                               </p>
                             )}
                             <p className="break-words">{message.message}</p>

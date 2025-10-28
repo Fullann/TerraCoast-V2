@@ -1,38 +1,47 @@
-import { useEffect, useState, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
-import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from 'lucide-react';
-import type { Database } from '../../lib/database.types';
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
+import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from "lucide-react";
+import type { Database } from "../../lib/database.types";
 
-type Quiz = Database['public']['Tables']['quizzes']['Row'];
-type Question = Database['public']['Tables']['questions']['Row'];
+type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
+type Question = Database["public"]["Tables"]["questions"]["Row"];
 
 interface PlayQuizPageProps {
   quizId: string;
-  mode?: 'solo' | 'duel';
+  mode?: "solo" | "duel";
   duelId?: string;
   trainingMode?: boolean;
   questionCount?: number;
   onNavigate: (view: string) => void;
 }
 
-export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = false, questionCount, onNavigate }: PlayQuizPageProps) {
+export function PlayQuizPage({
+  quizId,
+  mode = "solo",
+  duelId,
+  trainingMode = false,
+  questionCount,
+  onNavigate,
+}: PlayQuizPageProps) {
   const { profile, refreshProfile } = useAuth();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [selectedOption, setSelectedOption] = useState('');
+  const [userAnswer, setUserAnswer] = useState("");
+  const [selectedOption, setSelectedOption] = useState("");
   const [timeLeft, setTimeLeft] = useState(30);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<{
-    question_id: string;
-    user_answer: string;
-    is_correct: boolean;
-    time_taken: number;
-    points_earned: number;
-  }[]>([]);
+  const [answers, setAnswers] = useState<
+    {
+      question_id: string;
+      user_answer: string;
+      is_correct: boolean;
+      time_taken: number;
+      points_earned: number;
+    }[]
+  >([]);
   const [showResult, setShowResult] = useState(false);
   const [isAnswered, setIsAnswered] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
@@ -42,16 +51,33 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   const isCreatingSessionRef = useRef(false);
 
   useEffect(() => {
-    console.log('[useEffect-loadQuiz] Loading quiz:', quizId);
+    console.log("[useEffect-loadQuiz] Loading quiz:", quizId);
     isCompletingRef.current = false;
     isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
 
   useEffect(() => {
-    console.log('[useEffect-session] quiz:', !!quiz, 'questions:', questions.length, 'sessionId:', !!sessionId, 'gameComplete:', gameComplete, 'isCreatingSession:', isCreatingSessionRef.current);
-    if (quiz && questions.length > 0 && !sessionId && !gameComplete && !isCreatingSessionRef.current) {
-      console.log('[useEffect-session] Creating new session');
+    console.log(
+      "[useEffect-session] quiz:",
+      !!quiz,
+      "questions:",
+      questions.length,
+      "sessionId:",
+      !!sessionId,
+      "gameComplete:",
+      gameComplete,
+      "isCreatingSession:",
+      isCreatingSessionRef.current
+    );
+    if (
+      quiz &&
+      questions.length > 0 &&
+      !sessionId &&
+      !gameComplete &&
+      !isCreatingSessionRef.current
+    ) {
+      console.log("[useEffect-session] Creating new session");
       isCreatingSessionRef.current = true;
       createSession();
     }
@@ -75,9 +101,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
-      .from('quizzes')
-      .select('*')
-      .eq('id', quizId)
+      .from("quizzes")
+      .select("*")
+      .eq("id", quizId)
       .single();
 
     if (quizData) {
@@ -85,22 +111,26 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       setTimeLeft(quizData.time_limit_seconds || 30);
 
       const { data: questionsData } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('quiz_id', quizId)
-        .order('order_index');
+        .from("questions")
+        .select("*")
+        .eq("quiz_id", quizId)
+        .order("order_index");
 
       if (questionsData) {
         let processedQuestions = [...questionsData];
 
         if (quizData.randomize_questions) {
-          processedQuestions = processedQuestions.sort(() => Math.random() - 0.5);
+          processedQuestions = processedQuestions.sort(
+            () => Math.random() - 0.5
+          );
         }
 
         if (quizData.randomize_answers) {
-          processedQuestions = processedQuestions.map(q => ({
+          processedQuestions = processedQuestions.map((q) => ({
             ...q,
-            options: q.options ? [...q.options].sort(() => Math.random() - 0.5) : q.options
+            options: q.options
+              ? [...q.options].sort(() => Math.random() - 0.5)
+              : q.options,
           }));
         }
 
@@ -110,15 +140,15 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   };
 
   const createSession = async () => {
-    console.log('[createSession] Starting session creation');
+    console.log("[createSession] Starting session creation");
     if (!profile || trainingMode) {
-      console.log('[createSession] Skipping (no profile or training mode)');
+      console.log("[createSession] Skipping (no profile or training mode)");
       isCreatingSessionRef.current = false;
       return;
     }
 
     const { data: session, error } = await supabase
-      .from('game_sessions')
+      .from("game_sessions")
       .insert({
         quiz_id: quizId,
         player_id: profile.id,
@@ -128,13 +158,13 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       .single();
 
     if (error) {
-      console.error('[createSession] Error creating session:', error);
+      console.error("[createSession] Error creating session:", error);
       isCreatingSessionRef.current = false;
       return;
     }
 
     if (session) {
-      console.log('[createSession] Session created:', session.id);
+      console.log("[createSession] Session created:", session.id);
       setSessionId(session.id);
       isCreatingSessionRef.current = false;
     }
@@ -147,7 +177,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   };
 
   const handleTimeout = () => {
-    console.log('[handleTimeout] Called. isAnswered:', isAnswered, 'gameComplete:', gameComplete);
+    console.log(
+      "[handleTimeout] Called. isAnswered:",
+      isAnswered,
+      "gameComplete:",
+      gameComplete
+    );
     if (isAnswered || gameComplete) return;
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
@@ -155,7 +190,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     const answerData = {
       question_id: currentQuestion.id,
-      user_answer: '',
+      user_answer: "",
       is_correct: false,
       time_taken: timeTaken,
       points_earned: 0,
@@ -166,7 +201,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     saveAnswer(answerData);
 
-    console.log('[handleTimeout] Moving to next question immediately');
+    console.log("[handleTimeout] Moving to next question immediately");
     moveToNextQuestion();
   };
 
@@ -175,21 +210,29 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
     const currentQuestion = questions[currentQuestionIndex];
-    const answer = (currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? selectedOption : userAnswer;
+    const answer =
+      currentQuestion.question_type === "mcq" ||
+      currentQuestion.question_type === "true_false"
+        ? selectedOption
+        : userAnswer;
 
     if (!answer.trim()) {
-      alert('Veuillez sélectionner ou entrer une réponse');
+      alert("Veuillez sélectionner ou entrer une réponse");
       return;
     }
 
-    const correctAnswers = currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0
-      ? currentQuestion.correct_answers
-      : [currentQuestion.correct_answer];
+    const correctAnswers =
+      currentQuestion.correct_answers &&
+      currentQuestion.correct_answers.length > 0
+        ? currentQuestion.correct_answers
+        : [currentQuestion.correct_answer];
 
     const isCorrect = correctAnswers.some(
-      ca => answer.toLowerCase().trim() === ca.toLowerCase().trim()
+      (ca) => answer.toLowerCase().trim() === ca.toLowerCase().trim()
     );
-    const pointsEarned = isCorrect ? calculatePoints(timeTaken, currentQuestion.points) : 0;
+    const pointsEarned = isCorrect
+      ? calculatePoints(timeTaken, currentQuestion.points)
+      : 0;
 
     const answerData = {
       question_id: currentQuestion.id,
@@ -214,7 +257,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   const saveAnswer = async (answerData: any) => {
     if (!sessionId) return;
 
-    await supabase.from('game_answers').insert({
+    await supabase.from("game_answers").insert({
       session_id: sessionId,
       question_id: answerData.question_id,
       user_answer: answerData.user_answer,
@@ -225,37 +268,51 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   };
 
   const moveToNextQuestion = () => {
-    console.log('[moveToNextQuestion] Called. gameComplete:', gameComplete, 'currentQuestionIndex:', currentQuestionIndex, 'questions.length:', questions.length);
+    console.log(
+      "[moveToNextQuestion] Called. gameComplete:",
+      gameComplete,
+      "currentQuestionIndex:",
+      currentQuestionIndex,
+      "questions.length:",
+      questions.length
+    );
 
     if (gameComplete) {
-      console.log('[moveToNextQuestion] Game already complete, exiting');
+      console.log("[moveToNextQuestion] Game already complete, exiting");
       return;
     }
 
     if (currentQuestionIndex < questions.length - 1) {
-      console.log('[moveToNextQuestion] Moving to next question');
+      console.log("[moveToNextQuestion] Moving to next question");
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setUserAnswer('');
-      setSelectedOption('');
+      setUserAnswer("");
+      setSelectedOption("");
       setShowResult(false);
       setIsAnswered(false);
       setTimeLeft(quiz?.time_limit_seconds || 30);
       setQuestionStartTime(Date.now());
     } else {
-      console.log('[moveToNextQuestion] Last question reached, calling completeGame');
+      console.log(
+        "[moveToNextQuestion] Last question reached, calling completeGame"
+      );
       completeGame();
     }
   };
 
   const completeGame = async () => {
-    console.log('[completeGame] Called. gameComplete:', gameComplete, 'isCompletingRef:', isCompletingRef.current);
+    console.log(
+      "[completeGame] Called. gameComplete:",
+      gameComplete,
+      "isCompletingRef:",
+      isCompletingRef.current
+    );
 
     if (gameComplete || isCompletingRef.current) {
-      console.log('[completeGame] Already completing or complete, exiting');
+      console.log("[completeGame] Already completing or complete, exiting");
       return;
     }
 
-    console.log('[completeGame] Starting game completion');
+    console.log("[completeGame] Starting game completion");
     isCompletingRef.current = true;
     setGameComplete(true);
 
@@ -265,14 +322,19 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
     if (!sessionId || !profile) return;
 
-    const correctAnswers = answers.filter(a => a.is_correct).length + (answers[answers.length - 1]?.is_correct ? 1 : 0);
+    const correctAnswers =
+      answers.filter((a) => a.is_correct).length +
+      (answers[answers.length - 1]?.is_correct ? 1 : 0);
     const accuracy = (correctAnswers / questions.length) * 100;
     const totalTime = answers.reduce((sum, a) => sum + a.time_taken, 0);
 
-    const normalizedScore = Math.min(100, Math.round((totalScore / (questions.length * 150)) * 100));
+    const normalizedScore = Math.min(
+      100,
+      Math.round((totalScore / (questions.length * 150)) * 100)
+    );
 
     await supabase
-      .from('game_sessions')
+      .from("game_sessions")
       .update({
         score: normalizedScore,
         accuracy_percentage: accuracy,
@@ -282,9 +344,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         correct_answers: correctAnswers,
         total_questions: questions.length,
       })
-      .eq('id', sessionId);
+      .eq("id", sessionId);
 
-    if (mode === 'duel' && duelId) {
+    if (mode === "duel" && duelId) {
       await updateDuel();
     }
 
@@ -301,15 +363,19 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       const needsReset = profile.last_reset_month !== currentMonth;
 
       await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           experience_points: newXP,
           level: newLevel,
-          monthly_score: needsReset ? normalizedScore : (profile.monthly_score || 0) + normalizedScore,
-          monthly_games_played: needsReset ? 1 : (profile.monthly_games_played || 0) + 1,
+          monthly_score: needsReset
+            ? normalizedScore
+            : (profile.monthly_score || 0) + normalizedScore,
+          monthly_games_played: needsReset
+            ? 1
+            : (profile.monthly_games_played || 0) + 1,
           last_reset_month: currentMonth,
         })
-        .eq('id', profile.id);
+        .eq("id", profile.id);
 
       if (needsReset && profile.last_reset_month) {
         await recordMonthlyRanking(profile.last_reset_month);
@@ -319,12 +385,15 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     }
 
     await supabase
-      .from('quizzes')
+      .from("quizzes")
       .update({
         total_plays: (quiz?.total_plays || 0) + 1,
-        average_score: ((quiz?.average_score || 0) * (quiz?.total_plays || 0) + normalizedScore) / ((quiz?.total_plays || 0) + 1),
+        average_score:
+          ((quiz?.average_score || 0) * (quiz?.total_plays || 0) +
+            normalizedScore) /
+          ((quiz?.total_plays || 0) + 1),
       })
-      .eq('id', quizId);
+      .eq("id", quizId);
 
     if (shouldGiveXP) {
       await checkAndAwardBadges(profile.level);
@@ -336,30 +405,32 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     if (!duelId || !sessionId || !profile) return;
 
     const { data: duel } = await supabase
-      .from('duels')
-      .select('*')
-      .eq('id', duelId)
+      .from("duels")
+      .select("*")
+      .eq("id", duelId)
       .single();
 
     if (!duel) return;
 
     const isPlayer1 = duel.player1_id === profile.id;
-    const updateField = isPlayer1 ? 'player1_session_id' : 'player2_session_id';
-    const otherPlayerSessionField = isPlayer1 ? 'player2_session_id' : 'player1_session_id';
+    const updateField = isPlayer1 ? "player1_session_id" : "player2_session_id";
+    const otherPlayerSessionField = isPlayer1
+      ? "player2_session_id"
+      : "player1_session_id";
 
     const updates: any = { [updateField]: sessionId };
 
     if (duel[otherPlayerSessionField]) {
       const { data: otherSession } = await supabase
-        .from('game_sessions')
-        .select('score')
-        .eq('id', duel[otherPlayerSessionField])
+        .from("game_sessions")
+        .select("score")
+        .eq("id", duel[otherPlayerSessionField])
         .single();
 
       const { data: mySession } = await supabase
-        .from('game_sessions')
-        .select('score')
-        .eq('id', sessionId)
+        .from("game_sessions")
+        .select("score")
+        .eq("id", sessionId)
         .single();
 
       if (otherSession && mySession) {
@@ -370,44 +441,39 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
           winnerId = isPlayer1 ? duel.player2_id : duel.player1_id;
         }
 
-        updates.status = 'completed';
+        updates.status = "completed";
         updates.winner_id = winnerId;
         updates.completed_at = new Date().toISOString();
       }
     }
 
-    await supabase
-      .from('duels')
-      .update(updates)
-      .eq('id', duelId);
+    await supabase.from("duels").update(updates).eq("id", duelId);
   };
 
   const recordMonthlyRanking = async (lastMonth: string) => {
     const { data: topPlayers } = await supabase
-      .from('profiles')
-      .select('id, pseudo, monthly_score, top_10_count')
-      .order('monthly_score', { ascending: false })
+      .from("profiles")
+      .select("id, pseudo, monthly_score, top_10_count")
+      .order("monthly_score", { ascending: false })
       .limit(10);
 
     if (topPlayers && topPlayers.length > 0) {
       for (let i = 0; i < topPlayers.length; i++) {
         const player = topPlayers[i];
 
-        await supabase
-          .from('monthly_rankings_history')
-          .upsert({
-            user_id: player.id,
-            month: lastMonth,
-            final_rank: i + 1,
-            final_score: player.monthly_score || 0,
-          });
+        await supabase.from("monthly_rankings_history").upsert({
+          user_id: player.id,
+          month: lastMonth,
+          final_rank: i + 1,
+          final_score: player.monthly_score || 0,
+        });
 
         await supabase
-          .from('profiles')
+          .from("profiles")
           .update({
             top_10_count: (player.top_10_count || 0) + 1,
           })
-          .eq('id', player.id);
+          .eq("id", player.id);
       }
     }
   };
@@ -416,22 +482,22 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
     if (!profile) return;
 
     const { data: badges } = await supabase
-      .from('badges')
-      .select('*')
-      .eq('requirement_type', 'level')
-      .lte('requirement_value', level);
+      .from("badges")
+      .select("*")
+      .eq("requirement_type", "level")
+      .lte("requirement_value", level);
 
     if (badges) {
       for (const badge of badges) {
         const { data: existing } = await supabase
-          .from('user_badges')
-          .select('id')
-          .eq('user_id', profile.id)
-          .eq('badge_id', badge.id)
+          .from("user_badges")
+          .select("id")
+          .eq("user_id", profile.id)
+          .eq("badge_id", badge.id)
           .maybeSingle();
 
         if (!existing) {
-          await supabase.from('user_badges').insert({
+          await supabase.from("user_badges").insert({
             user_id: profile.id,
             badge_id: badge.id,
           });
@@ -452,7 +518,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   }
 
   if (gameComplete) {
-    const correctAnswers = answers.filter(a => a.is_correct).length;
+    const correctAnswers = answers.filter((a) => a.is_correct).length;
     const accuracy = (correctAnswers / questions.length) * 100;
 
     return (
@@ -460,8 +526,14 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         <div className="bg-white rounded-xl shadow-md p-8">
           <div className="text-center mb-8">
             <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">{trainingMode ? 'Entraînement terminé!' : 'Quiz terminé!'}</h1>
-            <p className="text-gray-600">{trainingMode ? 'Bon travail! Continue à t’entraîner' : 'Félicitations pour avoir complété ce quiz'}</p>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              {trainingMode ? "Entraînement terminé!" : "Quiz terminé!"}
+            </h1>
+            <p className="text-gray-600">
+              {trainingMode
+                ? "Bon travail! Continue à t’entraîner"
+                : "Félicitations pour avoir complété ce quiz"}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -478,76 +550,97 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               </>
             )}
 
-            <div className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-1' : ''}`}>
+            <div
+              className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${
+                trainingMode ? "md:col-span-1" : ""
+              }`}
+            >
               <p className="text-blue-100 text-sm mb-2">Précision</p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
 
-            <div className={`bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white text-center ${trainingMode ? 'md:col-span-1' : ''}`}>
+            <div
+              className={`bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white text-center ${
+                trainingMode ? "md:col-span-1" : ""
+              }`}
+            >
               <p className="text-amber-100 text-sm mb-2">Bonnes réponses</p>
-              <p className="text-4xl font-bold">{correctAnswers}/{questions.length}</p>
+              <p className="text-4xl font-bold">
+                {correctAnswers}/{questions.length}
+              </p>
             </div>
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Récapitulatif</h2>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Récapitulatif
+            </h2>
             <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-            {questions.map((question, index) => {
-              const answer = answers[index];
-              return (
-                <div
-                  key={question.id}
-                  className={`p-4 rounded-lg border-2 ${
-                    answer?.is_correct
-                      ? 'border-green-300 bg-green-50'
-                      : 'border-red-300 bg-red-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800 mb-2">
-                        {index + 1}. {question.question_text}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Votre réponse: <span className="font-medium">{answer?.user_answer || 'Pas de réponse'}</span>
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Bonne réponse: <span className="font-medium text-emerald-600">{question.correct_answer}</span>
-                      </p>
+              {questions.map((question, index) => {
+                const answer = answers[index];
+                return (
+                  <div
+                    key={question.id}
+                    className={`p-4 rounded-lg border-2 ${
+                      answer?.is_correct
+                        ? "border-green-300 bg-green-50"
+                        : "border-red-300 bg-red-50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800 mb-2">
+                          {index + 1}. {question.question_text}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Votre réponse:{" "}
+                          <span className="font-medium">
+                            {answer?.user_answer || "Pas de réponse"}
+                          </span>
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Bonne réponse:{" "}
+                          <span className="font-medium text-emerald-600">
+                            {question.correct_answer}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="ml-4">
+                        {answer?.is_correct ? (
+                          <CheckCircle className="w-8 h-8 text-green-600" />
+                        ) : (
+                          <XCircle className="w-8 h-8 text-red-600" />
+                        )}
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      {answer?.is_correct ? (
-                        <CheckCircle className="w-8 h-8 text-green-600" />
-                      ) : (
-                        <XCircle className="w-8 h-8 text-red-600" />
-                      )}
-                    </div>
+                    {!trainingMode && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        <span className="font-medium">
+                          {answer?.points_earned || 0} points
+                        </span>
+                        {" • "}
+                        {answer?.time_taken || 0}s
+                      </div>
+                    )}
                   </div>
-                  {!trainingMode && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <span className="font-medium">
-                        {answer?.points_earned || 0} points
-                      </span>
-                      {' • '}
-                      {answer?.time_taken || 0}s
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
 
           <div className="flex space-x-4">
             <button
-              onClick={() => onNavigate('quizzes')}
+              onClick={() => onNavigate("quizzes")}
               className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
               Explorer d'autres quiz
             </button>
             <button
               onClick={() => {
-                onNavigate('play-quiz', { quizId });
+                onNavigate("play-quiz", {
+                  quizId,
+                  resetKey: Date.now(), 
+                });
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
@@ -560,7 +653,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   }
 
   if (currentQuestionIndex >= questions.length && !gameComplete) {
-    console.log('[Render] Index out of bounds, calling completeGame');
+    console.log("[Render] Index out of bounds, calling completeGame");
     completeGame();
     return null;
   }
@@ -568,7 +661,11 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
   const currentQuestion = questions[currentQuestionIndex];
 
   if (!currentQuestion) {
-    console.error('[Render] Current question is undefined!', { currentQuestionIndex, questionsLength: questions.length, gameComplete });
+    console.error("[Render] Current question is undefined!", {
+      currentQuestionIndex,
+      questionsLength: questions.length,
+      gameComplete,
+    });
     return null;
   }
 
@@ -579,8 +676,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
       <div className="mb-6">
         <button
           onClick={() => {
-            if (confirm('Êtes-vous sûr de vouloir quitter? Votre progression sera perdue.')) {
-              onNavigate('quizzes');
+            if (
+              confirm(
+                "Êtes-vous sûr de vouloir quitter? Votre progression sera perdue."
+              )
+            ) {
+              onNavigate("quizzes");
             }
           }}
           className="flex items-center text-gray-600 hover:text-gray-800"
@@ -607,11 +708,21 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
                   <Trophy className="w-5 h-5 text-blue-600" />
                   <span className="font-bold text-blue-600">{totalScore}</span>
                 </div>
-                <div className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
-                  timeLeft <= 5 ? 'bg-red-100' : 'bg-gray-100'
-                }`}>
-                  <Clock className={`w-5 h-5 ${timeLeft <= 5 ? 'text-red-600' : 'text-gray-600'}`} />
-                  <span className={`font-bold ${timeLeft <= 5 ? 'text-red-600' : 'text-gray-600'}`}>
+                <div
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                    timeLeft <= 5 ? "bg-red-100" : "bg-gray-100"
+                  }`}
+                >
+                  <Clock
+                    className={`w-5 h-5 ${
+                      timeLeft <= 5 ? "text-red-600" : "text-gray-600"
+                    }`}
+                  />
+                  <span
+                    className={`font-bold ${
+                      timeLeft <= 5 ? "text-red-600" : "text-gray-600"
+                    }`}
+                  >
                     {timeLeft}s
                   </span>
                 </div>
@@ -622,7 +733,9 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
 
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Question {currentQuestionIndex + 1} / {questions.length}</span>
+            <span>
+              Question {currentQuestionIndex + 1} / {questions.length}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -646,106 +759,128 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
               alt="Question"
               className="max-w-full max-h-96 rounded-lg shadow-md object-contain"
               onError={(e) => {
-                e.currentTarget.style.display = 'none';
+                e.currentTarget.style.display = "none";
               }}
             />
           </div>
         )}
 
         <div className="mb-6">
-          {currentQuestion.question_type === 'true_false' && (
+          {currentQuestion.question_type === "true_false" && (
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => setSelectedOption('Vrai')}
+                onClick={() => setSelectedOption("Vrai")}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === 'Vrai'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : isAnswered && selectedOption === 'Vrai' && currentQuestion.correct_answer !== 'Vrai'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : selectedOption === 'Vrai'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 hover:border-emerald-300'
-                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  isAnswered && currentQuestion.correct_answer === "Vrai"
+                    ? "border-green-500 bg-green-50 text-green-700"
+                    : isAnswered &&
+                      selectedOption === "Vrai" &&
+                      currentQuestion.correct_answer !== "Vrai"
+                    ? "border-red-500 bg-red-50 text-red-700"
+                    : selectedOption === "Vrai"
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : "border-gray-200 hover:border-emerald-300"
+                } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 ✓ Vrai
               </button>
               <button
-                onClick={() => setSelectedOption('Faux')}
+                onClick={() => setSelectedOption("Faux")}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === 'Faux'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : isAnswered && selectedOption === 'Faux' && currentQuestion.correct_answer !== 'Faux'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : selectedOption === 'Faux'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 hover:border-emerald-300'
-                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  isAnswered && currentQuestion.correct_answer === "Faux"
+                    ? "border-green-500 bg-green-50 text-green-700"
+                    : isAnswered &&
+                      selectedOption === "Faux" &&
+                      currentQuestion.correct_answer !== "Faux"
+                    ? "border-red-500 bg-red-50 text-red-700"
+                    : selectedOption === "Faux"
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : "border-gray-200 hover:border-emerald-300"
+                } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
                 ✗ Faux
               </button>
             </div>
           )}
 
-          {currentQuestion.question_type === 'mcq' && currentQuestion.options && (
-            <div className={`grid gap-4 ${
-              currentQuestion.option_images && Object.keys(currentQuestion.option_images).length > 0
-                ? 'grid-cols-2'
-                : 'grid-cols-1'
-            }`}>
-              {(Array.isArray(currentQuestion.options) ? currentQuestion.options : []).map((option: string, index: number) => {
-                const optionImages = currentQuestion.option_images as Record<string, string> | null;
-                const imageUrl = optionImages?.[option];
+          {currentQuestion.question_type === "mcq" &&
+            currentQuestion.options && (
+              <div
+                className={`grid gap-4 ${
+                  currentQuestion.option_images &&
+                  Object.keys(currentQuestion.option_images).length > 0
+                    ? "grid-cols-2"
+                    : "grid-cols-1"
+                }`}
+              >
+                {(Array.isArray(currentQuestion.options)
+                  ? currentQuestion.options
+                  : []
+                ).map((option: string, index: number) => {
+                  const optionImages = currentQuestion.option_images as Record<
+                    string,
+                    string
+                  > | null;
+                  const imageUrl = optionImages?.[option];
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedOption(option)}
-                    disabled={isAnswered}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      isAnswered && (
-                        (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedOption(option)}
+                      disabled={isAnswered}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        isAnswered &&
+                        (currentQuestion.correct_answers &&
+                        currentQuestion.correct_answers.length > 0
                           ? currentQuestion.correct_answers.includes(option)
-                          : option === currentQuestion.correct_answer
-                      )
-                        ? 'border-green-500 bg-green-50'
-                        : isAnswered && option === selectedOption && !(
-                          (currentQuestion.correct_answers && currentQuestion.correct_answers.length > 0)
-                            ? currentQuestion.correct_answers.includes(option)
-                            : option === currentQuestion.correct_answer
-                        )
-                        ? 'border-red-500 bg-red-50'
-                        : selectedOption === option
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-gray-200 hover:border-emerald-300'
-                    } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    {imageUrl && (
-                      <div className="mb-3 flex justify-center">
-                        <img
-                          src={imageUrl}
-                          alt={option}
-                          className="max-w-full h-40 rounded object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    )}
-                    <span className="font-medium text-center block">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                          : option === currentQuestion.correct_answer)
+                          ? "border-green-500 bg-green-50"
+                          : isAnswered &&
+                            option === selectedOption &&
+                            !(currentQuestion.correct_answers &&
+                            currentQuestion.correct_answers.length > 0
+                              ? currentQuestion.correct_answers.includes(option)
+                              : option === currentQuestion.correct_answer)
+                          ? "border-red-500 bg-red-50"
+                          : selectedOption === option
+                          ? "border-emerald-500 bg-emerald-50"
+                          : "border-gray-200 hover:border-emerald-300"
+                      } ${
+                        isAnswered ? "cursor-not-allowed" : "cursor-pointer"
+                      }`}
+                    >
+                      {imageUrl && (
+                        <div className="mb-3 flex justify-center">
+                          <img
+                            src={imageUrl}
+                            alt={option}
+                            className="max-w-full h-40 rounded object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      )}
+                      <span className="font-medium text-center block">
+                        {option}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
-          {(currentQuestion.question_type === 'single_answer' || currentQuestion.question_type === 'text_free') && (
+          {(currentQuestion.question_type === "single_answer" ||
+            currentQuestion.question_type === "text_free") && (
             <input
               type="text"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && !isAnswered && handleSubmitAnswer()}
+              onKeyDown={(e) =>
+                e.key === "Enter" && !isAnswered && handleSubmitAnswer()
+              }
               autoFocus
               disabled={isAnswered}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
@@ -753,7 +888,7 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
             />
           )}
 
-          {currentQuestion.question_type === 'map_click' && (
+          {currentQuestion.question_type === "map_click" && (
             <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
               <p className="text-gray-600">
                 Fonctionnalité de clic sur carte à venir
@@ -763,19 +898,36 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         </div>
 
         {showResult && (
-          <div className={`p-4 rounded-lg mb-6 ${
-            answers[answers.length - 1]?.is_correct || (isAnswered && selectedOption === currentQuestion.correct_answer) || (isAnswered && userAnswer.toLowerCase().trim() === currentQuestion.correct_answer.toLowerCase().trim())
-              ? 'bg-green-50 border-2 border-green-300'
-              : 'bg-red-50 border-2 border-red-300'
-          }`}>
+          <div
+            className={`p-4 rounded-lg mb-6 ${
+              answers[answers.length - 1]?.is_correct ||
+              (isAnswered &&
+                selectedOption === currentQuestion.correct_answer) ||
+              (isAnswered &&
+                userAnswer.toLowerCase().trim() ===
+                  currentQuestion.correct_answer.toLowerCase().trim())
+                ? "bg-green-50 border-2 border-green-300"
+                : "bg-red-50 border-2 border-red-300"
+            }`}
+          >
             <div className="flex items-center space-x-3">
-              {answers[answers.length - 1]?.is_correct || (isAnswered && (selectedOption === currentQuestion.correct_answer || userAnswer.toLowerCase().trim() === currentQuestion.correct_answer.toLowerCase().trim())) ? (
+              {answers[answers.length - 1]?.is_correct ||
+              (isAnswered &&
+                (selectedOption === currentQuestion.correct_answer ||
+                  userAnswer.toLowerCase().trim() ===
+                    currentQuestion.correct_answer.toLowerCase().trim())) ? (
                 <>
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
                     <p className="font-bold text-green-800">Correct!</p>
                     <p className="text-sm text-green-700">
-                      +{answers[answers.length - 1]?.points_earned || calculatePoints(Math.round((Date.now() - questionStartTime) / 1000), currentQuestion.points)} points
+                      +
+                      {answers[answers.length - 1]?.points_earned ||
+                        calculatePoints(
+                          Math.round((Date.now() - questionStartTime) / 1000),
+                          currentQuestion.points
+                        )}{" "}
+                      points
                     </p>
                   </div>
                 </>
@@ -797,7 +949,12 @@ export function PlayQuizPage({ quizId, mode = 'solo', duelId, trainingMode = fal
         {!isAnswered && (
           <button
             onClick={handleSubmitAnswer}
-            disabled={(currentQuestion.question_type === 'mcq' || currentQuestion.question_type === 'true_false') ? !selectedOption : !userAnswer.trim()}
+            disabled={
+              currentQuestion.question_type === "mcq" ||
+              currentQuestion.question_type === "true_false"
+                ? !selectedOption
+                : !userAnswer.trim()
+            }
             className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Valider
