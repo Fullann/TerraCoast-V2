@@ -1,16 +1,35 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { supabase } from '../../lib/supabase';
-import { Award, Trophy, Star, Calendar, TrendingUp, AlertTriangle, Settings, ArrowLeft, Flame, UserPlus, UserCheck, Clock, History, X } from 'lucide-react';
-import type { Database } from '../../lib/database.types';
+import { useEffect, useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { supabase } from "../../lib/supabase";
+import {
+  Award,
+  Trophy,
+  Star,
+  Calendar,
+  TrendingUp,
+  AlertTriangle,
+  Settings,
+  ArrowLeft,
+  Flame,
+  UserPlus,
+  UserCheck,
+  Clock,
+  History,
+  X,
+} from "lucide-react";
+import type { Database } from "../../lib/database.types";
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-type Badge = Database['public']['Tables']['badges']['Row'];
-type UserBadge = Database['public']['Tables']['user_badges']['Row'] & { badges: Badge };
-type Title = Database['public']['Tables']['titles']['Row'];
-type UserTitle = Database['public']['Tables']['user_titles']['Row'] & { titles: Title };
-type GameSession = Database['public']['Tables']['game_sessions']['Row'];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Badge = Database["public"]["Tables"]["badges"]["Row"];
+type UserBadge = Database["public"]["Tables"]["user_badges"]["Row"] & {
+  badges: Badge;
+};
+type Title = Database["public"]["Tables"]["titles"]["Row"];
+type UserTitle = Database["public"]["Tables"]["user_titles"]["Row"] & {
+  titles: Title;
+};
+type GameSession = Database["public"]["Tables"]["game_sessions"]["Row"];
 
 interface ProfilePageProps {
   userId?: string;
@@ -29,18 +48,24 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     winRate: 0,
     averageScore: 0,
   });
-  const [dailyStats, setDailyStats] = useState<{ date: string; points: number }[]>([]);
+  const [dailyStats, setDailyStats] = useState<
+    { date: string; points: number }[]
+  >([]);
   const [showWarnModal, setShowWarnModal] = useState(false);
-  const [warnReason, setWarnReason] = useState('');
+  const [warnReason, setWarnReason] = useState("");
   const [sending, setSending] = useState(false);
-  const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'friends' | 'blocked'>('none');
+  const [friendshipStatus, setFriendshipStatus] = useState<
+    "none" | "pending" | "friends" | "blocked"
+  >("none");
   const [showWarningHistory, setShowWarningHistory] = useState(false);
   const [warningHistory, setWarningHistory] = useState<any[]>([]);
 
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
-  const isAdmin = currentUserProfile?.role === 'admin';
-
+  const isAdmin = currentUserProfile?.role === "admin";
+  const getDayText = (count: number) => {
+    return count > 1 ? "jours" : "jour";
+  };
   useEffect(() => {
     loadProfileData();
   }, [targetUserId]);
@@ -49,9 +74,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     if (!targetUserId) return;
 
     const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', targetUserId)
+      .from("profiles")
+      .select("*")
+      .eq("id", targetUserId)
       .single();
 
     if (profileData) setProfile(profileData);
@@ -61,54 +86,67 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     }
 
     const { data: userBadges } = await supabase
-      .from('user_badges')
-      .select('*, badges(*)')
-      .eq('user_id', targetUserId);
+      .from("user_badges")
+      .select("*, badges(*)")
+      .eq("user_id", targetUserId);
 
     if (userBadges) setBadges(userBadges as UserBadge[]);
 
     const { data: userTitles } = await supabase
-      .from('user_titles')
-      .select('*, titles(*)')
-      .eq('user_id', targetUserId);
+      .from("user_titles")
+      .select("*, titles(*)")
+      .eq("user_id", targetUserId);
 
     if (userTitles) setTitles(userTitles as UserTitle[]);
 
     const { data: gameSessions } = await supabase
-      .from('game_sessions')
-      .select('*')
-      .eq('player_id', targetUserId)
-      .eq('completed', true)
-      .order('completed_at', { ascending: false });
+      .from("game_sessions")
+      .select("*")
+      .eq("player_id", targetUserId)
+      .eq("completed", true)
+      .order("completed_at", { ascending: false });
 
     if (gameSessions) {
       setSessions(gameSessions);
       const totalGames = gameSessions.length;
       const totalScore = gameSessions.reduce((sum, s) => sum + s.score, 0);
       const averageScore = totalGames > 0 ? totalScore / totalGames : 0;
-      const winRate = totalGames > 0 ? (gameSessions.filter(s => s.accuracy_percentage >= 70).length / totalGames) * 100 : 0;
+      const winRate =
+        totalGames > 0
+          ? (gameSessions.filter((s) => s.accuracy_percentage >= 70).length /
+              totalGames) *
+            100
+          : 0;
 
       setStats({ totalGames, winRate, averageScore });
     }
 
     const { data: last7DaysData } = await supabase
-      .from('game_sessions')
-      .select('score, completed_at')
-      .eq('player_id', targetUserId)
-      .eq('completed', true)
-      .gte('completed_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('completed_at', { ascending: true });
+      .from("game_sessions")
+      .select("score, completed_at")
+      .eq("player_id", targetUserId)
+      .eq("completed", true)
+      .gte(
+        "completed_at",
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      )
+      .order("completed_at", { ascending: true });
 
     if (last7DaysData) {
       const dailyPointsMap = new Map<string, number>();
       last7DaysData.forEach((session) => {
         const date = new Date(session.completed_at!).toLocaleDateString();
-        dailyPointsMap.set(date, (dailyPointsMap.get(date) || 0) + session.score);
+        dailyPointsMap.set(
+          date,
+          (dailyPointsMap.get(date) || 0) + session.score
+        );
       });
-      const dailyStatsArray = Array.from(dailyPointsMap.entries()).map(([date, points]) => ({
-        date,
-        points,
-      }));
+      const dailyStatsArray = Array.from(dailyPointsMap.entries()).map(
+        ([date, points]) => ({
+          date,
+          points,
+        })
+      );
       setDailyStats(dailyStatsArray);
     }
   };
@@ -117,50 +155,52 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     if (!currentUserProfile || !targetUserId) return;
 
     const { data: friendship } = await supabase
-      .from('friendships')
-      .select('status')
-      .or(`and(user_id.eq.${currentUserProfile.id},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserProfile.id})`)
+      .from("friendships")
+      .select("status")
+      .or(
+        `and(user_id.eq.${currentUserProfile.id},friend_id.eq.${targetUserId}),and(user_id.eq.${targetUserId},friend_id.eq.${currentUserProfile.id})`
+      )
       .maybeSingle();
 
     if (friendship) {
       setFriendshipStatus(friendship.status as any);
     } else {
-      setFriendshipStatus('none');
+      setFriendshipStatus("none");
     }
   };
 
   const sendFriendRequest = async () => {
     if (!currentUserProfile || !targetUserId) return;
 
-    const { error } = await supabase
-      .from('friendships')
-      .insert({
-        user_id: currentUserProfile.id,
-        friend_id: targetUserId,
-        status: 'pending',
-      });
+    const { error } = await supabase.from("friendships").insert({
+      user_id: currentUserProfile.id,
+      friend_id: targetUserId,
+      status: "pending",
+    });
 
     if (error) {
-      alert('Erreur lors de l\'envoi de la demande');
+      alert("Erreur lors de l'envoi de la demande");
       return;
     }
 
-    alert('Demande d\'ami envoyée !');
-    setFriendshipStatus('pending');
+    alert("Demande d'ami envoyée !");
+    setFriendshipStatus("pending");
   };
 
   const loadWarningHistory = async () => {
     if (!targetUserId) return;
 
     const { data } = await supabase
-      .from('warnings')
-      .select(`
+      .from("warnings")
+      .select(
+        `
         *,
         reported_user:profiles!warnings_reported_user_id_fkey(pseudo),
         reporter_user:profiles!warnings_reporter_user_id_fkey(pseudo)
-      `)
-      .eq('reported_user_id', targetUserId)
-      .order('created_at', { ascending: false });
+      `
+      )
+      .eq("reported_user_id", targetUserId)
+      .order("created_at", { ascending: false });
 
     if (data) {
       setWarningHistory(data);
@@ -173,24 +213,22 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
     setSending(true);
 
-    const { error } = await supabase
-      .from('warnings')
-      .insert({
-        reported_user_id: targetUserId,
-        reporter_user_id: currentUserProfile.id,
-        reason: warnReason.trim(),
-      });
+    const { error } = await supabase.from("warnings").insert({
+      reported_user_id: targetUserId,
+      reporter_user_id: currentUserProfile.id,
+      reason: warnReason.trim(),
+    });
 
     setSending(false);
 
     if (error) {
-      alert('Erreur lors de l\'envoi du signalement');
+      alert("Erreur lors de l'envoi du signalement");
       return;
     }
 
-    alert('Signalement envoyé avec succès');
+    alert("Signalement envoyé avec succès");
     setShowWarnModal(false);
-    setWarnReason('');
+    setWarnReason("");
   };
 
   if (!profile) {
@@ -201,17 +239,17 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     );
   }
 
-  const activeTitle = titles.find(t => t.is_active)?.titles;
+  const activeTitle = titles.find((t) => t.is_active)?.titles;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {!isOwnProfile && (
         <button
-          onClick={() => onNavigate('home')}
+          onClick={() => onNavigate("home")}
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          {t('common.back')}
+          {t("common.back")}
         </button>
       )}
 
@@ -225,7 +263,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             </div>
 
             <div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">{profile.pseudo}</h1>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">
+                {profile.pseudo}
+              </h1>
               {activeTitle && (
                 <p className="text-lg text-emerald-600 font-medium mb-2">
                   {activeTitle.emoji} {activeTitle.name}
@@ -234,11 +274,15 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               <div className="flex items-center space-x-4 text-gray-600">
                 <div className="flex items-center">
                   <Trophy className="w-5 h-5 mr-1 text-yellow-500" />
-                  <span className="font-medium">{t('profile.level')} {profile.level}</span>
+                  <span className="font-medium">
+                    {t("profile.level")} {profile.level}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <Star className="w-5 h-5 mr-1 text-emerald-500" />
-                  <span className="font-medium">{profile.xp} {t('profile.xp')}</span>
+                  <span className="font-medium">
+                    {profile.experience_points} {t("profile.xp")}
+                  </span>
                 </div>
               </div>
             </div>
@@ -247,15 +291,15 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="flex space-x-2">
             {isOwnProfile && (
               <button
-                onClick={() => onNavigate('settings')}
+                onClick={() => onNavigate("settings")}
                 className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
               >
                 <Settings className="w-5 h-5 mr-2" />
-                {t('nav.settings')}
+                {t("nav.settings")}
               </button>
             )}
 
-            {!isOwnProfile && friendshipStatus === 'none' && (
+            {!isOwnProfile && friendshipStatus === "none" && (
               <button
                 onClick={sendFriendRequest}
                 className="flex items-center px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors"
@@ -265,7 +309,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               </button>
             )}
 
-            {!isOwnProfile && friendshipStatus === 'pending' && (
+            {!isOwnProfile && friendshipStatus === "pending" && (
               <button
                 disabled
                 className="flex items-center px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
@@ -275,7 +319,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               </button>
             )}
 
-            {!isOwnProfile && friendshipStatus === 'accepted' && (
+            {!isOwnProfile && friendshipStatus === "accepted" && (
               <button
                 disabled
                 className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg cursor-not-allowed"
@@ -310,30 +354,51 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-blue-900">Parties jouées</h3>
+              <h3 className="text-sm font-medium text-blue-900">
+                Parties jouées
+              </h3>
               <TrendingUp className="w-5 h-5 text-blue-600" />
             </div>
-            <p className="text-3xl font-bold text-blue-900">{stats.totalGames}</p>
+            <p className="text-3xl font-bold text-blue-900">
+              {stats.totalGames}
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-green-900">Taux de réussite</h3>
+              <h3 className="text-sm font-medium text-green-900">
+                Taux de réussite
+              </h3>
               <Trophy className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-3xl font-bold text-green-900">{stats.winRate.toFixed(1)}%</p>
+            <p className="text-3xl font-bold text-green-900">
+              {stats.winRate.toFixed(1)}%
+            </p>
           </div>
 
           <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-orange-900">Série en cours</h3>
+              <h3 className="text-sm font-medium text-orange-900">
+                Série en cours
+              </h3>
               <Flame className="w-5 h-5 text-orange-600" />
             </div>
             <div className="flex items-center space-x-2">
-              <p className="text-3xl font-bold text-orange-900">{profile?.current_streak || 0}</p>
-              <Flame className={`w-8 h-8 ${(profile?.current_streak || 0) > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-400'}`} />
+              <p className="text-3xl font-bold text-orange-900">
+                {profile?.current_streak || 0}
+              </p>
+              <Flame
+                className={`w-8 h-8 ${
+                  (profile?.current_streak || 0) > 0
+                    ? "text-orange-500 animate-pulse"
+                    : "text-gray-400"
+                }`}
+              />
             </div>
-            <p className="text-xs text-orange-700 mt-1">Record: {profile?.longest_streak || 0} jours</p>
+            <p className="text-xs text-orange-700 mt-1">
+              Record: {profile?.longest_streak || 0}{" "}
+              {getDayText(profile?.longest_streak || 0)}
+            </p>
           </div>
         </div>
       </div>
@@ -350,15 +415,19 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 key={userTitle.id}
                 className={`flex items-center justify-between p-3 rounded-lg border-2 ${
                   userTitle.is_active
-                    ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300'
-                    : 'bg-gray-50 border-gray-200'
+                    ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300"
+                    : "bg-gray-50 border-gray-200"
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <span className="text-2xl">{userTitle.titles.emoji}</span>
                   <div>
-                    <p className="font-semibold text-gray-800">{userTitle.titles.name}</p>
-                    <p className="text-xs text-gray-600">{userTitle.titles.description}</p>
+                    <p className="font-semibold text-gray-800">
+                      {userTitle.titles.name}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {userTitle.titles.description}
+                    </p>
                   </div>
                 </div>
                 {userTitle.is_active && (
@@ -385,14 +454,24 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             {dailyStats.length > 0 ? (
               <>
                 {dailyStats.map((stat, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-700">{stat.date}</span>
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <span className="text-sm font-medium text-gray-700">
+                      {stat.date}
+                    </span>
                     <div className="flex items-center space-x-2">
                       <div className="w-32 bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-gradient-to-r from-blue-500 to-emerald-500 h-2 rounded-full"
                           style={{
-                            width: `${Math.min((stat.points / Math.max(...dailyStats.map(s => s.points))) * 100, 100)}%`
+                            width: `${Math.min(
+                              (stat.points /
+                                Math.max(...dailyStats.map((s) => s.points))) *
+                                100,
+                              100
+                            )}%`,
                           }}
                         />
                       </div>
@@ -404,9 +483,12 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 ))}
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">Total</span>
+                    <span className="text-sm font-medium text-gray-700">
+                      Total
+                    </span>
                     <span className="text-lg font-bold text-emerald-600">
-                      {dailyStats.reduce((sum, stat) => sum + stat.points, 0)} pts
+                      {dailyStats.reduce((sum, stat) => sum + stat.points, 0)}{" "}
+                      pts
                     </span>
                   </div>
                 </div>
@@ -424,16 +506,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <Award className="w-6 h-6 mr-2 text-yellow-500" />
-            {t('profile.badges')} ({badges.length})
+            {t("profile.badges")} ({badges.length})
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {badges.map((userBadge) => (
               <div
                 key={userBadge.id}
-                className="flex flex-col items-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200"
+                className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200"
               >
                 <span className="text-4xl mb-2">{userBadge.badges.emoji}</span>
-                <p className="text-xs font-medium text-gray-700 text-center">
+                <p className="text-xs font-medium text-gray-700 text-center leading-tight">
                   {userBadge.badges.name}
                 </p>
               </div>
@@ -492,7 +574,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             </h3>
 
             <p className="text-gray-600 mb-4">
-              Décrivez la raison de votre signalement. Un administrateur examinera votre demande.
+              Décrivez la raison de votre signalement. Un administrateur
+              examinera votre demande.
             </p>
 
             <textarea
@@ -507,19 +590,19 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               <button
                 onClick={() => {
                   setShowWarnModal(false);
-                  setWarnReason('');
+                  setWarnReason("");
                 }}
                 className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
                 disabled={sending}
               >
-                {t('common.cancel')}
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleSendWarning}
                 disabled={!warnReason.trim() || sending}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {sending ? 'Envoi...' : 'Envoyer'}
+                {sending ? "Envoi..." : "Envoyer"}
               </button>
             </div>
           </div>
@@ -545,55 +628,85 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             </div>
 
             {warningHistory.length === 0 ? (
-              <p className="text-center text-gray-600 py-8">Aucun avertissement trouvé</p>
+              <p className="text-center text-gray-600 py-8">
+                Aucun avertissement trouvé
+              </p>
             ) : (
               <div className="space-y-4">
                 {warningHistory.map((warning, index) => (
-                  <div key={warning.id} className="border-2 border-gray-200 rounded-lg p-4">
+                  <div
+                    key={warning.id}
+                    className="border-2 border-gray-200 rounded-lg p-4"
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
-                        <span className="font-bold text-lg text-gray-700">#{index + 1}</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          warning.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          warning.status === 'action_taken' ? 'bg-red-100 text-red-800' :
-                          warning.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className="font-bold text-lg text-gray-700">
+                          #{index + 1}
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            warning.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : warning.status === "action_taken"
+                              ? "bg-red-100 text-red-800"
+                              : warning.status === "reviewed"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {warning.status}
                         </span>
-                        {warning.action_taken && warning.action_taken !== 'none' && (
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            warning.action_taken === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                            warning.action_taken === 'temporary_ban' ? 'bg-orange-100 text-orange-800' :
-                            warning.action_taken === 'permanent_ban' ? 'bg-red-100 text-red-800' :
-                            warning.action_taken === 'force_username_change' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {warning.action_taken}
-                          </span>
-                        )}
+                        {warning.action_taken &&
+                          warning.action_taken !== "none" && (
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                warning.action_taken === "warning"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : warning.action_taken === "temporary_ban"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : warning.action_taken === "permanent_ban"
+                                  ? "bg-red-100 text-red-800"
+                                  : warning.action_taken ===
+                                    "force_username_change"
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {warning.action_taken}
+                            </span>
+                          )}
                       </div>
                       <span className="text-sm text-gray-500">
                         {new Date(warning.created_at).toLocaleString()}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      Signalé par: <span className="font-medium">{warning.reporter_user?.pseudo || 'Inconnu'}</span>
+                      Signalé par:{" "}
+                      <span className="font-medium">
+                        {warning.reporter_user?.pseudo || "Inconnu"}
+                      </span>
                     </p>
                     <div className="bg-gray-50 rounded p-3 mb-2">
-                      <p className="text-xs font-medium text-gray-600 mb-1">Raison:</p>
+                      <p className="text-xs font-medium text-gray-600 mb-1">
+                        Raison:
+                      </p>
                       <p className="text-sm text-gray-800">{warning.reason}</p>
                     </div>
                     {warning.admin_notes && (
                       <div className="bg-blue-50 rounded p-3 mb-2">
-                        <p className="text-xs font-medium text-blue-700 mb-1">Notes admin:</p>
-                        <p className="text-sm text-blue-900">{warning.admin_notes}</p>
+                        <p className="text-xs font-medium text-blue-700 mb-1">
+                          Notes admin:
+                        </p>
+                        <p className="text-sm text-blue-900">
+                          {warning.admin_notes}
+                        </p>
                       </div>
                     )}
                     {warning.temp_ban_until && (
                       <div className="bg-red-50 rounded p-3">
                         <p className="text-xs font-medium text-red-700">
-                          Ban temporaire jusqu'au: {new Date(warning.temp_ban_until).toLocaleString()}
+                          Ban temporaire jusqu'au:{" "}
+                          {new Date(warning.temp_ban_until).toLocaleString()}
                         </p>
                       </div>
                     )}
