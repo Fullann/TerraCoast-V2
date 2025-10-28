@@ -23,7 +23,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const updatePseudo = async () => {
     if (!pseudo.trim()) {
-      setError('Le pseudo ne peut pas être vide');
+      setError(t('settings.pseudoRequired'));
       return;
     }
 
@@ -37,9 +37,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
       .eq('id', profile?.id);
 
     if (updateError) {
-      setError('Erreur lors de la mise à jour du pseudo');
+      setError(t('settings.pseudoUpdateError'));
     } else {
-      setMessage('Pseudo mis à jour avec succès');
+      setMessage(t('settings.pseudoUpdateSuccess'));
       await refreshProfile();
     }
 
@@ -48,7 +48,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const updateEmail = async () => {
     if (!email.trim() || !currentPassword.trim()) {
-      setError('Email et mot de passe actuel requis');
+      setError(t('settings.emailPasswordRequired'));
       return;
     }
 
@@ -62,7 +62,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (authError) {
-      setError('Mot de passe incorrect');
+      setError(t('settings.incorrectPassword'));
       setLoading(false);
       return;
     }
@@ -72,9 +72,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (updateError) {
-      setError('Erreur lors de la mise à jour de l\'email');
+      setError(t('settings.emailUpdateError'));
     } else {
-      setMessage('Un email de confirmation a été envoyé à ta nouvelle adresse');
+      setMessage(t('settings.emailConfirmationSent'));
       setCurrentPassword('');
     }
 
@@ -83,17 +83,17 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const updatePassword = async () => {
     if (!currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()) {
-      setError('Tous les champs sont requis');
+      setError(t('settings.allFieldsRequired'));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
+      setError(t('settings.passwordsMismatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+      setError(t('settings.passwordTooShort'));
       return;
     }
 
@@ -107,7 +107,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (authError) {
-      setError('Mot de passe actuel incorrect');
+      setError(t('settings.currentPasswordIncorrect'));
       setLoading(false);
       return;
     }
@@ -117,9 +117,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (updateError) {
-      setError('Erreur lors de la mise à jour du mot de passe');
+      setError(t('settings.passwordUpdateError'));
     } else {
-      setMessage('Mot de passe mis à jour avec succès');
+      setMessage(t('settings.passwordUpdateSuccess'));
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -130,10 +130,10 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const deleteAccount = async () => {
     const confirmation = prompt(
-      'Cette action est irréversible. Tape "SUPPRIMER" pour confirmer :'
+      t('settings.deleteConfirmation')
     );
 
-    if (confirmation !== 'SUPPRIMER') {
+    if (confirmation !== t('settings.deleteKeyword')) {
       return;
     }
 
@@ -145,7 +145,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
     });
 
     if (error) {
-      setError('Erreur lors de la suppression du compte');
+      setError(t('settings.deleteAccountError'));
       setLoading(false);
     } else {
       await supabase.auth.signOut();
@@ -166,7 +166,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
           <Settings className="w-10 h-10 mr-3 text-gray-700" />
           {t('settings.accountSettings')}
         </h1>
-        <p className="text-gray-600">Gère tes informations personnelles</p>
+        <p className="text-gray-600">{t('settings.manageInfo')}</p>
       </div>
 
       {message && (
@@ -185,13 +185,13 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center mb-4">
             <Globe className="w-6 h-6 text-emerald-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-800">Langue et préférences</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('settings.languagePreferences')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Langue de l'interface
+                {t('settings.interfaceLanguage')}
               </label>
               <select
                 value={language}
@@ -215,7 +215,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                 className="mt-1 w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
               />
               <label htmlFor="showAllLanguages" className="ml-2 text-sm text-gray-700">
-                Afficher tous les quiz dans toutes les langues (sinon, uniquement les quiz dans ma langue)
+                {t('settings.showAllLanguagesDescription')}
               </label>
             </div>
           </div>
@@ -224,20 +224,20 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center mb-4">
             <User className="w-6 h-6 text-blue-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-800">Pseudo</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('settings.username')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nouveau pseudo
+                {t('settings.newUsername')}
               </label>
               <input
                 type="text"
                 value={pseudo}
                 onChange={(e) => setPseudo(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Ton pseudo"
+                placeholder={t('settings.yourUsername')}
               />
             </div>
 
@@ -246,7 +246,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
               disabled={loading || !pseudo.trim() || pseudo === profile?.pseudo}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Mettre à jour le pseudo
+              {t('settings.updateUsername')}
             </button>
           </div>
         </div>
@@ -254,26 +254,26 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center mb-4">
             <Mail className="w-6 h-6 text-emerald-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-800">Adresse email</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('settings.emailAddress')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nouvelle adresse email
+                {t('settings.newEmail')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                placeholder="nouvelle@email.com"
+                placeholder={t('settings.newEmailPlaceholder')}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mot de passe actuel
+                {t('settings.currentPassword')}
               </label>
               <input
                 type="password"
@@ -289,7 +289,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
               disabled={loading || !email.trim() || !currentPassword.trim()}
               className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Mettre à jour l'email
+              {t('settings.updateEmail')}
             </button>
           </div>
         </div>
@@ -297,13 +297,13 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center mb-4">
             <Lock className="w-6 h-6 text-amber-600 mr-2" />
-            <h2 className="text-2xl font-bold text-gray-800">Mot de passe</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('settings.password')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mot de passe actuel
+                {t('settings.currentPassword')}
               </label>
               <input
                 type="password"
@@ -316,7 +316,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nouveau mot de passe
+                {t('settings.newPassword')}
               </label>
               <input
                 type="password"
@@ -329,7 +329,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmer le nouveau mot de passe
+                {t('settings.confirmNewPassword')}
               </label>
               <input
                 type="password"
@@ -345,7 +345,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
               disabled={loading || !currentPassword.trim() || !newPassword.trim() || !confirmPassword.trim()}
               className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Mettre à jour le mot de passe
+              {t('settings.updatePassword')}
             </button>
           </div>
         </div>
@@ -353,11 +353,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-red-50 rounded-xl shadow-md p-6 border-2 border-red-200">
           <div className="flex items-center mb-4">
             <Trash2 className="w-6 h-6 text-red-600 mr-2" />
-            <h2 className="text-2xl font-bold text-red-800">Zone de danger</h2>
+            <h2 className="text-2xl font-bold text-red-800">{t('settings.dangerZone')}</h2>
           </div>
 
           <p className="text-gray-700 mb-4">
-            Supprimer ton compte est une action irréversible. Toutes tes données seront perdues.
+            {t('settings.deleteWarning')}
           </p>
 
           <button
@@ -365,7 +365,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
             disabled={loading}
             className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Supprimer mon compte
+            {t('settings.deleteAccount')}
           </button>
         </div>
       </div>

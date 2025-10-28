@@ -3,7 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
 import {
-  Award,
+   Award,
   Trophy,
   Star,
   Calendar,
@@ -63,9 +63,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
   const isAdmin = currentUserProfile?.role === "admin";
+
   const getDayText = (count: number) => {
-    return count > 1 ? "jours" : "jour";
+    return count > 1 ? t("common.days") : t("common.day");
   };
+
   useEffect(() => {
     loadProfileData();
   }, [targetUserId]);
@@ -88,14 +90,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     const { data: userBadges } = await supabase
       .from("user_badges")
       .select("*, badges(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (userBadges) setBadges(userBadges as UserBadge[]);
 
     const { data: userTitles } = await supabase
       .from("user_titles")
       .select("*, titles(*)")
-      .eq("user_id", targetUserId);
+      .eq("user_id", targetUserId)
+      .order("earned_at", { ascending: false });
 
     if (userTitles) setTitles(userTitles as UserTitle[]);
 
@@ -179,11 +183,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     });
 
     if (error) {
-      alert("Erreur lors de l'envoi de la demande");
+      alert(t("profile.friendRequestError"));
       return;
     }
 
-    alert("Demande d'ami envoyée !");
+    alert(t("profile.friendRequestSent"));
     setFriendshipStatus("pending");
   };
 
@@ -222,11 +226,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     setSending(false);
 
     if (error) {
-      alert("Erreur lors de l'envoi du signalement");
+      alert(t("profile.reportError"));
       return;
     }
 
-    alert("Signalement envoyé avec succès");
+    alert(t("profile.reportSuccess"));
     setShowWarnModal(false);
     setWarnReason("");
   };
@@ -234,7 +238,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   if (!profile) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center text-gray-600">Chargement...</div>
+        <div className="text-center text-gray-600">{t("common.loading")}</div>
       </div>
     );
   }
@@ -305,7 +309,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors"
               >
                 <UserPlus className="w-5 h-5 mr-2" />
-                Ajouter en ami
+                {t("profile.addFriend")}
               </button>
             )}
 
@@ -315,7 +319,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
               >
                 <Clock className="w-5 h-5 mr-2" />
-                Demande envoyée
+                {t("profile.requestSent")}
               </button>
             )}
 
@@ -325,7 +329,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg cursor-not-allowed"
               >
                 <UserCheck className="w-5 h-5 mr-2" />
-                Ami
+                {t("profile.friend")}
               </button>
             )}
 
@@ -335,7 +339,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
               >
                 <History className="w-5 h-5 mr-2" />
-                Historique
+                {t("profile.history")}
               </button>
             )}
 
@@ -345,7 +349,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
               >
                 <AlertTriangle className="w-5 h-5 mr-2" />
-                Signaler
+                {t("profile.report")}
               </button>
             )}
           </div>
@@ -355,7 +359,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-blue-900">
-                Parties jouées
+                {t("profile.gamesPlayed")}
               </h3>
               <TrendingUp className="w-5 h-5 text-blue-600" />
             </div>
@@ -367,7 +371,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-green-900">
-                Taux de réussite
+                {t("profile.successRate")}
               </h3>
               <Trophy className="w-5 h-5 text-green-600" />
             </div>
@@ -379,7 +383,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-orange-900">
-                Série en cours
+                {t("home.currentStreak")}
               </h3>
               <Flame className="w-5 h-5 text-orange-600" />
             </div>
@@ -396,7 +400,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               />
             </div>
             <p className="text-xs text-orange-700 mt-1">
-              Record: {profile?.longest_streak || 0}{" "}
+              {t("home.record")}: {profile?.longest_streak || 0}{" "}
               {getDayText(profile?.longest_streak || 0)}
             </p>
           </div>
@@ -406,41 +410,60 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <Star className="w-6 h-6 mr-2 text-amber-500" />
-            Titres ({titles.length})
+            <Award className="w-6 h-6 mr-2 text-purple-500" />
+            {t("profile.titles")} ({titles.length})
           </h2>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {titles.map((userTitle) => (
               <div
                 key={userTitle.id}
-                className={`flex items-center justify-between p-3 rounded-lg border-2 ${
+                className={`relative overflow-hidden p-4 rounded-xl border-2 transition-all hover:scale-105 ${
                   userTitle.is_active
-                    ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-300"
-                    : "bg-gray-50 border-gray-200"
+                    ? "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-purple-400 shadow-lg"
+                    : "bg-gradient-to-br from-gray-50 to-slate-100 border-gray-300"
                 }`}
               >
+                {userTitle.is_active && (
+                  <div className="absolute top-2 right-2">
+                    <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full font-bold shadow-md flex items-center">
+                      <Star className="w-3 h-3 mr-1" />
+                      {t("profile.active")}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center space-x-3">
-                  <span className="text-2xl">{userTitle.titles.emoji}</span>
-                  <div>
-                    <p className="font-semibold text-gray-800">
+                  <div
+                    className={`text-4xl ${
+                      userTitle.is_active ? "animate-bounce" : ""
+                    }`}
+                  >
+                    {userTitle.titles.emoji}
+                  </div>
+                  <div className="flex-1">
+                    <p
+                      className={`font-bold ${
+                        userTitle.is_active
+                          ? "text-purple-900"
+                          : "text-gray-800"
+                      }`}
+                    >
                       {userTitle.titles.name}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-600 line-clamp-2">
                       {userTitle.titles.description}
                     </p>
                   </div>
                 </div>
                 {userTitle.is_active && (
-                  <span className="px-2 py-1 bg-amber-500 text-white text-xs rounded-full font-medium">
-                    Actif
-                  </span>
+                  <div className="absolute -bottom-1 -right-1 w-20 h-20 bg-gradient-to-br from-purple-200 to-pink-200 rounded-full opacity-20 blur-xl"></div>
                 )}
               </div>
             ))}
             {titles.length === 0 && (
-              <p className="text-center text-gray-500 py-8">
-                Aucun titre obtenu
-              </p>
+              <div className="col-span-2 text-center py-12">
+                <Award className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">{t("profile.noTitles")}</p>
+              </div>
             )}
           </div>
         </div>
@@ -448,7 +471,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <TrendingUp className="w-6 h-6 mr-2 text-blue-500" />
-            Points des 7 derniers jours
+            {t("profile.last7Days")}
           </h2>
           <div className="space-y-2">
             {dailyStats.length > 0 ? (
@@ -476,7 +499,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                         />
                       </div>
                       <span className="text-sm font-bold text-gray-800 w-16 text-right">
-                        {stat.points} pts
+                        {stat.points} {t("home.pts")}
                       </span>
                     </div>
                   </div>
@@ -484,18 +507,18 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700">
-                      Total
+                      {t("profile.total")}
                     </span>
                     <span className="text-lg font-bold text-emerald-600">
                       {dailyStats.reduce((sum, stat) => sum + stat.points, 0)}{" "}
-                      pts
+                      {t("home.pts")}
                     </span>
                   </div>
                 </div>
               </>
             ) : (
               <p className="text-center text-gray-500 py-8">
-                Aucune partie jouée cette semaine
+                {t("profile.noGamesThisWeek")}
               </p>
             )}
           </div>
@@ -505,25 +528,59 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-            <Award className="w-6 h-6 mr-2 text-yellow-500" />
+            <Trophy className="w-6 h-6 mr-2 text-yellow-500" />
             {t("profile.badges")} ({badges.length})
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {badges.map((userBadge) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {badges.map((userBadge, index) => (
               <div
                 key={userBadge.id}
-                className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200"
+                className="group relative"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <span className="text-4xl mb-2">{userBadge.badges.emoji}</span>
-                <p className="text-xs font-medium text-gray-700 text-center leading-tight">
-                  {userBadge.badges.name}
-                </p>
+                <div className="relative flex flex-col items-center justify-center p-4 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-2xl border-2 border-yellow-300 hover:border-yellow-400 transition-all hover:scale-110 hover:shadow-xl cursor-pointer">
+                  {/* Icône du badge basée sur le type */}
+                  <div className="absolute top-1 right-1">
+                    {userBadge.badges.requirement_type === "level" && (
+                      <Trophy className="w-4 h-4 text-yellow-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "games_played" && (
+                      <Star className="w-4 h-4 text-blue-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "streak" && (
+                      <Flame className="w-4 h-4 text-orange-600" />
+                    )}
+                    {userBadge.badges.requirement_type === "wins" && (
+                      <Award className="w-4 h-4 text-green-600" />
+                    )}
+                  </div>
+
+                  {/* Emoji du badge avec effet brillant */}
+                  <div className="relative">
+                    <span className="text-5xl mb-2 filter drop-shadow-lg">
+                      {userBadge.badges.emoji}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-200 to-amber-200 rounded-full opacity-0 group-hover:opacity-30 blur-xl transition-opacity"></div>
+                  </div>
+
+                  {/* Nom du badge */}
+                  <p className="text-xs font-bold text-gray-800 text-center leading-tight mt-2">
+                    {userBadge.badges.name}
+                  </p>
+
+                  {/* Tooltip au survol */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                    {userBadge.badges.description}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
               </div>
             ))}
             {badges.length === 0 && (
-              <p className="col-span-3 text-center text-gray-500 py-8">
-                Aucun badge obtenu
-              </p>
+              <div className="col-span-full text-center py-12">
+                <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">{t("profile.noBadges")}</p>
+              </div>
             )}
           </div>
         </div>
@@ -531,7 +588,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <Calendar className="w-6 h-6 mr-2 text-emerald-500" />
-            Dernières parties
+            {t("profile.recentGames")}
           </h2>
           <div className="space-y-3">
             {sessions.slice(0, 5).map((session) => (
@@ -542,10 +599,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium text-gray-800">
-                      Score: {session.score} pts
+                      {t("profile.score")}: {session.score} {t("home.pts")}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Précision: {session.accuracy_percentage.toFixed(1)}%
+                      {t("profile.accuracy")}:{" "}
+                      {session.accuracy_percentage.toFixed(1)}%
                     </p>
                   </div>
                   <div className="text-right">
@@ -558,7 +616,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             ))}
             {sessions.length === 0 && (
               <p className="text-center text-gray-500 py-8">
-                Aucune partie jouée
+                {t("profile.noGames")}
               </p>
             )}
           </div>
@@ -570,18 +628,17 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <AlertTriangle className="w-6 h-6 mr-2 text-red-600" />
-              Signaler {profile.pseudo}
+              {t("profile.reportUser").replace("{user}", profile.pseudo)}
             </h3>
 
             <p className="text-gray-600 mb-4">
-              Décrivez la raison de votre signalement. Un administrateur
-              examinera votre demande.
+              {t("profile.reportDescription")}
             </p>
 
             <textarea
               value={warnReason}
               onChange={(e) => setWarnReason(e.target.value)}
-              placeholder="Raison du signalement..."
+              placeholder={t("profile.reportReason")}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none"
             />
@@ -602,7 +659,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 disabled={!warnReason.trim() || sending}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {sending ? "Envoi..." : "Envoyer"}
+                {sending ? t("profile.sending") : t("chat.send")}
               </button>
             </div>
           </div>
@@ -614,7 +671,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-800">
-                Historique des avertissements - {profile.pseudo}
+                {t("profile.warningHistory")} - {profile.pseudo}
               </h3>
               <button
                 onClick={() => {
@@ -629,7 +686,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
             {warningHistory.length === 0 ? (
               <p className="text-center text-gray-600 py-8">
-                Aucun avertissement trouvé
+                {t("profile.noWarnings")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -681,21 +738,21 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      Signalé par:{" "}
+                      {t("profile.reportedBy")}:{" "}
                       <span className="font-medium">
-                        {warning.reporter_user?.pseudo || "Inconnu"}
+                        {warning.reporter_user?.pseudo || t("profile.unknown")}
                       </span>
                     </p>
                     <div className="bg-gray-50 rounded p-3 mb-2">
                       <p className="text-xs font-medium text-gray-600 mb-1">
-                        Raison:
+                        {t("home.reason")}:
                       </p>
                       <p className="text-sm text-gray-800">{warning.reason}</p>
                     </div>
                     {warning.admin_notes && (
                       <div className="bg-blue-50 rounded p-3 mb-2">
                         <p className="text-xs font-medium text-blue-700 mb-1">
-                          Notes admin:
+                          {t("profile.adminNotes")}:
                         </p>
                         <p className="text-sm text-blue-900">
                           {warning.admin_notes}
@@ -705,7 +762,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     {warning.temp_ban_until && (
                       <div className="bg-red-50 rounded p-3">
                         <p className="text-xs font-medium text-red-700">
-                          Ban temporaire jusqu'au:{" "}
+                          {t("profile.tempBanUntil")}:{" "}
                           {new Date(warning.temp_ban_until).toLocaleString()}
                         </p>
                       </div>
@@ -722,7 +779,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               }}
               className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
             >
-              Fermer
+              {t("common.close")}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -9,7 +10,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type ChatMessage = Database['public']['Tables']['chat_messages']['Row'];
 
 interface MessageWithUser extends ChatMessage {
-  from_profile: Profile | null; // Permettre null
+  from_profile: Profile | null;
 }
 
 interface ChatPageProps {
@@ -19,6 +20,7 @@ interface ChatPageProps {
 
 export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const { refreshNotifications } = useNotifications();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [selectedFriend, setSelectedFriend] = useState<Profile | null>(null);
@@ -155,7 +157,6 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
       .order('created_at', { ascending: true });
 
     if (data) {
-      // Filtrer les messages avec des profils valides
       setMessages(data as MessageWithUser[]);
     }
   };
@@ -207,7 +208,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
           className="flex items-center text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour aux amis
+          {t('chat.backToFriends')}
         </button>
       </div>
 
@@ -217,14 +218,14 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
             <div className="p-4 border-b border-gray-200 bg-emerald-600">
               <h2 className="text-xl font-bold text-white flex items-center">
                 <MessageCircle className="w-6 h-6 mr-2" />
-                Messages
+                {t('chat.messages')}
               </h2>
             </div>
 
             <div className="divide-y divide-gray-200">
               {friends.length === 0 ? (
                 <div className="p-8 text-center">
-                  <p className="text-gray-500">Aucun ami</p>
+                  <p className="text-gray-500">{t('chat.noFriends')}</p>
                 </div>
               ) : (
                 friends.map((friend) => (
@@ -247,8 +248,8 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">{friend.pseudo || 'Utilisateur'}</p>
-                        <p className="text-sm text-gray-600">Niveau {friend.level || 1}</p>
+                        <p className="font-semibold text-gray-800 truncate">{friend.pseudo || t('chat.user')}</p>
+                        <p className="text-sm text-gray-600">{t('profile.level')} {friend.level || 1}</p>
                       </div>
                     </div>
                   </button>
@@ -272,9 +273,9 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                     </div>
                     <div>
                       <h3 className="font-bold text-gray-800 hover:text-emerald-600 transition-colors">
-                        {selectedFriend.pseudo || 'Utilisateur'}
+                        {selectedFriend.pseudo || t('chat.user')}
                       </h3>
-                      <p className="text-sm text-gray-600">Niveau {selectedFriend.level || 1}</p>
+                      <p className="text-sm text-gray-600">{t('profile.level')} {selectedFriend.level || 1}</p>
                     </div>
                   </div>
                 </div>
@@ -282,13 +283,12 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                      <p className="text-gray-500">Aucun message. Commencez la conversation!</p>
+                      <p className="text-gray-500">{t('chat.noMessages')}</p>
                     </div>
                   ) : (
                     messages.map((message) => {
                       const isOwnMessage = message.from_user_id === profile?.id;
-                      // Vérification de sécurité pour from_profile
-                      const senderName = message.from_profile?.pseudo || 'Utilisateur supprimé';
+                      const senderName = message.from_profile?.pseudo || t('chat.deletedUser');
                       
                       return (
                         <div
@@ -313,7 +313,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                                 isOwnMessage ? 'text-emerald-100' : 'text-gray-500'
                               }`}
                             >
-                              {new Date(message.created_at).toLocaleTimeString('fr-FR', {
+                              {new Date(message.created_at).toLocaleTimeString(undefined, {
                                 hour: '2-digit',
                                 minute: '2-digit',
                               })}
@@ -338,7 +338,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Tapez votre message..."
+                      placeholder={t('chat.typeMessage')}
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                     />
                     <button
@@ -355,7 +355,7 @@ export function ChatPage({ friendId, onNavigate }: ChatPageProps) {
               <div className="flex-1 flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                   <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Sélectionnez un ami pour commencer à discuter</p>
+                  <p className="text-gray-500">{t('chat.selectFriend')}</p>
                 </div>
               </div>
             )}

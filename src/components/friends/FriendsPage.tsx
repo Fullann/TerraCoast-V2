@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Users, UserPlus, UserCheck, X, MessageCircle, UserMinus, Sparkles } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -18,6 +19,7 @@ interface FriendsPageProps {
 
 export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [friends, setFriends] = useState<FriendData[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendData[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,7 +117,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
         status: 'pending',
       });
 
-      alert('Demande envoyée!');
+      alert(t('friends.requestSent'));
       setSearchResults([]);
       setSearchTerm('');
     } catch (error) {
@@ -142,7 +144,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
   };
 
   const removeFriend = async (friendshipId: string, friendName: string) => {
-    if (!confirm(`Voulez-vous vraiment retirer ${friendName} de vos amis ?`)) return;
+    if (!confirm(t('friends.confirmRemove').replace('{name}', friendName))) return;
 
     await supabase
       .from('friendships')
@@ -158,15 +160,15 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
           <Users className="w-10 h-10 mr-3 text-emerald-600" />
-          Amis
+          {t('friends.title')}
         </h1>
-        <p className="text-gray-600">Gérez vos amis et tchattez ensemble</p>
+        <p className="text-gray-600">{t('friends.subtitle')}</p>
       </div>
 
       {pendingRequests.length > 0 && (
         <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
-            Demandes en attente ({pendingRequests.length})
+            {t('friends.pendingRequests')} ({pendingRequests.length})
           </h2>
           <div className="space-y-3">
             {pendingRequests.map((request) => (
@@ -183,7 +185,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                       {request.user_profile?.pseudo}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Niveau {request.user_profile?.level}
+                      {t('profile.level')} {request.user_profile?.level}
                     </p>
                   </div>
                 </div>
@@ -191,12 +193,14 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   <button
                     onClick={() => acceptFriendRequest(request.id)}
                     className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    title={t('friends.accept')}
                   >
                     <UserCheck className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => rejectFriendRequest(request.id)}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    title={t('friends.reject')}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -211,7 +215,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
         <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
           <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
             <Sparkles className="w-5 h-5 mr-2 text-amber-500" />
-            Suggestions d'amis
+            {t('friends.suggestions')}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {suggestions.filter(s => !existingFriendIds.has(s.id)).map((user) => (
@@ -225,7 +229,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   </span>
                 </div>
                 <p className="font-semibold text-gray-800 truncate">{user.pseudo}</p>
-                <p className="text-xs text-gray-600 mb-3">Niveau {user.level}</p>
+                <p className="text-xs text-gray-600 mb-3">{t('profile.level')} {user.level}</p>
                 <button
                   onClick={() => {
                     sendFriendRequest(user.id);
@@ -234,7 +238,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
                   <UserPlus className="w-3 h-3 mr-1" />
-                  Ajouter
+                  {t('friends.add')}
                 </button>
               </div>
             ))}
@@ -243,11 +247,11 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
       )}
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Rechercher des amis</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-4">{t('friends.searchTitle')}</h2>
         <div className="flex space-x-2">
           <input
             type="text"
-            placeholder="Rechercher par pseudo..."
+            placeholder={t('friends.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
@@ -257,7 +261,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
             onClick={searchUsers}
             className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
-            Rechercher
+            {t('common.search')}
           </button>
         </div>
 
@@ -274,7 +278,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">{user.pseudo}</p>
-                    <p className="text-sm text-gray-600">Niveau {user.level}</p>
+                    <p className="text-sm text-gray-600">{t('profile.level')} {user.level}</p>
                   </div>
                 </div>
                 <button
@@ -282,7 +286,7 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Ajouter
+                  {t('friends.add')}
                 </button>
               </div>
             ))}
@@ -292,13 +296,13 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
 
       <div className="bg-white rounded-xl shadow-md p-6">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Mes amis ({friends.length})
+          {t('friends.myFriendsTitle')} ({friends.length})
         </h2>
 
         {friends.length === 0 ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Vous n'avez pas encore d'amis</p>
+            <p className="text-gray-500">{t('friends.noFriends')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -322,21 +326,21 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
                     </div>
                     <div>
                       <p className="font-semibold text-gray-800 hover:text-emerald-600 transition-colors">{friendProfile.pseudo}</p>
-                      <p className="text-sm text-gray-600">Niveau {friendProfile.level}</p>
+                      <p className="text-sm text-gray-600">{t('profile.level')} {friendProfile.level}</p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onNavigate?.('chat', { friendId: friendProfile.id })}
                       className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                      title="Envoyer un message"
+                      title={t('friends.sendMessage')}
                     >
                       <MessageCircle className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => removeFriend(friendship.id, friendProfile.pseudo)}
                       className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      title="Retirer de mes amis"
+                      title={t('friends.removeFriend')}
                     >
                       <UserMinus className="w-4 h-4" />
                     </button>

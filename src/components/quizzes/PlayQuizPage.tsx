@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -25,6 +26,7 @@ export function PlayQuizPage({
   onNavigate,
 }: PlayQuizPageProps) {
   const { profile, refreshProfile } = useAuth();
+  const { t } = useLanguage();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -49,6 +51,7 @@ export function PlayQuizPage({
   const [xpGained, setXpGained] = useState(0);
   const isCompletingRef = useRef(false);
   const isCreatingSessionRef = useRef(false);
+  const hasTimedOutRef = useRef(false);
 
   useEffect(() => {
     console.log("[useEffect-loadQuiz] Loading quiz:", quizId);
@@ -83,6 +86,98 @@ export function PlayQuizPage({
     }
   }, [quiz, questions, gameComplete]);
 
+  const saveAnswer = async (answerData: any) => {
+    if (!sessionId) return;
+
+    await supabase.from("game_answers").insert({
+      session_id: sessionId,
+      question_id: answerData.question_id,
+      user_answer: answerData.user_answer,
+      is_correct: answerData.is_correct,
+      time_taken_seconds: answerData.time_taken,
+      points_earned: answerData.points_earned,
+    });
+  };
+
+  const moveToNextQuestion = () => {
+    console.log(
+      "[moveToNextQuestion] Called. gameComplete:",
+      gameComplete,
+      "currentQuestionIndex:",
+      currentQuestionIndex,
+      "questions.length:",
+      questions.length
+    );
+
+    if (gameComplete) {
+      console.log("[moveToNextQuestion] Game already complete, exiting");
+      return;
+    }
+
+    if (currentQuestionIndex < questions.length - 1) {
+      console.log("[moveToNextQuestion] Moving to next question");
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setUserAnswer("");
+      setSelectedOption("");
+      setShowResult(false);
+      setIsAnswered(false);
+      setTimeLeft(quiz?.time_limit_seconds || 30);
+      setQuestionStartTime(Date.now());
+      hasTimedOutRef.current = false;
+    } else {
+      console.log(
+        "[moveToNextQuestion] Last question reached, calling completeGame"
+      );
+      completeGame();
+    }
+  };
+
+  const handleTimeout = useCallback(() => {
+    console.log(
+      "[handleTimeout] Called. isAnswered:",
+      isAnswered,
+      "gameComplete:",
+      gameComplete,
+      "hasTimedOut:",
+      hasTimedOutRef.current
+    );
+
+    if (isAnswered || gameComplete || hasTimedOutRef.current) return;
+
+    hasTimedOutRef.current = true;
+
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+    const currentQuestion = questions[currentQuestionIndex];
+
+    if (!currentQuestion) return;
+
+    const answerData = {
+      question_id: currentQuestion.id,
+      user_answer: "",
+      is_correct: false,
+      time_taken: timeTaken,
+      points_earned: 0,
+    };
+
+    setAnswers((prev) => [...prev, answerData]);
+    setIsAnswered(true);
+
+    saveAnswer(answerData);
+
+    console.log("[handleTimeout] Setting timeout to move to next question");
+    setTimeout(() => {
+      hasTimedOutRef.current = false;
+      moveToNextQuestion();
+    }, 100);
+  }, [
+    isAnswered,
+    gameComplete,
+    questionStartTime,
+    questions,
+    currentQuestionIndex,
+    sessionId,
+  ]);
+
   useEffect(() => {
     if (gameComplete || isAnswered || trainingMode) return;
 
@@ -97,7 +192,13 @@ export function PlayQuizPage({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentQuestionIndex, isAnswered, gameComplete, trainingMode]);
+  }, [
+    currentQuestionIndex,
+    isAnswered,
+    gameComplete,
+    trainingMode,
+    handleTimeout,
+  ]);
 
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
@@ -179,35 +280,6 @@ export function PlayQuizPage({
     return Math.round(basePoints * (1 + speedBonus));
   };
 
-  const handleTimeout = () => {
-    console.log(
-      "[handleTimeout] Called. isAnswered:",
-      isAnswered,
-      "gameComplete:",
-      gameComplete
-    );
-    if (isAnswered || gameComplete) return;
-
-    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
-    const currentQuestion = questions[currentQuestionIndex];
-
-    const answerData = {
-      question_id: currentQuestion.id,
-      user_answer: "",
-      is_correct: false,
-      time_taken: timeTaken,
-      points_earned: 0,
-    };
-
-    setAnswers([...answers, answerData]);
-    setIsAnswered(true);
-
-    saveAnswer(answerData);
-
-    console.log("[handleTimeout] Moving to next question immediately");
-    moveToNextQuestion();
-  };
-
   const handleSubmitAnswer = () => {
     if (isAnswered || gameComplete) return;
 
@@ -220,14 +292,14 @@ export function PlayQuizPage({
         : userAnswer;
 
     if (!answer.trim()) {
-      alert("Veuillez sélectionner ou entrer une réponse");
+      alert(t("playQuiz.selectAnswer"));
       return;
     }
 
     const correctAnswers =
       currentQuestion.correct_answers &&
       currentQuestion.correct_answers.length > 0
-        ? currentQuestion.correct_answers
+        ? [currentQuestion.correct_answer, ...currentQuestion.correct_answers]
         : [currentQuestion.correct_answer];
 
     const isCorrect = correctAnswers.some(
@@ -255,51 +327,6 @@ export function PlayQuizPage({
     setTimeout(() => {
       moveToNextQuestion();
     }, 1500);
-  };
-
-  const saveAnswer = async (answerData: any) => {
-    if (!sessionId) return;
-
-    await supabase.from("game_answers").insert({
-      session_id: sessionId,
-      question_id: answerData.question_id,
-      user_answer: answerData.user_answer,
-      is_correct: answerData.is_correct,
-      time_taken_seconds: answerData.time_taken,
-      points_earned: answerData.points_earned,
-    });
-  };
-
-  const moveToNextQuestion = () => {
-    console.log(
-      "[moveToNextQuestion] Called. gameComplete:",
-      gameComplete,
-      "currentQuestionIndex:",
-      currentQuestionIndex,
-      "questions.length:",
-      questions.length
-    );
-
-    if (gameComplete) {
-      console.log("[moveToNextQuestion] Game already complete, exiting");
-      return;
-    }
-
-    if (currentQuestionIndex < questions.length - 1) {
-      console.log("[moveToNextQuestion] Moving to next question");
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setUserAnswer("");
-      setSelectedOption("");
-      setShowResult(false);
-      setIsAnswered(false);
-      setTimeLeft(quiz?.time_limit_seconds || 30);
-      setQuestionStartTime(Date.now());
-    } else {
-      console.log(
-        "[moveToNextQuestion] Last question reached, calling completeGame"
-      );
-      completeGame();
-    }
   };
 
   const completeGame = async () => {
@@ -514,7 +541,7 @@ export function PlayQuizPage({
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du quiz...</p>
+          <p className="text-gray-600">{t("playQuiz.loadingQuiz")}</p>
         </div>
       </div>
     );
@@ -530,12 +557,14 @@ export function PlayQuizPage({
           <div className="text-center mb-8">
             <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              {trainingMode ? "Entraînement terminé!" : "Quiz terminé!"}
+              {trainingMode
+                ? t("playQuiz.trainingComplete")
+                : t("playQuiz.quizComplete")}
             </h1>
             <p className="text-gray-600">
               {trainingMode
-                ? "Bon travail! Continue à t’entraîner"
-                : "Félicitations pour avoir complété ce quiz"}
+                ? t("playQuiz.trainingMessage")
+                : t("playQuiz.congratsMessage")}
             </p>
           </div>
 
@@ -543,11 +572,15 @@ export function PlayQuizPage({
             {!trainingMode && (
               <>
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-emerald-100 text-sm mb-2">Score total</p>
+                  <p className="text-emerald-100 text-sm mb-2">
+                    {t("playQuiz.totalScore")}
+                  </p>
                   <p className="text-4xl font-bold">{totalScore}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-purple-100 text-sm mb-2">XP gagné</p>
+                  <p className="text-purple-100 text-sm mb-2">
+                    {t("playQuiz.xpGained")}
+                  </p>
                   <p className="text-4xl font-bold">+{xpGained}</p>
                 </div>
               </>
@@ -558,7 +591,9 @@ export function PlayQuizPage({
                 trainingMode ? "md:col-span-1" : ""
               }`}
             >
-              <p className="text-blue-100 text-sm mb-2">Précision</p>
+              <p className="text-blue-100 text-sm mb-2">
+                {t("playQuiz.accuracy")}
+              </p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
 
@@ -567,7 +602,9 @@ export function PlayQuizPage({
                 trainingMode ? "md:col-span-1" : ""
               }`}
             >
-              <p className="text-amber-100 text-sm mb-2">Bonnes réponses</p>
+              <p className="text-amber-100 text-sm mb-2">
+                {t("playQuiz.correctAnswers")}
+              </p>
               <p className="text-4xl font-bold">
                 {correctAnswers}/{questions.length}
               </p>
@@ -576,16 +613,31 @@ export function PlayQuizPage({
 
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Récapitulatif
+              {t("playQuiz.summary")}
             </h2>
             <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
               {questions.map((question, index) => {
                 const answer = answers[index];
+
+                // Vérifier si la réponse est correcte (en tenant compte des variantes)
+                const isCorrectAnswer =
+                  answer?.is_correct ||
+                  (answer?.user_answer &&
+                    (question.correct_answers &&
+                    question.correct_answers.length > 0
+                      ? question.correct_answers.some(
+                          (ca) =>
+                            answer.user_answer.toLowerCase().trim() ===
+                            ca.toLowerCase().trim()
+                        )
+                      : answer.user_answer.toLowerCase().trim() ===
+                        question.correct_answer.toLowerCase().trim()));
+
                 return (
                   <div
                     key={question.id}
                     className={`p-4 rounded-lg border-2 ${
-                      answer?.is_correct
+                      isCorrectAnswer
                         ? "border-green-300 bg-green-50"
                         : "border-red-300 bg-red-50"
                     }`}
@@ -596,20 +648,27 @@ export function PlayQuizPage({
                           {index + 1}. {question.question_text}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Votre réponse:{" "}
+                          {t("playQuiz.yourAnswer")}:{" "}
                           <span className="font-medium">
-                            {answer?.user_answer || "Pas de réponse"}
+                            {answer?.user_answer || t("playQuiz.noAnswer")}
                           </span>
                         </p>
                         <p className="text-sm text-gray-600">
-                          Bonne réponse:{" "}
+                          {t("playQuiz.correctAnswer")}:{" "}
                           <span className="font-medium text-emerald-600">
                             {question.correct_answer}
                           </span>
+                          {question.correct_answers &&
+                            question.correct_answers.length > 0 && (
+                              <span className="block text-xs text-gray-500 mt-1">
+                                {t("playQuiz.acceptedVariants")}:{" "}
+                                {question.correct_answers.join(", ")}
+                              </span>
+                            )}
                         </p>
                       </div>
                       <div className="ml-4">
-                        {answer?.is_correct ? (
+                        {isCorrectAnswer ? (
                           <CheckCircle className="w-8 h-8 text-green-600" />
                         ) : (
                           <XCircle className="w-8 h-8 text-red-600" />
@@ -619,7 +678,7 @@ export function PlayQuizPage({
                     {!trainingMode && (
                       <div className="mt-2 text-sm text-gray-600">
                         <span className="font-medium">
-                          {answer?.points_earned || 0} points
+                          {answer?.points_earned || 0} {t("home.pts")}
                         </span>
                         {" • "}
                         {answer?.time_taken || 0}s
@@ -636,7 +695,7 @@ export function PlayQuizPage({
               onClick={() => onNavigate("quizzes")}
               className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
-              Explorer d'autres quiz
+              {t("playQuiz.exploreOtherQuizzes")}
             </button>
             <button
               onClick={() => {
@@ -647,7 +706,7 @@ export function PlayQuizPage({
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Rejouer
+              {t("playQuiz.playAgain")}
             </button>
           </div>
         </div>
@@ -679,18 +738,14 @@ export function PlayQuizPage({
       <div className="mb-6">
         <button
           onClick={() => {
-            if (
-              confirm(
-                "Êtes-vous sûr de vouloir quitter? Votre progression sera perdue."
-              )
-            ) {
+            if (confirm(t("playQuiz.confirmQuit"))) {
               onNavigate("quizzes");
             }
           }}
           className="flex items-center text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Quitter
+          {t("playQuiz.quit")}
         </button>
       </div>
 
@@ -700,7 +755,7 @@ export function PlayQuizPage({
             <h2 className="text-2xl font-bold text-gray-800">{quiz.title}</h2>
             {trainingMode && (
               <span className="inline-block mt-1 px-3 py-1 bg-teal-100 text-teal-700 text-sm rounded-full font-medium">
-                Mode Entraînement
+                {t("playQuiz.trainingMode")}
               </span>
             )}
           </div>
@@ -737,7 +792,8 @@ export function PlayQuizPage({
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>
-              Question {currentQuestionIndex + 1} / {questions.length}
+              {t("playQuiz.question")} {currentQuestionIndex + 1} /{" "}
+              {questions.length}
             </span>
             <span>{Math.round(progress)}%</span>
           </div>
@@ -759,7 +815,7 @@ export function PlayQuizPage({
           <div className="mb-6 flex justify-center">
             <img
               src={currentQuestion.image_url}
-              alt="Question"
+              alt={t("playQuiz.questionImage")}
               className="max-w-full max-h-96 rounded-lg shadow-md object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -772,38 +828,82 @@ export function PlayQuizPage({
           {currentQuestion.question_type === "true_false" && (
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => setSelectedOption("Vrai")}
+                onClick={() =>
+                  setSelectedOption(
+                    currentQuestion.correct_answer ===
+                      t("createQuiz.trueFalse.true")
+                      ? t("createQuiz.trueFalse.true")
+                      : "Vrai"
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isAnswered) {
+                    setSelectedOption(
+                      currentQuestion.correct_answer ===
+                        t("createQuiz.trueFalse.true")
+                        ? t("createQuiz.trueFalse.true")
+                        : "Vrai"
+                    );
+                    setTimeout(() => handleSubmitAnswer(), 100);
+                  }
+                }}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === "Vrai"
+                  isAnswered &&
+                  (currentQuestion.correct_answer ===
+                    t("createQuiz.trueFalse.true") ||
+                    currentQuestion.correct_answer === "Vrai")
                     ? "border-green-500 bg-green-50 text-green-700"
                     : isAnswered &&
-                      selectedOption === "Vrai" &&
-                      currentQuestion.correct_answer !== "Vrai"
+                      selectedOption === t("createQuiz.trueFalse.true") &&
+                      currentQuestion.correct_answer !==
+                        t("createQuiz.trueFalse.true")
                     ? "border-red-500 bg-red-50 text-red-700"
-                    : selectedOption === "Vrai"
+                    : selectedOption === t("createQuiz.trueFalse.true")
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-200 hover:border-emerald-300"
                 } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                ✓ Vrai
+                ✓ {t("createQuiz.trueFalse.true")}
               </button>
               <button
-                onClick={() => setSelectedOption("Faux")}
+                onClick={() =>
+                  setSelectedOption(
+                    currentQuestion.correct_answer ===
+                      t("createQuiz.trueFalse.false")
+                      ? t("createQuiz.trueFalse.false")
+                      : "Faux"
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isAnswered) {
+                    setSelectedOption(
+                      currentQuestion.correct_answer ===
+                        t("createQuiz.trueFalse.false")
+                        ? t("createQuiz.trueFalse.false")
+                        : "Faux"
+                    );
+                    setTimeout(() => handleSubmitAnswer(), 100);
+                  }
+                }}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === "Faux"
+                  isAnswered &&
+                  (currentQuestion.correct_answer ===
+                    t("createQuiz.trueFalse.false") ||
+                    currentQuestion.correct_answer === "Faux")
                     ? "border-green-500 bg-green-50 text-green-700"
                     : isAnswered &&
-                      selectedOption === "Faux" &&
-                      currentQuestion.correct_answer !== "Faux"
+                      selectedOption === t("createQuiz.trueFalse.false") &&
+                      currentQuestion.correct_answer !==
+                        t("createQuiz.trueFalse.false")
                     ? "border-red-500 bg-red-50 text-red-700"
-                    : selectedOption === "Faux"
+                    : selectedOption === t("createQuiz.trueFalse.false")
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-200 hover:border-emerald-300"
                 } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                ✗ Faux
+                ✗ {t("createQuiz.trueFalse.false")}
               </button>
             </div>
           )}
@@ -832,6 +932,12 @@ export function PlayQuizPage({
                     <button
                       key={index}
                       onClick={() => setSelectedOption(option)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !isAnswered) {
+                          setSelectedOption(option);
+                          setTimeout(() => handleSubmitAnswer(), 100);
+                        }
+                      }}
                       disabled={isAnswered}
                       className={`p-4 rounded-lg border-2 transition-all ${
                         isAnswered &&
@@ -887,15 +993,13 @@ export function PlayQuizPage({
               autoFocus
               disabled={isAnswered}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
-              placeholder="Entrez votre réponse..."
+              placeholder={t("playQuiz.enterAnswer")}
             />
           )}
 
           {currentQuestion.question_type === "map_click" && (
             <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
-              <p className="text-gray-600">
-                Fonctionnalité de clic sur carte à venir
-              </p>
+              <p className="text-gray-600">{t("playQuiz.mapClickComing")}</p>
             </div>
           )}
         </div>
@@ -905,10 +1009,17 @@ export function PlayQuizPage({
             className={`p-4 rounded-lg mb-6 ${
               answers[answers.length - 1]?.is_correct ||
               (isAnswered &&
-                selectedOption === currentQuestion.correct_answer) ||
-              (isAnswered &&
-                userAnswer.toLowerCase().trim() ===
-                  currentQuestion.correct_answer.toLowerCase().trim())
+                (currentQuestion.question_type === "mcq" ||
+                currentQuestion.question_type === "true_false"
+                  ? selectedOption === currentQuestion.correct_answer
+                  : [
+                      currentQuestion.correct_answer,
+                      ...(currentQuestion.correct_answers || []),
+                    ].some(
+                      (ca) =>
+                        userAnswer.toLowerCase().trim() ===
+                        ca.toLowerCase().trim()
+                    )))
                 ? "bg-green-50 border-2 border-green-300"
                 : "bg-red-50 border-2 border-red-300"
             }`}
@@ -916,13 +1027,23 @@ export function PlayQuizPage({
             <div className="flex items-center space-x-3">
               {answers[answers.length - 1]?.is_correct ||
               (isAnswered &&
-                (selectedOption === currentQuestion.correct_answer ||
-                  userAnswer.toLowerCase().trim() ===
-                    currentQuestion.correct_answer.toLowerCase().trim())) ? (
+                (currentQuestion.question_type === "mcq" ||
+                currentQuestion.question_type === "true_false"
+                  ? selectedOption === currentQuestion.correct_answer
+                  : [
+                      currentQuestion.correct_answer,
+                      ...(currentQuestion.correct_answers || []),
+                    ].some(
+                      (ca) =>
+                        userAnswer.toLowerCase().trim() ===
+                        ca.toLowerCase().trim()
+                    ))) ? (
                 <>
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
-                    <p className="font-bold text-green-800">Correct!</p>
+                    <p className="font-bold text-green-800">
+                      {t("playQuiz.correct")}
+                    </p>
                     <p className="text-sm text-green-700">
                       +
                       {answers[answers.length - 1]?.points_earned ||
@@ -930,7 +1051,7 @@ export function PlayQuizPage({
                           Math.round((Date.now() - questionStartTime) / 1000),
                           currentQuestion.points
                         )}{" "}
-                      points
+                      {t("home.pts")}
                     </p>
                   </div>
                 </>
@@ -938,9 +1059,19 @@ export function PlayQuizPage({
                 <>
                   <XCircle className="w-8 h-8 text-red-600" />
                   <div>
-                    <p className="font-bold text-red-800">Incorrect</p>
+                    <p className="font-bold text-red-800">
+                      {t("playQuiz.incorrect")}
+                    </p>
                     <p className="text-sm text-red-700">
-                      La bonne réponse était: {currentQuestion.correct_answer}
+                      {t("playQuiz.correctAnswerWas")}:{" "}
+                      {currentQuestion.correct_answer}
+                      {currentQuestion.correct_answers &&
+                        currentQuestion.correct_answers.length > 0 && (
+                          <span className="block text-xs mt-1">
+                            ({t("playQuiz.variants")}:{" "}
+                            {currentQuestion.correct_answers.join(", ")})
+                          </span>
+                        )}
                     </p>
                   </div>
                 </>
@@ -960,7 +1091,7 @@ export function PlayQuizPage({
             }
             className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Valider
+            {t("playQuiz.validate")}
           </button>
         )}
       </div>

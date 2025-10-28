@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Trophy, Medal, Crown, TrendingUp } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
 
@@ -17,6 +18,7 @@ interface LeaderboardPageProps {
 
 export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'global' | 'friends'>('global');
@@ -132,14 +134,18 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
     return 'bg-white border-gray-200';
   };
 
+  const getGameText = (count: number) => {
+    return count <= 1 ? t('leaderboard.game') : t('leaderboard.games');
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
           <Trophy className="w-10 h-10 mr-3 text-emerald-600" />
-          Classement
+          {t('leaderboard.title')}
         </h1>
-        <p className="text-gray-600">Les meilleurs joueurs de TerraCoast</p>
+        <p className="text-gray-600">{t('leaderboard.subtitle')}</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-4">
@@ -153,7 +159,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
             }`}
           >
             <TrendingUp className="w-4 h-4 inline mr-2" />
-            Classement mondial
+            {t('leaderboard.global')}
           </button>
           <button
             onClick={() => setView('friends')}
@@ -164,7 +170,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
             }`}
           >
             <Trophy className="w-4 h-4 inline mr-2" />
-            Entre amis
+            {t('leaderboard.friends')}
           </button>
         </div>
       </div>
@@ -179,7 +185,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Ce mois-ci
+            {t('leaderboard.thisMonth')}
           </button>
           <button
             onClick={() => setPeriod('alltime')}
@@ -189,12 +195,12 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            Tous les temps
+            {t('leaderboard.allTime')}
           </button>
         </div>
         {period === 'monthly' && (
           <p className="text-sm text-gray-500 mt-3 text-center">
-            Les scores sont réinitialisés chaque mois. Top 10 reçoivent un titre !
+            {t('leaderboard.monthlyReset')}
           </p>
         )}
       </div>
@@ -202,13 +208,13 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
       {loading ? (
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Chargement du classement...</p>
+          <p className="mt-4 text-gray-600">{t('leaderboard.loading')}</p>
         </div>
       ) : leaderboard.length === 0 ? (
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Aucun joueur</h3>
-          <p className="text-gray-500">Le classement est vide pour le moment</p>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('leaderboard.noPlayers')}</h3>
+          <p className="text-gray-500">{t('leaderboard.emptyLeaderboard')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -228,15 +234,15 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
                     <h3 className="text-xl font-bold text-gray-800">{entry.pseudo}</h3>
                     <div className="flex items-center space-x-4 mt-1">
                       <span className="text-sm text-gray-600">
-                        Niveau {entry.level}
+                        {t('profile.level')} {entry.level}
                       </span>
                       <span className="text-sm text-gray-500">
-                        {entry.games_played} {entry.games_played <= 1 ? 'partie' : 'parties'} {period === 'monthly' ? 'ce mois' : ''}
+                        {entry.games_played} {getGameText(entry.games_played)} {period === 'monthly' ? t('leaderboard.thisMonthShort') : ''}
                       </span>
                       {entry.top_10_count > 0 && index < 10 && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-400 to-amber-500 text-white">
                           <Crown className="w-3 h-3 mr-1" />
-                          {entry.top_10_count}x Top 10
+                          {entry.top_10_count}x {t('leaderboard.top10')}
                         </span>
                       )}
                     </div>
@@ -247,9 +253,9 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
                   <p className="text-3xl font-bold text-emerald-600">
                     {entry.total_score.toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600">points totaux</p>
+                  <p className="text-sm text-gray-600">{t('leaderboard.totalPoints')}</p>
                   <p className="text-sm font-semibold text-gray-700 mt-1">
-                    {entry.experience_points.toLocaleString()} XP
+                    {entry.experience_points.toLocaleString()} {t('profile.xp')}
                   </p>
                 </div>
               </div>

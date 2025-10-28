@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { Swords, Trophy, Clock, Users, Plus, Target, Zap, Award, TrendingUp, Crown } from 'lucide-react';
 import type { Database } from '../../lib/database.types';
@@ -30,6 +31,7 @@ interface DuelsPageProps {
 
 export function DuelsPage({ onNavigate }: DuelsPageProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const { refreshNotifications } = useNotifications();
   const [activeDuels, setActiveDuels] = useState<DuelWithDetails[]>([]);
   const [completedDuels, setCompletedDuels] = useState<DuelWithDetails[]>([]);
@@ -165,12 +167,12 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
 
   const getDuelStatus = (duel: DuelWithDetails) => {
     if (duel.status === 'completed') {
-      if (!duel.winner_id) return 'Match nul';
-      if (duel.winner_id === profile?.id) return 'Victoire';
-      return 'Défaite';
+      if (!duel.winner_id) return t('duels.draw');
+      if (duel.winner_id === profile?.id) return t('duels.victory');
+      return t('duels.defeat');
     }
-    if (duel.status === 'in_progress') return 'En cours';
-    return 'En attente';
+    if (duel.status === 'in_progress') return t('duels.inProgress');
+    return t('duels.waiting');
   };
 
   const getOpponent = (duel: DuelWithDetails) => {
@@ -184,16 +186,16 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           <div>
             <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
               <Swords className="w-10 h-10 mr-3 text-emerald-600" />
-              Duels
+              {t('duels.title')}
             </h1>
-            <p className="text-gray-600">Affrontez vos amis en temps réel</p>
+            <p className="text-gray-600">{t('duels.subtitle')}</p>
           </div>
           <button
             onClick={() => setShowCreateInvitation(true)}
             className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center"
           >
             <Plus className="w-5 h-5 mr-2" />
-            Créer un duel
+            {t('duels.createDuel')}
           </button>
         </div>
       </div>
@@ -209,7 +211,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
             }`}
           >
             <Swords className="w-4 h-4 inline mr-2" />
-            Duels actifs ({activeDuels.length})
+            {t('duels.activeDuels')} ({activeDuels.length})
           </button>
           <button
             onClick={() => setActiveTab('invitations')}
@@ -220,7 +222,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Invitations ({pendingInvitations.length})
+            {t('duels.invitations')} ({pendingInvitations.length})
           </button>
           <button
             onClick={() => setActiveTab('completed')}
@@ -231,7 +233,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
             }`}
           >
             <Trophy className="w-4 h-4 inline mr-2" />
-            Historique
+            {t('duels.history')}
           </button>
         </div>
       </div>
@@ -241,8 +243,8 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           {activeDuels.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <Swords className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Aucun duel actif</h3>
-              <p className="text-gray-500">Créez un duel ou acceptez une invitation</p>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('duels.noActiveDuels')}</h3>
+              <p className="text-gray-500">{t('duels.createOrAccept')}</p>
             </div>
           ) : (
             activeDuels.map((duel) => {
@@ -261,11 +263,11 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                         <span className="flex items-center">
                           <Users className="w-4 h-4 mr-1" />
-                          vs {opponent.pseudo}
+                          {t('duels.vs')} {opponent.pseudo}
                         </span>
                         <span className="flex items-center">
                           <Clock className="w-4 h-4 mr-1" />
-                          {new Date(duel.created_at).toLocaleDateString('fr-FR')}
+                          {new Date(duel.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       <div className="flex items-center space-x-3">
@@ -275,7 +277,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                           <div className={`w-2 h-2 rounded-full ${
                             hasPlayed ? 'bg-green-500' : 'bg-amber-500'
                           }`} />
-                          <span>{hasPlayed ? 'Vous avez joué' : 'En attente'}</span>
+                          <span>{hasPlayed ? t('duels.youPlayed') : t('duels.waiting')}</span>
                         </div>
                         <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
                           opponentHasPlayed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
@@ -283,7 +285,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                           <div className={`w-2 h-2 rounded-full ${
                             opponentHasPlayed ? 'bg-green-500' : 'bg-gray-400'
                           }`} />
-                          <span>{opponent.pseudo} {opponentHasPlayed ? 'a joué' : 'n\'a pas joué'}</span>
+                          <span>{opponent.pseudo} {opponentHasPlayed ? t('duels.hasPlayed') : t('duels.hasNotPlayed')}</span>
                         </div>
                       </div>
                     </div>
@@ -296,7 +298,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                           : 'bg-emerald-600 text-white hover:bg-emerald-700'
                       }`}
                     >
-                      {hasPlayed ? 'Déjà joué' : 'Jouer'}
+                      {hasPlayed ? t('duels.alreadyPlayed') : t('quiz.play')}
                     </button>
                   </div>
                 </div>
@@ -310,18 +312,18 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
         <div className="space-y-6">
           {pendingInvitations.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Invitations reçues</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('duels.receivedInvitations')}</h2>
               <div className="space-y-3">
                 {pendingInvitations.map((invitation) => (
                   <div key={invitation.id} className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-lg font-semibold text-gray-800 mb-1">
-                          {invitation.from_user.pseudo} vous défie!
+                          {invitation.from_user.pseudo} {t('duels.challengesYou')}
                         </p>
                         <p className="text-gray-600 mb-2">{invitation.quizzes.title}</p>
                         <p className="text-sm text-gray-500">
-                          {new Date(invitation.created_at).toLocaleString('fr-FR')}
+                          {new Date(invitation.created_at).toLocaleString()}
                         </p>
                       </div>
                       <div className="flex space-x-2">
@@ -329,13 +331,13 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                           onClick={() => acceptInvitation(invitation)}
                           className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                         >
-                          Accepter
+                          {t('friends.accept')}
                         </button>
                         <button
                           onClick={() => declineInvitation(invitation.id)}
                           className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                         >
-                          Refuser
+                          {t('friends.reject')}
                         </button>
                       </div>
                     </div>
@@ -347,22 +349,22 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
 
           {sentInvitations.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Invitations envoyées</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('duels.sentInvitations')}</h2>
               <div className="space-y-3">
                 {sentInvitations.map((invitation) => (
                   <div key={invitation.id} className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-lg font-semibold text-gray-800 mb-1">
-                          Invitation à {invitation.to_user.pseudo}
+                          {t('duels.invitationTo')} {invitation.to_user.pseudo}
                         </p>
                         <p className="text-gray-600 mb-2">{invitation.quizzes.title}</p>
                         <p className="text-sm text-gray-500">
-                          {new Date(invitation.created_at).toLocaleString('fr-FR')}
+                          {new Date(invitation.created_at).toLocaleString()}
                         </p>
                       </div>
                       <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
-                        En attente
+                        {t('duels.waiting')}
                       </span>
                     </div>
                   </div>
@@ -374,8 +376,8 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           {pendingInvitations.length === 0 && sentInvitations.length === 0 && (
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Aucune invitation</h3>
-              <p className="text-gray-500">Créez un duel pour défier vos amis</p>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('duels.noInvitations')}</h3>
+              <p className="text-gray-500">{t('duels.createToChallenge')}</p>
             </div>
           )}
         </div>
@@ -386,8 +388,8 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           {completedDuels.length === 0 ? (
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">Aucun duel terminé</h3>
-              <p className="text-gray-500">Votre historique de duels apparaîtra ici</p>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">{t('duels.noCompletedDuels')}</h3>
+              <p className="text-gray-500">{t('duels.historyAppears')}</p>
             </div>
           ) : (
             completedDuels.map((duel) => {
@@ -403,9 +405,9 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                 <div
                   key={duel.id}
                   className={`rounded-xl shadow-lg overflow-hidden transition-all hover:shadow-xl ${
-                    status === 'Victoire'
+                    status === t('duels.victory')
                       ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-400'
-                      : status === 'Défaite'
+                      : status === t('duels.defeat')
                       ? 'bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-400'
                       : 'bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-400'
                   }`}
@@ -417,25 +419,25 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                           <h3 className="text-2xl font-bold text-gray-800">
                             {duel.quizzes.title}
                           </h3>
-                          {status === 'Victoire' && (
+                          {status === t('duels.victory') && (
                             <Crown className="w-6 h-6 text-yellow-500" />
                           )}
                         </div>
                         <p className="text-sm text-gray-500">
-                          {duel.completed_at && new Date(duel.completed_at).toLocaleString('fr-FR')}
+                          {duel.completed_at && new Date(duel.completed_at).toLocaleString()}
                         </p>
                       </div>
                       <div className="text-right">
                         <span
                           className={`inline-flex items-center px-4 py-2 rounded-lg font-bold text-xl shadow-md ${
-                            status === 'Victoire'
+                            status === t('duels.victory')
                               ? 'bg-green-600 text-white'
-                              : status === 'Défaite'
+                              : status === t('duels.defeat')
                               ? 'bg-red-600 text-white'
                               : 'bg-gray-600 text-white'
                           }`}
                         >
-                          {status === 'Victoire' && <Trophy className="w-5 h-5 mr-2" />}
+                          {status === t('duels.victory') && <Trophy className="w-5 h-5 mr-2" />}
                           {status}
                         </span>
                       </div>
@@ -446,7 +448,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                         <div className="flex items-center justify-center space-x-3">
                           <Crown className="w-8 h-8 text-yellow-500" />
                           <div className="text-center">
-                            <p className="text-sm text-gray-600 font-medium">Vainqueur</p>
+                            <p className="text-sm text-gray-600 font-medium">{t('duels.winner')}</p>
                             <p className="text-2xl font-bold text-gray-800">{winner.pseudo}</p>
                           </div>
                           <Crown className="w-8 h-8 text-yellow-500" />
@@ -456,27 +458,27 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
 
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div className={`p-4 rounded-lg ${
-                        status === 'Victoire' ? 'bg-green-100/70' : 'bg-white/50'
+                        status === t('duels.victory') ? 'bg-green-100/70' : 'bg-white/50'
                       }`}>
                         <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-gray-700">Vous</p>
-                          {status === 'Victoire' && <Award className="w-5 h-5 text-green-600" />}
+                          <p className="font-semibold text-gray-700">{t('duels.you')}</p>
+                          {status === t('duels.victory') && <Award className="w-5 h-5 text-green-600" />}
                         </div>
                         <p className="text-sm text-gray-600 mb-1">{myProfile.pseudo}</p>
                         {mySession && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Score</span>
+                              <span className="text-xs text-gray-600">{t('duels.score')}</span>
                               <span className="text-lg font-bold text-emerald-600">{mySession.score}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Précision</span>
+                              <span className="text-xs text-gray-600">{t('duels.accuracy')}</span>
                               <span className="text-sm font-semibold text-gray-700">
                                 {mySession.correct_answers}/{mySession.total_questions}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Taux</span>
+                              <span className="text-xs text-gray-600">{t('duels.rate')}</span>
                               <span className="text-sm font-semibold text-gray-700">
                                 {((mySession.correct_answers / mySession.total_questions) * 100).toFixed(0)}%
                               </span>
@@ -486,27 +488,27 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                       </div>
 
                       <div className={`p-4 rounded-lg ${
-                        status === 'Défaite' ? 'bg-red-100/70' : 'bg-white/50'
+                        status === t('duels.defeat') ? 'bg-red-100/70' : 'bg-white/50'
                       }`}>
                         <div className="flex items-center justify-between mb-2">
-                          <p className="font-semibold text-gray-700">Adversaire</p>
-                          {status === 'Défaite' && <Award className="w-5 h-5 text-red-600" />}
+                          <p className="font-semibold text-gray-700">{t('duels.opponent')}</p>
+                          {status === t('duels.defeat') && <Award className="w-5 h-5 text-red-600" />}
                         </div>
                         <p className="text-sm text-gray-600 mb-1">{opponent.pseudo}</p>
                         {opponentSession && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Score</span>
+                              <span className="text-xs text-gray-600">{t('duels.score')}</span>
                               <span className="text-lg font-bold text-emerald-600">{opponentSession.score}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Précision</span>
+                              <span className="text-xs text-gray-600">{t('duels.accuracy')}</span>
                               <span className="text-sm font-semibold text-gray-700">
                                 {opponentSession.correct_answers}/{opponentSession.total_questions}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-600">Taux</span>
+                              <span className="text-xs text-gray-600">{t('duels.rate')}</span>
                               <span className="text-sm font-semibold text-gray-700">
                                 {((opponentSession.correct_answers / opponentSession.total_questions) * 100).toFixed(0)}%
                               </span>
@@ -520,19 +522,19 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                       <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-300">
                         <div className="text-center p-3 bg-white/40 rounded-lg">
                           <Target className="w-5 h-5 mx-auto mb-1 text-blue-600" />
-                          <p className="text-xs text-gray-600 mb-1">Écart</p>
+                          <p className="text-xs text-gray-600 mb-1">{t('duels.gap')}</p>
                           <p className="text-lg font-bold text-gray-800">
                             {Math.abs(mySession.score - opponentSession.score)}
                           </p>
                         </div>
                         <div className="text-center p-3 bg-white/40 rounded-lg">
                           <Zap className="w-5 h-5 mx-auto mb-1 text-yellow-600" />
-                          <p className="text-xs text-gray-600 mb-1">Votre score</p>
+                          <p className="text-xs text-gray-600 mb-1">{t('duels.yourScore')}</p>
                           <p className="text-lg font-bold text-emerald-600">{mySession.score}</p>
                         </div>
                         <div className="text-center p-3 bg-white/40 rounded-lg">
                           <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600" />
-                          <p className="text-xs text-gray-600 mb-1">Questions</p>
+                          <p className="text-xs text-gray-600 mb-1">{t('quiz.questions')}</p>
                           <p className="text-lg font-bold text-gray-800">{mySession.total_questions}</p>
                         </div>
                       </div>
@@ -566,6 +568,7 @@ function CreateDuelInvitation({
   onCreated: () => void;
 }) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [friends, setFriends] = useState<Profile[]>([]);
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [selectedFriend, setSelectedFriend] = useState('');
@@ -632,22 +635,22 @@ function CreateDuelInvitation({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Créer un duel</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">{t('duels.createDuel')}</h2>
 
         <div className="space-y-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choisir un ami
+              {t('duels.chooseFriend')}
             </label>
             <select
               value={selectedFriend}
               onChange={(e) => setSelectedFriend(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
             >
-              <option value="">Sélectionnez un ami</option>
+              <option value="">{t('duels.selectFriend')}</option>
               {friends.map((friend) => (
                 <option key={friend.id} value={friend.id}>
-                  {friend.pseudo} (Niveau {friend.level})
+                  {friend.pseudo} ({t('profile.level')} {friend.level})
                 </option>
               ))}
             </select>
@@ -655,14 +658,14 @@ function CreateDuelInvitation({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choisir un quiz
+              {t('duels.chooseQuiz')}
             </label>
             <select
               value={selectedQuiz}
               onChange={(e) => setSelectedQuiz(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
             >
-              <option value="">Sélectionnez un quiz</option>
+              <option value="">{t('duels.selectQuiz')}</option>
               {quizzes.map((quiz) => (
                 <option key={quiz.id} value={quiz.id}>
                   {quiz.title} ({quiz.difficulty})
@@ -677,14 +680,14 @@ function CreateDuelInvitation({
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
           >
-            Annuler
+            {t('common.cancel')}
           </button>
           <button
             onClick={createInvitation}
             disabled={!selectedFriend || !selectedQuiz || loading}
             className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Envoi...' : 'Envoyer'}
+            {loading ? t('duels.sending') : t('chat.send')}
           </button>
         </div>
       </div>

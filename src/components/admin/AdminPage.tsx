@@ -260,15 +260,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
         </button>
 
         <button
-          onClick={() => onNavigate?.('warnings-management')}
-          className="bg-gradient-to-br from-red-400 to-red-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
-        >
-          <AlertTriangle className="w-10 h-10 mb-3" />
-          <p className="text-red-100 text-sm">Gestion des signalements</p>
-          <p className="text-xs text-red-100 mt-2">Traiter les avertissements →</p>
-        </button>
-
-        <button
           onClick={() => onNavigate?.('quiz-type-management')}
           className="bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
         >
