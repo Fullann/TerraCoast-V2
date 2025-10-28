@@ -15,7 +15,12 @@ import {
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 
-type QuestionType = "mcq" | "single_answer" | "map_click" | "text_free" | "true_false";
+type QuestionType =
+  | "mcq"
+  | "single_answer"
+  | "map_click"
+  | "text_free"
+  | "true_false";
 type QuizCategory =
   | "flags"
   | "capitals"
@@ -164,12 +169,32 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     setEditingQuestion(newQuestion);
   };
 
-  const deleteQuestion = (questionId: string) => {
-    if (confirm(t("editQuiz.confirmDeleteQuestion"))) {
-      setQuestions(questions.filter((q) => q.id !== questionId));
-    }
-  };
+  const deleteQuestion = async (questionId: string) => {
+    if (!confirm(t("editQuiz.confirmDeleteQuestion"))) return;
 
+    // Si c'est une nouvelle question (pas encore en DB), supprimer juste localement
+    if (questionId.startsWith("temp_")) {
+      setQuestions(questions.filter((q) => q.id !== questionId));
+      return;
+    }
+
+    // Sinon, supprimer de la base de données
+    const { error } = await supabase
+      .from("questions")
+      .delete()
+      .eq("id", questionId);
+
+    if (error) {
+      console.error("Error deleting question:", error);
+      alert(t("editQuiz.deleteQuestionError"));
+      return;
+    }
+
+    // Mettre à jour la liste locale
+    setQuestions(questions.filter((q) => q.id !== questionId));
+
+    alert(t("editQuiz.deleteQuestionSuccess"));
+  };
   const updateOption = (index: number, value: string) => {
     if (!editingQuestion) return;
 
@@ -275,6 +300,26 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         })
         .eq("id", quizId);
 
+      const { data: existingQuestions } = await supabase
+        .from("questions")
+        .select("id")
+        .eq("quiz_id", quizId);
+
+      if (existingQuestions) {
+        const currentQuestionIds = questions
+          .filter((q) => !q.isNew)
+          .map((q) => q.id);
+
+        const questionsToDelete = existingQuestions
+          .filter((eq) => !currentQuestionIds.includes(eq.id))
+          .map((eq) => eq.id);
+
+        if (questionsToDelete.length > 0) {
+          await supabase.from("questions").delete().in("id", questionsToDelete);
+        }
+      }
+
+      // Sauvegarder ou mettre à jour les questions
       for (const question of questions) {
         if (question.isNew) {
           const { id, isNew, ...questionData } = question;
@@ -428,7 +473,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   </label>
                   <select
                     value={quizLanguage}
-                    onChange={(e) => setQuizLanguage(e.target.value as Language)}
+                    onChange={(e) =>
+                      setQuizLanguage(e.target.value as Language)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
                     {Object.entries(languageNames).map(([code, name]) => (
@@ -463,14 +510,22 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   </label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as QuizCategory)}
+                    onChange={(e) =>
+                      setCategory(e.target.value as QuizCategory)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
                     <option value="flags">{getCategoryLabel("flags")}</option>
-                    <option value="capitals">{getCategoryLabel("capitals")}</option>
+                    <option value="capitals">
+                      {getCategoryLabel("capitals")}
+                    </option>
                     <option value="maps">{getCategoryLabel("maps")}</option>
-                    <option value="borders">{getCategoryLabel("borders")}</option>
-                    <option value="regions">{getCategoryLabel("regions")}</option>
+                    <option value="borders">
+                      {getCategoryLabel("borders")}
+                    </option>
+                    <option value="regions">
+                      {getCategoryLabel("regions")}
+                    </option>
                     <option value="mixed">{getCategoryLabel("mixed")}</option>
                   </select>
                 </div>
@@ -481,11 +536,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   </label>
                   <select
                     value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                    onChange={(e) =>
+                      setDifficulty(e.target.value as Difficulty)
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
                     <option value="easy">{getDifficultyLabel("easy")}</option>
-                    <option value="medium">{getDifficultyLabel("medium")}</option>
+                    <option value="medium">
+                      {getDifficultyLabel("medium")}
+                    </option>
                     <option value="hard">{getDifficultyLabel("hard")}</option>
                   </select>
                 </div>
@@ -671,7 +730,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               onClick={() =>
                                 setEditingQuestion({
                                   ...editingQuestion,
-                                  correct_answer: t("createQuiz.trueFalse.true"),
+                                  correct_answer: t(
+                                    "createQuiz.trueFalse.true"
+                                  ),
                                 })
                               }
                               className={`p-3 rounded-lg border-2 font-medium transition-all ${
@@ -687,7 +748,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               onClick={() =>
                                 setEditingQuestion({
                                   ...editingQuestion,
-                                  correct_answer: t("createQuiz.trueFalse.false"),
+                                  correct_answer: t(
+                                    "createQuiz.trueFalse.false"
+                                  ),
                                 })
                               }
                               className={`p-3 rounded-lg border-2 font-medium transition-all ${
@@ -721,12 +784,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                     updateOption(idx, e.target.value)
                                   }
                                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                                  placeholder={`${t("editQuiz.option")} ${idx + 1}`}
+                                  placeholder={`${t("editQuiz.option")} ${
+                                    idx + 1
+                                  }`}
                                 />
                                 {option.trim() && (
                                   <ImageDropzone
                                     currentImageUrl={
-                                      editingQuestion.option_images?.[option] || ""
+                                      editingQuestion.option_images?.[option] ||
+                                      ""
                                     }
                                     onImageUploaded={(url) =>
                                       updateOptionImage(option, url)
@@ -852,7 +918,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               📷 {t("editQuiz.imageIncluded")}
                             </span>
                           )}
-                          <span>{getQuestionTypeLabel(question.question_type)}</span>
+                          <span>
+                            {getQuestionTypeLabel(question.question_type)}
+                          </span>
                           <span>
                             {question.points} {t("home.pts")}
                           </span>
