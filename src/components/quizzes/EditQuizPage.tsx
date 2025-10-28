@@ -10,11 +10,12 @@ import {
   ArrowLeft,
   CreditCard as Edit,
   Image,
+  X,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 
-type QuestionType = "mcq" | "single_answer" | "map_click" | "text_free";
+type QuestionType = "mcq" | "single_answer" | "map_click" | "text_free" | "true_false";
 type QuizCategory =
   | "flags"
   | "capitals"
@@ -23,8 +24,10 @@ type QuizCategory =
   | "regions"
   | "mixed";
 type Difficulty = "easy" | "medium" | "hard";
+
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
 type Question = Database["public"]["Tables"]["questions"]["Row"];
+type QuizType = Database["public"]["Tables"]["quiz_types"]["Row"];
 
 interface EditQuizPageProps {
   quizId: string;
@@ -39,20 +42,37 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<QuizCategory>("capitals");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
-  const [timeLimitSeconds, setTimeLimitSeconds] = useState<number>(30);
+  const [timeLimitSeconds, setTimeLimitSeconds] = useState(30);
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [quizLanguage, setQuizLanguage] = useState<Language>("fr");
+  const [quizTypes, setQuizTypes] = useState<QuizType[]>([]);
+  const [selectedQuizType, setSelectedQuizType] = useState<string>("");
+  const [randomizeQuestions, setRandomizeQuestions] = useState(false);
+  const [randomizeAnswers, setRandomizeAnswers] = useState(false);
+  const [isPublic, setIsPublic] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(false);
   const [questions, setQuestions] = useState<
     (Question & { isNew?: boolean })[]
   >([]);
-  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     loadQuiz();
+    loadQuizTypes();
   }, [quizId]);
+
+  const loadQuizTypes = async () => {
+    const { data } = await supabase
+      .from("quiz_types")
+      .select("*")
+      .eq("is_active", true)
+      .order("name");
+
+    if (data) setQuizTypes(data);
+  };
 
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
@@ -70,6 +90,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       setTimeLimitSeconds(quizData.time_limit_seconds || 30);
       setCoverImageUrl(quizData.cover_image_url || "");
       setQuizLanguage((quizData.language as Language) || "fr");
+      setSelectedQuizType(quizData.quiz_type_id || "");
+      setRandomizeQuestions(quizData.randomize_questions || false);
+      setRandomizeAnswers(quizData.randomize_answers || false);
+      setIsPublic(quizData.is_public || false);
+      setIsGlobal(quizData.is_global || false);
 
       const { data: questionsData } = await supabase
         .from("questions")
@@ -87,12 +112,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
   const updateOptionImage = (optionText: string, imageUrl: string) => {
     if (!editingQuestion) return;
+
     const newOptionImages = { ...(editingQuestion.option_images || {}) };
     if (imageUrl.trim()) {
       newOptionImages[optionText] = imageUrl;
     } else {
       delete newOptionImages[optionText];
     }
+
     setEditingQuestion({ ...editingQuestion, option_images: newOptionImages });
   };
 
@@ -113,6 +140,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       newQuestions[index] = editingQuestion;
       setQuestions(newQuestions);
     }
+
     setEditingQuestion(null);
   };
 
@@ -123,6 +151,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       question_text: "",
       question_type: "mcq" as QuestionType,
       correct_answer: "",
+      correct_answers: [],
       options: ["", "", "", ""],
       image_url: null,
       points: 100,
@@ -130,35 +159,99 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       created_at: new Date().toISOString(),
       isNew: true,
     };
+
     setQuestions([...questions, newQuestion]);
     setEditingQuestion(newQuestion);
   };
 
   const deleteQuestion = (questionId: string) => {
-    if (confirm(t('editQuiz.confirmDeleteQuestion'))) {
+    if (confirm(t("editQuiz.confirmDeleteQuestion"))) {
       setQuestions(questions.filter((q) => q.id !== questionId));
     }
   };
 
   const updateOption = (index: number, value: string) => {
     if (!editingQuestion) return;
+
     const newOptions = Array.isArray(editingQuestion.options)
       ? [...(editingQuestion.options as string[])]
       : ["", "", "", ""];
     newOptions[index] = value;
+
     setEditingQuestion({ ...editingQuestion, options: newOptions });
+  };
+
+  const addVariant = () => {
+    if (!editingQuestion) return;
+
+    const currentVariants = Array.isArray(editingQuestion.correct_answers)
+      ? editingQuestion.correct_answers
+      : [];
+
+    setEditingQuestion({
+      ...editingQuestion,
+      correct_answers: [...currentVariants, ""],
+    });
+  };
+
+  const updateVariant = (index: number, value: string) => {
+    if (!editingQuestion) return;
+
+    const newVariants = [...(editingQuestion.correct_answers || [])];
+    newVariants[index] = value;
+
+    setEditingQuestion({
+      ...editingQuestion,
+      correct_answers: newVariants,
+    });
+  };
+
+  const removeVariant = (index: number) => {
+    if (!editingQuestion) return;
+
+    const newVariants = (editingQuestion.correct_answers || []).filter(
+      (_: any, i: number) => i !== index
+    );
+
+    setEditingQuestion({
+      ...editingQuestion,
+      correct_answers: newVariants,
+    });
+  };
+
+  const makeQuizPrivate = async () => {
+    if (!quiz) return;
+
+    if (confirm("Voulez-vous vraiment rendre ce quiz privé ?")) {
+      const { error } = await supabase
+        .from("quizzes")
+        .update({
+          is_public: false,
+          is_global: false,
+          validation_status: null,
+          pending_validation: false,
+        })
+        .eq("id", quizId);
+
+      if (error) {
+        alert("Erreur lors de la modification");
+      } else {
+        alert("Quiz rendu privé avec succès !");
+        loadQuiz();
+      }
+    }
   };
 
   const saveQuiz = async () => {
     if (!profile || !quiz) return;
 
     if (!title.trim()) {
-      setError(t('editQuiz.titleRequired'));
+      setError(t("editQuiz.titleRequired"));
       return;
     }
 
     if (questions.length === 0) {
-      setError(t('editQuiz.atLeastOneQuestion'));
+      setError(t("editQuiz.atLeastOneQuestion"));
       return;
     }
 
@@ -176,6 +269,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           time_limit_seconds: timeLimitSeconds,
           cover_image_url: coverImageUrl || null,
           language: quizLanguage,
+          quiz_type_id: selectedQuizType || null,
+          randomize_questions: randomizeQuestions,
+          randomize_answers: randomizeAnswers,
         })
         .eq("id", quizId);
 
@@ -191,6 +287,13 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     : []
                   ).filter((opt: string) => opt.trim())
                 : null,
+            correct_answers:
+              question.question_type === "single_answer" ||
+              question.question_type === "text_free"
+                ? Array.isArray(question.correct_answers)
+                  ? question.correct_answers.filter((v: string) => v.trim())
+                  : []
+                : null,
           });
         } else {
           const { isNew, ...questionData } = question;
@@ -200,6 +303,15 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
               question_text: questionData.question_text,
               question_type: questionData.question_type,
               correct_answer: questionData.correct_answer,
+              correct_answers:
+                questionData.question_type === "single_answer" ||
+                questionData.question_type === "text_free"
+                  ? Array.isArray(questionData.correct_answers)
+                    ? questionData.correct_answers.filter((v: string) =>
+                        v.trim()
+                      )
+                    : []
+                  : null,
               options:
                 questionData.question_type === "mcq"
                   ? (Array.isArray(questionData.options)
@@ -208,6 +320,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     ).filter((opt: string) => opt.trim())
                   : null,
               image_url: questionData.image_url,
+              option_images: questionData.option_images || null,
               points: questionData.points,
               order_index: questionData.order_index,
             })
@@ -215,10 +328,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         }
       }
 
-      alert(t('editQuiz.updateSuccess'));
+      alert(t("editQuiz.updateSuccess"));
       onNavigate("quizzes");
     } catch (err: any) {
-      setError(err.message || t('editQuiz.updateError'));
+      setError(err.message || t("editQuiz.updateError"));
     } finally {
       setSaving(false);
     }
@@ -241,7 +354,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">{t('editQuiz.loadingQuiz')}</p>
+          <p className="text-gray-600">{t("editQuiz.loadingQuiz")}</p>
         </div>
       </div>
     );
@@ -249,382 +362,539 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <button
-          onClick={() => onNavigate("quizzes")}
-          className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          {t('editQuiz.backToQuizzes')}
-        </button>
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          {t('editQuiz.title')}
+      <button
+        onClick={() => onNavigate("quizzes")}
+        className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
+      >
+        <ArrowLeft className="w-5 h-5 mr-2" />
+        {t("editQuiz.backToQuizzes")}
+      </button>
+
+      <div className="bg-white rounded-xl shadow-md p-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          {t("editQuiz.title")}
         </h1>
-        <p className="text-gray-600">{t('editQuiz.subtitle')}</p>
-      </div>
+        <p className="text-gray-600 mb-8">{t("editQuiz.subtitle")}</p>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          {t('editQuiz.quizInfo')}
-        </h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editQuiz.quizTitle')} *
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              placeholder={t('editQuiz.titlePlaceholder')}
-            />
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
           </div>
+        )}
 
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('editQuiz.description')}
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              rows={3}
-              placeholder={t('editQuiz.descriptionPlaceholder')}
-            />
-          </div>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              {t("editQuiz.quizInfo")}
+            </h2>
 
-          <div>
-            <ImageDropzone
-              label={t('editQuiz.coverImage')}
-              currentImageUrl={coverImageUrl}
-              onImageUploaded={(url) => setCoverImageUrl(url)}
-              bucketName="quiz-images"
-            />
-          </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t("editQuiz.quizTitle")} *
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  placeholder={t("editQuiz.titlePlaceholder")}
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editQuiz.language')} *
-              </label>
-              <select
-                value={quizLanguage}
-                onChange={(e) => setQuizLanguage(e.target.value as Language)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              >
-                {Object.entries(languageNames).map(([code, name]) => (
-                  <option key={code} value={code}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t("editQuiz.description")}
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  rows={3}
+                  placeholder={t("editQuiz.descriptionPlaceholder")}
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editQuiz.category')} *
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as QuizCategory)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              >
-                <option value="flags">{getCategoryLabel('flags')}</option>
-                <option value="capitals">{getCategoryLabel('capitals')}</option>
-                <option value="maps">{getCategoryLabel('maps')}</option>
-                <option value="borders">{getCategoryLabel('borders')}</option>
-                <option value="regions">{getCategoryLabel('regions')}</option>
-                <option value="mixed">{getCategoryLabel('mixed')}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editQuiz.difficulty')} *
-              </label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              >
-                <option value="easy">{getDifficultyLabel('easy')}</option>
-                <option value="medium">{getDifficultyLabel('medium')}</option>
-                <option value="hard">{getDifficultyLabel('hard')}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('editQuiz.timePerQuestion')}
-              </label>
-              <input
-                type="number"
-                value={timeLimitSeconds}
-                onChange={(e) =>
-                  setTimeLimitSeconds(parseInt(e.target.value) || 30)
-                }
-                min="5"
-                max="120"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+              <ImageDropzone
+                currentImageUrl={coverImageUrl}
+                onImageUploaded={(url) => setCoverImageUrl(url)}
+                bucketName="quiz-images"
               />
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {t('editQuiz.questions')} ({questions.length})
-          </h2>
-          <button
-            onClick={addNewQuestion}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('editQuiz.addQuestion')}
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {questions.map((question, index) => (
-            <div
-              key={question.id}
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-300 transition-colors"
-            >
-              {editingQuestion?.id === question.id ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('editQuiz.question')} *
-                    </label>
-                    <input
-                      type="text"
-                      value={editingQuestion.question_text}
-                      onChange={(e) =>
-                        setEditingQuestion({
-                          ...editingQuestion,
-                          question_text: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <ImageDropzone
-                      label={t('editQuiz.questionImageOptional')}
-                      currentImageUrl={editingQuestion.image_url || ""}
-                      onImageUploaded={(url) =>
-                        setEditingQuestion({
-                          ...editingQuestion,
-                          image_url: url,
-                        })
-                      }
-                      bucketName="quiz-images"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('editQuiz.questionType.label')}
-                      </label>
-                      <select
-                        value={editingQuestion.question_type}
-                        onChange={(e) =>
-                          setEditingQuestion({
-                            ...editingQuestion,
-                            question_type: e.target.value as QuestionType,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                      >
-                        <option value="mcq">{getQuestionTypeLabel('mcq')}</option>
-                        <option value="single_answer">{getQuestionTypeLabel('single_answer')}</option>
-                        <option value="text_free">{getQuestionTypeLabel('text_free')}</option>
-                        <option value="map_click">{getQuestionTypeLabel('map_click')}</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t('editQuiz.points')}
-                      </label>
-                      <input
-                        type="number"
-                        value={editingQuestion.points}
-                        onChange={(e) =>
-                          setEditingQuestion({
-                            ...editingQuestion,
-                            points: parseInt(e.target.value) || 100,
-                          })
-                        }
-                        min="10"
-                        max="1000"
-                        step="10"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {editingQuestion.question_type === "mcq" && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('editQuiz.options')}
-                      </label>
-                      <div className="space-y-3">
-                        {(Array.isArray(editingQuestion.options)
-                          ? editingQuestion.options
-                          : ["", "", "", ""]
-                        ).map((option: string, idx: number) => (
-                          <div key={idx} className="space-y-2">
-                            <input
-                              type="text"
-                              value={option}
-                              onChange={(e) =>
-                                updateOption(idx, e.target.value)
-                              }
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                              placeholder={`${t('editQuiz.option')} ${idx + 1}`}
-                            />
-                            {option.trim() && (
-                              <ImageDropzone
-                                label={t('editQuiz.imageForOption').replace('{option}', option)}
-                                currentImageUrl={
-                                  editingQuestion.option_images?.[option] || ""
-                                }
-                                onImageUploaded={(url) =>
-                                  updateOptionImage(option, url)
-                                }
-                                bucketName="quiz-images"
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {t('editQuiz.correctAnswer')} *
-                    </label>
-                    {editingQuestion.question_type === "mcq" ? (
-                      <select
-                        value={editingQuestion.correct_answer}
-                        onChange={(e) =>
-                          setEditingQuestion({
-                            ...editingQuestion,
-                            correct_answer: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                      >
-                        <option value="">{t('editQuiz.select')}</option>
-                        {(Array.isArray(editingQuestion.options)
-                          ? editingQuestion.options
-                          : []
-                        )
-                          .filter((opt: string) => opt.trim())
-                          .map((option: string, idx: number) => (
-                            <option key={idx} value={option}>
-                              {option}
-                            </option>
-                          ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        value={editingQuestion.correct_answer}
-                        onChange={(e) =>
-                          setEditingQuestion({
-                            ...editingQuestion,
-                            correct_answer: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={saveQuestion}
-                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                    >
-                      {t('common.save')}
-                    </button>
-                    <button
-                      onClick={cancelEditingQuestion}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t("editQuiz.language")} *
+                  </label>
+                  <select
+                    value={quizLanguage}
+                    onChange={(e) => setQuizLanguage(e.target.value as Language)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  >
+                    {Object.entries(languageNames).map(([code, name]) => (
+                      <option key={code} value={code}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800 mb-1">
-                      {index + 1}. {question.question_text}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t("createQuiz.quizType")}
+                  </label>
+                  <select
+                    value={selectedQuizType}
+                    onChange={(e) => setSelectedQuizType(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  >
+                    <option value="">{t("createQuiz.noType")}</option>
+                    {quizTypes.map((type) => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t("editQuiz.category")} *
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value as QuizCategory)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  >
+                    <option value="flags">{getCategoryLabel("flags")}</option>
+                    <option value="capitals">{getCategoryLabel("capitals")}</option>
+                    <option value="maps">{getCategoryLabel("maps")}</option>
+                    <option value="borders">{getCategoryLabel("borders")}</option>
+                    <option value="regions">{getCategoryLabel("regions")}</option>
+                    <option value="mixed">{getCategoryLabel("mixed")}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t("editQuiz.difficulty")} *
+                  </label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  >
+                    <option value="easy">{getDifficultyLabel("easy")}</option>
+                    <option value="medium">{getDifficultyLabel("medium")}</option>
+                    <option value="hard">{getDifficultyLabel("hard")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t("editQuiz.timePerQuestion")}
+                </label>
+                <input
+                  type="number"
+                  value={timeLimitSeconds}
+                  onChange={(e) =>
+                    setTimeLimitSeconds(parseInt(e.target.value) || 30)
+                  }
+                  min="5"
+                  max="120"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                />
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={randomizeQuestions}
+                    onChange={(e) => setRandomizeQuestions(e.target.checked)}
+                    className="w-5 h-5 text-emerald-600 rounded focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">
+                    {t("createQuiz.randomizeQuestions")}
+                  </span>
+                </label>
+
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={randomizeAnswers}
+                    onChange={(e) => setRandomizeAnswers(e.target.checked)}
+                    className="w-5 h-5 text-emerald-600 rounded focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <span className="text-gray-700">
+                    {t("createQuiz.randomizeAnswers")}
+                  </span>
+                </label>
+              </div>
+
+              {/* Gestion publication */}
+              {quiz && (quiz.is_public || quiz.is_global) && (
+                <div className="border-t pt-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm font-medium text-blue-800">
+                      Statut actuel :{" "}
+                      {quiz.is_global
+                        ? "✅ Quiz public validé"
+                        : quiz.pending_validation
+                        ? "⏳ En attente de validation"
+                        : "📤 Publié"}
                     </p>
-                    {question.image_url && (
-                      <p className="text-xs text-blue-600 mb-2">
-                        📷 {t('editQuiz.imageIncluded')}
-                      </p>
-                    )}
-                    <div className="flex items-center space-x-3 text-sm text-gray-600">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {getQuestionTypeLabel(question.question_type)}
-                      </span>
-                      <span>{question.points} {t('home.pts')}</span>
-                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => startEditingQuestion(question)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => deleteQuestion(question.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={makeQuizPrivate}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    🔒 Rendre privé
+                  </button>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="flex space-x-4">
-        <button
-          onClick={() => onNavigate("quizzes")}
-          className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-        >
-          {t('common.cancel')}
-        </button>
-        <button
-          onClick={saveQuiz}
-          disabled={saving}
-          className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-        >
-          <Save className="w-5 h-5 mr-2" />
-          {saving ? t('editQuiz.saving') : t('editQuiz.saveChanges')}
-        </button>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {t("editQuiz.questions")} ({questions.length})
+              </h2>
+              <button
+                onClick={addNewQuestion}
+                className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                <span>{t("editQuiz.addQuestion")}</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {questions.map((question, index) => (
+                <div
+                  key={question.id}
+                  className="border border-gray-200 rounded-lg p-6"
+                >
+                  {editingQuestion?.id === question.id ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t("editQuiz.question")} *
+                        </label>
+                        <input
+                          type="text"
+                          value={editingQuestion.question_text}
+                          onChange={(e) =>
+                            setEditingQuestion({
+                              ...editingQuestion,
+                              question_text: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+
+                      <ImageDropzone
+                        currentImageUrl={editingQuestion.image_url || ""}
+                        onImageUploaded={(url) =>
+                          setEditingQuestion({
+                            ...editingQuestion,
+                            image_url: url,
+                          })
+                        }
+                        bucketName="quiz-images"
+                      />
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t("editQuiz.questionType.label")}
+                          </label>
+                          <select
+                            value={editingQuestion.question_type}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                question_type: e.target.value as QuestionType,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          >
+                            <option value="mcq">
+                              {getQuestionTypeLabel("mcq")}
+                            </option>
+                            <option value="true_false">
+                              {t("createQuiz.trueFalse.type")}
+                            </option>
+                            <option value="single_answer">
+                              {getQuestionTypeLabel("single_answer")}
+                            </option>
+                            <option value="text_free">
+                              {getQuestionTypeLabel("text_free")}
+                            </option>
+                            <option value="map_click">
+                              {getQuestionTypeLabel("map_click")}
+                            </option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t("editQuiz.points")}
+                          </label>
+                          <input
+                            type="number"
+                            value={editingQuestion.points}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                points: parseInt(e.target.value) || 100,
+                              })
+                            }
+                            min="10"
+                            max="1000"
+                            step="10"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {editingQuestion.question_type === "true_false" && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-800 mb-3">
+                            {t("createQuiz.trueFalse.description")}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <button
+                              onClick={() =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  correct_answer: t("createQuiz.trueFalse.true"),
+                                })
+                              }
+                              className={`p-3 rounded-lg border-2 font-medium transition-all ${
+                                editingQuestion.correct_answer ===
+                                t("createQuiz.trueFalse.true")
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                  : "border-gray-300 hover:border-emerald-300"
+                              }`}
+                            >
+                              ✓ {t("createQuiz.trueFalse.true")}
+                            </button>
+                            <button
+                              onClick={() =>
+                                setEditingQuestion({
+                                  ...editingQuestion,
+                                  correct_answer: t("createQuiz.trueFalse.false"),
+                                })
+                              }
+                              className={`p-3 rounded-lg border-2 font-medium transition-all ${
+                                editingQuestion.correct_answer ===
+                                t("createQuiz.trueFalse.false")
+                                  ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                  : "border-gray-300 hover:border-emerald-300"
+                              }`}
+                            >
+                              ✗ {t("createQuiz.trueFalse.false")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {editingQuestion.question_type === "mcq" && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t("editQuiz.options")}
+                          </label>
+                          <div className="space-y-3">
+                            {(Array.isArray(editingQuestion.options)
+                              ? editingQuestion.options
+                              : ["", "", "", ""]
+                            ).map((option: string, idx: number) => (
+                              <div key={idx} className="space-y-2">
+                                <input
+                                  type="text"
+                                  value={option}
+                                  onChange={(e) =>
+                                    updateOption(idx, e.target.value)
+                                  }
+                                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                                  placeholder={`${t("editQuiz.option")} ${idx + 1}`}
+                                />
+                                {option.trim() && (
+                                  <ImageDropzone
+                                    currentImageUrl={
+                                      editingQuestion.option_images?.[option] || ""
+                                    }
+                                    onImageUploaded={(url) =>
+                                      updateOptionImage(option, url)
+                                    }
+                                    bucketName="quiz-images"
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {t("editQuiz.correctAnswer")} *
+                        </label>
+                        {editingQuestion.question_type === "mcq" ? (
+                          <select
+                            value={editingQuestion.correct_answer}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                correct_answer: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          >
+                            <option value="">{t("editQuiz.select")}</option>
+                            {(Array.isArray(editingQuestion.options)
+                              ? editingQuestion.options
+                              : []
+                            )
+                              .filter((opt: string) => opt.trim())
+                              .map((option: string, idx: number) => (
+                                <option key={idx} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                          </select>
+                        ) : editingQuestion.question_type !== "true_false" ? (
+                          <input
+                            type="text"
+                            value={editingQuestion.correct_answer}
+                            onChange={(e) =>
+                              setEditingQuestion({
+                                ...editingQuestion,
+                                correct_answer: e.target.value,
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          />
+                        ) : null}
+                      </div>
+
+                      {(editingQuestion.question_type === "single_answer" ||
+                        editingQuestion.question_type === "text_free") && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t("createQuiz.variants")}
+                          </label>
+                          <div className="space-y-2">
+                            {(editingQuestion.correct_answers || []).map(
+                              (variant: string, index: number) => (
+                                <div key={index} className="flex space-x-2">
+                                  <input
+                                    type="text"
+                                    value={variant}
+                                    onChange={(e) =>
+                                      updateVariant(index, e.target.value)
+                                    }
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                                    placeholder={t(
+                                      "createQuiz.variantPlaceholder"
+                                    ).replace("{number}", String(index + 1))}
+                                  />
+                                  <button
+                                    onClick={() => removeVariant(index)}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  >
+                                    <X className="w-5 h-5" />
+                                  </button>
+                                </div>
+                              )
+                            )}
+                            <button
+                              onClick={addVariant}
+                              className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                            >
+                              + {t("createQuiz.addVariant")}
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            {t("createQuiz.variantsDesc")}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex space-x-3 pt-4">
+                        <button
+                          onClick={saveQuestion}
+                          className="flex-1 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                        >
+                          {t("common.save")}
+                        </button>
+                        <button
+                          onClick={cancelEditingQuestion}
+                          className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                        >
+                          {t("common.cancel")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800 mb-2">
+                          {index + 1}. {question.question_text}
+                        </p>
+                        <div className="flex items-center space-x-3 text-sm text-gray-600">
+                          {question.image_url && (
+                            <span className="text-blue-600">
+                              📷 {t("editQuiz.imageIncluded")}
+                            </span>
+                          )}
+                          <span>{getQuestionTypeLabel(question.question_type)}</span>
+                          <span>
+                            {question.points} {t("home.pts")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => startEditingQuestion(question)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => deleteQuestion(question.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex space-x-4 pt-6">
+            <button
+              onClick={() => onNavigate("quizzes")}
+              className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              onClick={saveQuiz}
+              disabled={saving}
+              className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {saving ? t("editQuiz.saving") : t("editQuiz.saveChanges")}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
