@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
 import {
   Plus,
@@ -32,6 +33,7 @@ interface EditQuizPageProps {
 
 export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -82,6 +84,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
     setLoading(false);
   };
+
   const updateOptionImage = (optionText: string, imageUrl: string) => {
     if (!editingQuestion) return;
     const newOptionImages = { ...(editingQuestion.option_images || {}) };
@@ -92,6 +95,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     }
     setEditingQuestion({ ...editingQuestion, option_images: newOptionImages });
   };
+
   const startEditingQuestion = (question: Question) => {
     setEditingQuestion({ ...question });
   };
@@ -131,7 +135,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   };
 
   const deleteQuestion = (questionId: string) => {
-    if (confirm("Voulez-vous vraiment supprimer cette question?")) {
+    if (confirm(t('editQuiz.confirmDeleteQuestion'))) {
       setQuestions(questions.filter((q) => q.id !== questionId));
     }
   };
@@ -149,12 +153,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     if (!profile || !quiz) return;
 
     if (!title.trim()) {
-      setError("Le titre ne peut pas être vide");
+      setError(t('editQuiz.titleRequired'));
       return;
     }
 
     if (questions.length === 0) {
-      setError("Ajoutez au moins une question");
+      setError(t('editQuiz.atLeastOneQuestion'));
       return;
     }
 
@@ -211,13 +215,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         }
       }
 
-      alert("Quiz mis à jour avec succès!");
+      alert(t('editQuiz.updateSuccess'));
       onNavigate("quizzes");
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la mise à jour du quiz");
+      setError(err.message || t('editQuiz.updateError'));
     } finally {
       setSaving(false);
     }
+  };
+
+  const getCategoryLabel = (cat: string) => {
+    return t(`quizzes.category.${cat}` as any);
+  };
+
+  const getDifficultyLabel = (diff: string) => {
+    return t(`quizzes.difficulty.${diff}` as any);
+  };
+
+  const getQuestionTypeLabel = (type: string) => {
+    return t(`editQuiz.questionType.${type}` as any);
   };
 
   if (loading) {
@@ -225,7 +241,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du quiz...</p>
+          <p className="text-gray-600">{t('editQuiz.loadingQuiz')}</p>
         </div>
       </div>
     );
@@ -239,12 +255,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour aux quiz
+          {t('editQuiz.backToQuizzes')}
         </button>
         <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Modifier le quiz
+          {t('editQuiz.title')}
         </h1>
-        <p className="text-gray-600">Éditez votre quiz de géographie</p>
+        <p className="text-gray-600">{t('editQuiz.subtitle')}</p>
       </div>
 
       {error && (
@@ -255,39 +271,39 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Informations du quiz
+          {t('editQuiz.quizInfo')}
         </h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Titre du quiz *
+              {t('editQuiz.quizTitle')} *
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              placeholder="Ex: Capitales d'Europe"
+              placeholder={t('editQuiz.titlePlaceholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t('editQuiz.description')}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               rows={3}
-              placeholder="Décrivez votre quiz..."
+              placeholder={t('editQuiz.descriptionPlaceholder')}
             />
           </div>
 
           <div>
             <ImageDropzone
-              label="Image de couverture"
+              label={t('editQuiz.coverImage')}
               currentImageUrl={coverImageUrl}
               onImageUploaded={(url) => setCoverImageUrl(url)}
               bucketName="quiz-images"
@@ -297,7 +313,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Langue *
+                {t('editQuiz.language')} *
               </label>
               <select
                 value={quizLanguage}
@@ -314,40 +330,40 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Catégorie *
+                {t('editQuiz.category')} *
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as QuizCategory)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="flags">Drapeaux</option>
-                <option value="capitals">Capitales</option>
-                <option value="maps">Cartes</option>
-                <option value="borders">Frontières</option>
-                <option value="regions">Régions</option>
-                <option value="mixed">Mixte</option>
+                <option value="flags">{getCategoryLabel('flags')}</option>
+                <option value="capitals">{getCategoryLabel('capitals')}</option>
+                <option value="maps">{getCategoryLabel('maps')}</option>
+                <option value="borders">{getCategoryLabel('borders')}</option>
+                <option value="regions">{getCategoryLabel('regions')}</option>
+                <option value="mixed">{getCategoryLabel('mixed')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Difficulté *
+                {t('editQuiz.difficulty')} *
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Difficulty)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="easy">Facile</option>
-                <option value="medium">Moyen</option>
-                <option value="hard">Difficile</option>
+                <option value="easy">{getDifficultyLabel('easy')}</option>
+                <option value="medium">{getDifficultyLabel('medium')}</option>
+                <option value="hard">{getDifficultyLabel('hard')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Temps par question (sec)
+                {t('editQuiz.timePerQuestion')}
               </label>
               <input
                 type="number"
@@ -367,14 +383,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-800">
-            Questions ({questions.length})
+            {t('editQuiz.questions')} ({questions.length})
           </h2>
           <button
             onClick={addNewQuestion}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Ajouter une question
+            {t('editQuiz.addQuestion')}
           </button>
         </div>
 
@@ -388,7 +404,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Question *
+                      {t('editQuiz.question')} *
                     </label>
                     <input
                       type="text"
@@ -405,7 +421,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
                   <div>
                     <ImageDropzone
-                      label="Image de la question (optionnel)"
+                      label={t('editQuiz.questionImageOptional')}
                       currentImageUrl={editingQuestion.image_url || ""}
                       onImageUploaded={(url) =>
                         setEditingQuestion({
@@ -420,7 +436,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Type de question
+                        {t('editQuiz.questionType.label')}
                       </label>
                       <select
                         value={editingQuestion.question_type}
@@ -432,16 +448,16 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                       >
-                        <option value="mcq">QCM</option>
-                        <option value="single_answer">Réponse unique</option>
-                        <option value="text_free">Texte libre</option>
-                        <option value="map_click">Clic sur carte</option>
+                        <option value="mcq">{getQuestionTypeLabel('mcq')}</option>
+                        <option value="single_answer">{getQuestionTypeLabel('single_answer')}</option>
+                        <option value="text_free">{getQuestionTypeLabel('text_free')}</option>
+                        <option value="map_click">{getQuestionTypeLabel('map_click')}</option>
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Points
+                        {t('editQuiz.points')}
                       </label>
                       <input
                         type="number"
@@ -463,7 +479,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   {editingQuestion.question_type === "mcq" && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Options
+                        {t('editQuiz.options')}
                       </label>
                       <div className="space-y-3">
                         {(Array.isArray(editingQuestion.options)
@@ -478,11 +494,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                 updateOption(idx, e.target.value)
                               }
                               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                              placeholder={`Option ${idx + 1}`}
+                              placeholder={`${t('editQuiz.option')} ${idx + 1}`}
                             />
                             {option.trim() && (
                               <ImageDropzone
-                                label={`Image pour "${option}" (optionnel)`}
+                                label={t('editQuiz.imageForOption').replace('{option}', option)}
                                 currentImageUrl={
                                   editingQuestion.option_images?.[option] || ""
                                 }
@@ -500,7 +516,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Réponse correcte *
+                      {t('editQuiz.correctAnswer')} *
                     </label>
                     {editingQuestion.question_type === "mcq" ? (
                       <select
@@ -513,7 +529,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                         }
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                       >
-                        <option value="">Sélectionnez</option>
+                        <option value="">{t('editQuiz.select')}</option>
                         {(Array.isArray(editingQuestion.options)
                           ? editingQuestion.options
                           : []
@@ -545,13 +561,13 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                       onClick={saveQuestion}
                       className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                     >
-                      Enregistrer
+                      {t('common.save')}
                     </button>
                     <button
                       onClick={cancelEditingQuestion}
                       className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -563,20 +579,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     </p>
                     {question.image_url && (
                       <p className="text-xs text-blue-600 mb-2">
-                        📷 Image incluse
+                        📷 {t('editQuiz.imageIncluded')}
                       </p>
                     )}
                     <div className="flex items-center space-x-3 text-sm text-gray-600">
                       <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {question.question_type === "mcq" && "QCM"}
-                        {question.question_type === "single_answer" &&
-                          "Réponse unique"}
-                        {question.question_type === "text_free" &&
-                          "Texte libre"}
-                        {question.question_type === "map_click" &&
-                          "Clic sur carte"}
+                        {getQuestionTypeLabel(question.question_type)}
                       </span>
-                      <span>{question.points} pts</span>
+                      <span>{question.points} {t('home.pts')}</span>
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -605,7 +615,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           onClick={() => onNavigate("quizzes")}
           className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
-          Annuler
+          {t('common.cancel')}
         </button>
         <button
           onClick={saveQuiz}
@@ -613,7 +623,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           <Save className="w-5 h-5 mr-2" />
-          {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+          {saving ? t('editQuiz.saving') : t('editQuiz.saveChanges')}
         </button>
       </div>
     </div>

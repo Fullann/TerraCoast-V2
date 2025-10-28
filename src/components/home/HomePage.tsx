@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import {
   Trophy,
   Target,
@@ -11,6 +12,7 @@ import {
   Dumbbell,
   AlertTriangle,
   Ban,
+  TrendingUp,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -24,6 +26,7 @@ export function HomePage({
   onNavigate: (view: string) => void;
 }) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
   const [recentSessions, setRecentSessions] = useState<GameSession[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
@@ -34,28 +37,32 @@ export function HomePage({
     maxDailyPoints: 0,
   });
 
+  const getDayText = (count: number) => {
+    return count > 1 ? t("common.days") : t("common.day");
+  };
+
   useEffect(() => {
     loadData();
   }, [profile]);
 
   const loadData = async () => {
-  if (!profile) return;
+    if (!profile) return;
 
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const { data: quizzes } = await supabase
-    .from('quizzes')
-    .select('*')
-    .or('is_public.eq.true,is_global.eq.true')
-    .eq('validation_status', 'approved') 
-    .gte('created_at', thirtyDaysAgo.toISOString()) 
-    .gte('total_plays', 1) 
-    .order('total_plays', { ascending: false }) 
-    .order('created_at', { ascending: false }) 
-    .limit(4); 
+    const { data: quizzes } = await supabase
+      .from("quizzes")
+      .select("*")
+      .or("is_public.eq.true,is_global.eq.true")
+      .eq("validation_status", "approved")
+      .gte("created_at", thirtyDaysAgo.toISOString())
+      .gte("total_plays", 1)
+      .order("total_plays", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(4);
 
-  if (quizzes) setRecentQuizzes(quizzes);
+    if (quizzes) setRecentQuizzes(quizzes);
 
     const { data: sessions } = await supabase
       .from("game_sessions")
@@ -123,11 +130,9 @@ export function HomePage({
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">
-          Bienvenue, {profile?.pseudo}!
+          {t("home.welcome")}, {profile?.pseudo}!
         </h1>
-        <p className="text-gray-600">
-          Prêt à tester vos connaissances en géographie?
-        </p>
+        <p className="text-gray-600">{t("home.readyToTest")}</p>
       </div>
 
       {profile?.is_banned && (
@@ -136,32 +141,32 @@ export function HomePage({
             <Ban className="w-8 h-8 text-red-600 mr-4 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="text-xl font-bold text-red-800 mb-2">
-                Compte banni
+                {t("home.accountBanned")}
               </h3>
               {profile.ban_until ? (
                 <>
                   <p className="text-red-700 mb-2">
-                    Votre compte est temporairement banni jusqu'au:{" "}
+                    {t("home.temporaryBanUntil")}:{" "}
                     <span className="font-bold">
                       {new Date(profile.ban_until).toLocaleString()}
                     </span>
                   </p>
                   <p className="text-red-700">
-                    Raison:{" "}
+                    {t("home.reason")}:{" "}
                     <span className="font-semibold">
-                      {profile.ban_reason || "Non spécifiée"}
+                      {profile.ban_reason || t("home.notSpecified")}
                     </span>
                   </p>
                 </>
               ) : (
                 <>
                   <p className="text-red-700 mb-2 font-bold">
-                    Votre compte est banni de manière permanente.
+                    {t("home.permanentBan")}
                   </p>
                   <p className="text-red-700">
-                    Raison:{" "}
+                    {t("home.reason")}:{" "}
                     <span className="font-semibold">
-                      {profile.ban_reason || "Non spécifiée"}
+                      {profile.ban_reason || t("home.notSpecified")}
                     </span>
                   </p>
                 </>
@@ -177,7 +182,7 @@ export function HomePage({
             <AlertTriangle className="w-8 h-8 text-yellow-600 mr-4 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="text-xl font-bold text-yellow-800 mb-3">
-                Avertissements reçus
+                {t("home.warningsReceived")}
               </h3>
               <div className="space-y-3">
                 {warnings.map((warning, index) => (
@@ -187,19 +192,19 @@ export function HomePage({
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-sm font-bold text-gray-700">
-                        Avertissement #{warnings.length - index}
+                        {t("home.warning")} #{warnings.length - index}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(warning.created_at).toLocaleDateString()}
                       </span>
                     </div>
                     <p className="text-sm text-gray-800 mb-2">
-                      <span className="font-medium">Raison:</span>{" "}
+                      <span className="font-medium">{t("home.reason")}:</span>{" "}
                       {warning.reason}
                     </p>
                     {warning.admin_notes && (
                       <p className="text-sm text-blue-700 bg-blue-50 rounded p-2">
-                        <span className="font-medium">Note:</span>{" "}
+                        <span className="font-medium">{t("home.note")}:</span>{" "}
                         {warning.admin_notes}
                       </p>
                     )}
@@ -207,8 +212,7 @@ export function HomePage({
                 ))}
               </div>
               <p className="text-sm text-yellow-700 mt-3">
-                Veuillez respecter les règles de la communauté pour éviter
-                d'autres sanctions.
+                {t("home.respectRules")}
               </p>
             </div>
           </div>
@@ -221,8 +225,10 @@ export function HomePage({
             <Target className="w-10 h-10" />
             <span className="text-3xl font-bold">{stats.totalPlays}</span>
           </div>
-          <h3 className="text-lg font-semibold">Parties jouées</h3>
-          <p className="text-emerald-100 text-sm">Total de vos sessions</p>
+          <h3 className="text-lg font-semibold">{t("home.gamesPlayed")}</h3>
+          <p className="text-emerald-100 text-sm">
+            {t("home.totalSessions")}
+          </p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
@@ -241,9 +247,10 @@ export function HomePage({
               />
             </div>
           </div>
-          <h3 className="text-lg font-semibold">Série en cours</h3>
+          <h3 className="text-lg font-semibold">{t("home.currentStreak")}</h3>
           <p className="text-orange-100 text-sm">
-            Record: {profile?.longest_streak || 0} jours
+            {t("home.record")}: {profile?.longest_streak || 0}{" "}
+            {getDayText(profile?.longest_streak || 0)}
           </p>
         </div>
 
@@ -252,9 +259,9 @@ export function HomePage({
             <Trophy className="w-10 h-10" />
             <span className="text-3xl font-bold">{stats.dailyPoints}</span>
           </div>
-          <h3 className="text-lg font-semibold">Points du jour</h3>
+          <h3 className="text-lg font-semibold">{t("home.dailyPoints")}</h3>
           <p className="text-amber-100 text-sm">
-            Record: {stats.maxDailyPoints} pts
+            {t("home.record")}: {stats.maxDailyPoints} {t("home.pts")}
           </p>
         </div>
       </div>
@@ -263,7 +270,7 @@ export function HomePage({
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
-              Actions rapides
+              {t("home.quickActions")}
             </h2>
           </div>
 
@@ -276,10 +283,10 @@ export function HomePage({
                 <BookOpen className="w-6 h-6 text-emerald-600" />
                 <div className="text-left">
                   <p className="font-semibold text-gray-800">
-                    Explorer les quiz
+                    {t("home.exploreQuizzes")}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Découvrez de nouveaux défis
+                    {t("home.discoverNewChallenges")}
                   </p>
                 </div>
               </div>
@@ -295,8 +302,12 @@ export function HomePage({
               <div className="flex items-center space-x-3">
                 <Award className="w-6 h-6 text-blue-600" />
                 <div className="text-left">
-                  <p className="font-semibold text-gray-800">Créer un quiz</p>
-                  <p className="text-sm text-gray-600">Partagez votre savoir</p>
+                  <p className="font-semibold text-gray-800">
+                    {t("quiz.create")}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {t("home.shareKnowledge")}
+                  </p>
                 </div>
               </div>
               <span className="text-blue-600 group-hover:translate-x-1 transition-transform">
@@ -312,9 +323,11 @@ export function HomePage({
                 <Dumbbell className="w-6 h-6 text-purple-600" />
                 <div className="text-left">
                   <p className="font-semibold text-gray-800">
-                    Mode Entraînement
+                    {t("home.trainingMode")}
                   </p>
-                  <p className="text-sm text-gray-600">Sans limite de temps</p>
+                  <p className="text-sm text-gray-600">
+                    {t("home.noTimeLimit")}
+                  </p>
                 </div>
               </div>
               <span className="text-purple-600 group-hover:translate-x-1 transition-transform">
@@ -329,8 +342,12 @@ export function HomePage({
               <div className="flex items-center space-x-3">
                 <Users className="w-6 h-6 text-amber-600" />
                 <div className="text-left">
-                  <p className="font-semibold text-gray-800">Défier un ami</p>
-                  <p className="text-sm text-gray-600">Duel en temps réel</p>
+                  <p className="font-semibold text-gray-800">
+                    {t("home.challengeFriend")}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {t("home.realTimeDuel")}
+                  </p>
                 </div>
               </div>
               <span className="text-amber-600 group-hover:translate-x-1 transition-transform">
@@ -343,17 +360,17 @@ export function HomePage({
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-800">
-              Quiz en tendance
+              {t("home.trendingQuizzes")}
             </h2>
             <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              Nouveaux & populaires
+              {t("home.newAndPopular")}
             </span>
           </div>
 
           <div className="space-y-3">
             {recentQuizzes.length === 0 ? (
               <p className="text-gray-500 text-center py-8">
-                Aucun quiz disponible
+                {t("quiz.noQuizzes")}
               </p>
             ) : (
               recentQuizzes.map((quiz, index) => (
@@ -367,7 +384,7 @@ export function HomePage({
                       {new Date(quiz.created_at).getTime() >
                         Date.now() - 7 * 24 * 60 * 60 * 1000 && (
                         <span className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full mb-2">
-                          🆕 NOUVEAU
+                          🆕 {t("home.new")}
                         </span>
                       )}
 
@@ -387,14 +404,14 @@ export function HomePage({
                       <div className="flex items-center space-x-4 mt-3">
                         <span className="text-xs text-gray-500 flex items-center">
                           <Trophy className="w-3 h-3 mr-1" />
-                          {quiz.total_plays} parties
+                          {quiz.total_plays} {t("home.games")}
                         </span>
 
                         {quiz.recentPlays !== undefined &&
                           quiz.recentPlays > 0 && (
                             <span className="text-xs text-emerald-600 font-medium flex items-center">
                               <TrendingUp className="w-3 h-3 mr-1" />
-                              {quiz.recentPlays} cette semaine
+                              {quiz.recentPlays} {t("home.thisWeek")}
                             </span>
                           )}
 
@@ -407,9 +424,11 @@ export function HomePage({
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {quiz.difficulty === "easy" && "⭐ Facile"}
-                          {quiz.difficulty === "medium" && "⭐⭐ Moyen"}
-                          {quiz.difficulty === "hard" && "⭐⭐⭐ Difficile"}
+                          {quiz.difficulty === "easy" && `⭐ ${t("home.easy")}`}
+                          {quiz.difficulty === "medium" &&
+                            `⭐⭐ ${t("home.medium")}`}
+                          {quiz.difficulty === "hard" &&
+                            `⭐⭐⭐ ${t("home.hard")}`}
                         </span>
                       </div>
                     </div>

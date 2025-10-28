@@ -41,7 +41,7 @@ interface CreateQuizPageProps {
 
 export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const { profile } = useAuth();
-  const { language: userLanguage } = useLanguage();
+  const { language: userLanguage, t } = useLanguage();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<QuizCategory>("capitals");
@@ -108,25 +108,32 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const getTrueFalseLabels = () => {
+    return {
+      true: t('createQuiz.trueFalse.true'),
+      false: t('createQuiz.trueFalse.false')
+    };
+  };
+
   const addQuestion = () => {
     if (!currentQuestion.question_text.trim()) {
-      setError("La question ne peut pas être vide");
+      setError(t('createQuiz.errors.questionEmpty'));
       return;
     }
 
     if (!currentQuestion.correct_answer.trim()) {
-      setError("La réponse correcte ne peut pas être vide");
+      setError(t('createQuiz.errors.answerEmpty'));
       return;
     }
 
     if (currentQuestion.question_type === "mcq") {
       const validOptions = currentQuestion.options.filter((opt) => opt.trim());
       if (validOptions.length < 2) {
-        setError("Il faut au moins 2 options pour un QCM");
+        setError(t('createQuiz.errors.minTwoOptions'));
         return;
       }
       if (!validOptions.includes(currentQuestion.correct_answer)) {
-        setError("La réponse correcte doit être dans les options");
+        setError(t('createQuiz.errors.answerMustBeOption'));
         return;
       }
     }
@@ -206,17 +213,17 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
     if (!profile) return;
 
     if (!title.trim()) {
-      setError("Le titre ne peut pas être vide");
+      setError(t('editQuiz.titleRequired'));
       return;
     }
 
     if (questions.length === 0) {
-      setError("Ajoutez au moins une question");
+      setError(t('editQuiz.atLeastOneQuestion'));
       return;
     }
 
     if (isPublic && profile.published_quiz_count >= 10) {
-      setError("Vous avez atteint la limite de 10 quiz publics");
+      setError(t('createQuiz.errors.maxQuizReached'));
       return;
     }
 
@@ -301,14 +308,20 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           .eq("id", profile.id);
       }
 
-      alert("Quiz créé avec succès!");
+      alert(t('createQuiz.success'));
       onNavigate("quizzes");
     } catch (err: any) {
-      setError(err.message || "Erreur lors de la création du quiz");
+      setError(err.message || t('createQuiz.errors.createError'));
     } finally {
       setSaving(false);
     }
   };
+
+  const getQuestionTypeLabel = (type: string) => {
+    return t(`editQuiz.questionType.${type}` as any);
+  };
+
+  const trueFalseLabels = getTrueFalseLabels();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -318,10 +331,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Retour aux quiz
+          {t('editQuiz.backToQuizzes')}
         </button>
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Créer un quiz</h1>
-        <p className="text-gray-600">Créez votre propre quiz de géographie</p>
+        <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('createQuiz.title')}</h1>
+        <p className="text-gray-600">{t('createQuiz.subtitle')}</p>
       </div>
 
       {error && (
@@ -332,39 +345,39 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Informations du quiz
+          {t('editQuiz.quizInfo')}
         </h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Titre du quiz *
+              {t('editQuiz.quizTitle')} *
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              placeholder="Ex: Capitales d'Europe"
+              placeholder={t('editQuiz.titlePlaceholder')}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t('editQuiz.description')}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               rows={3}
-              placeholder="Décrivez votre quiz..."
+              placeholder={t('editQuiz.descriptionPlaceholder')}
             />
           </div>
 
           <div>
             <ImageDropzone
-              label="Image de couverture"
+              label={t('editQuiz.coverImage')}
               currentImageUrl={coverImageUrl}
               onImageUploaded={(url) => setCoverImageUrl(url)}
               bucketName="quiz-images"
@@ -374,7 +387,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Langue *
+                {t('editQuiz.language')} *
               </label>
               <select
                 value={quizLanguage}
@@ -391,7 +404,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Catégorie *
+                {t('editQuiz.category')} *
               </label>
               <select
                 value={category}
@@ -408,7 +421,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Difficulté *
+                {t('editQuiz.difficulty')} *
               </label>
               <select
                 value={difficulty}
@@ -425,14 +438,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type de quiz
+                {t('createQuiz.quizType')}
               </label>
               <select
                 value={selectedQuizType}
                 onChange={(e) => setSelectedQuizType(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="">Aucun type</option>
+                <option value="">{t('createQuiz.noType')}</option>
                 {quizTypes.map((type) => (
                   <option key={type.id} value={type.id}>
                     {type.name}
@@ -443,7 +456,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Temps par question (sec)
+                {t('editQuiz.timePerQuestion')}
               </label>
               <input
                 type="number"
@@ -471,7 +484,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 htmlFor="randomizeQuestions"
                 className="text-sm text-gray-700"
               >
-                Mélanger l'ordre des questions
+                {t('createQuiz.randomizeQuestions')}
               </label>
             </div>
 
@@ -487,7 +500,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 htmlFor="randomizeAnswers"
                 className="text-sm text-gray-700"
               >
-                Mélanger l'ordre des réponses (QCM)
+                {t('createQuiz.randomizeAnswers')}
               </label>
             </div>
 
@@ -501,10 +514,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               />
               <label htmlFor="isPublic" className="text-sm text-gray-700">
                 {profile?.role === "admin"
-                  ? "Quiz public - En tant qu'admin, ce sera un quiz global approuvé immédiatement"
-                  : `Soumettre pour validation (${
-                      profile?.published_quiz_count || 0
-                    }/10 quiz publiés)`}
+                  ? t('createQuiz.publicQuizAdmin')
+                  : t('createQuiz.submitValidation').replace('{count}', String(profile?.published_quiz_count || 0))}
               </label>
             </div>
           </div>
@@ -513,13 +524,13 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-6">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          Ajouter une question
+          {t('createQuiz.addQuestion')}
         </h2>
 
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Question *
+              {t('editQuiz.question')} *
             </label>
             <input
               type="text"
@@ -531,14 +542,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-              placeholder="Ex: Quelle est la capitale de la France?"
+              placeholder={t('createQuiz.questionPlaceholder')}
             />
           </div>
 
           <div>
             <div className="flex space-x-2">
               <ImageDropzone
-                label="Image de la question (optionnel)"
+                label={t('editQuiz.questionImageOptional')}
                 currentImageUrl={currentQuestion.image_url || ""}
                 onImageUploaded={(url) =>
                   setCurrentQuestion({ ...currentQuestion, image_url: url })
@@ -547,14 +558,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Ajoutez une image pour illustrer votre question
+              {t('createQuiz.questionImageDesc')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Type de question *
+                {t('editQuiz.questionType.label')} *
               </label>
               <select
                 value={currentQuestion.question_type}
@@ -564,8 +575,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     setCurrentQuestion({
                       ...currentQuestion,
                       question_type: newType,
-                      options: ["Vrai", "Faux"],
-                      correct_answer: "Vrai",
+                      options: [trueFalseLabels.true, trueFalseLabels.false],
+                      correct_answer: trueFalseLabels.true,
                     });
                   } else {
                     setCurrentQuestion({
@@ -576,17 +587,17 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
               >
-                <option value="mcq">QCM (Choix multiples)</option>
-                <option value="single_answer">Réponse unique</option>
-                <option value="text_free">Texte libre</option>
-                <option value="true_false">Vrai / Faux</option>
-                <option value="map_click">Clic sur carte</option>
+                <option value="mcq">{getQuestionTypeLabel('mcq')}</option>
+                <option value="single_answer">{getQuestionTypeLabel('single_answer')}</option>
+                <option value="text_free">{getQuestionTypeLabel('text_free')}</option>
+                <option value="true_false">{t('createQuiz.trueFalse.type')}</option>
+                <option value="map_click">{getQuestionTypeLabel('map_click')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Points
+                {t('editQuiz.points')}
               </label>
               <input
                 type="number"
@@ -608,8 +619,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           {currentQuestion.question_type === "true_false" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-700">
-                Pour les questions Vrai/Faux, les options sont automatiquement
-                définies. Sélectionnez simplement la bonne réponse ci-dessous.
+                {t('createQuiz.trueFalse.description')}
               </p>
             </div>
           )}
@@ -617,7 +627,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           {currentQuestion.question_type === "mcq" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Options (2 minimum)
+                {t('createQuiz.optionsMinTwo')}
               </label>
               <div className="space-y-3">
                 {currentQuestion.options.map((option, index) => (
@@ -627,11 +637,11 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                      placeholder={`Option ${index + 1}`}
+                      placeholder={`${t('editQuiz.option')} ${index + 1}`}
                     />
                     {option.trim() && (
                       <ImageDropzone
-                        label={`Image pour "${option}"`}
+                        label={t('editQuiz.imageForOption').replace('{option}', option)}
                         currentImageUrl={
                           currentQuestion.option_images?.[option] || ""
                         }
@@ -645,15 +655,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 ))}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Ajoutez des images pour chaque option (ex: drapeaux). Parfait
-                pour les quiz visuels!
+                {t('createQuiz.optionImageDesc')}
               </p>
             </div>
           )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Réponse(s) correcte(s) *
+              {t('editQuiz.correctAnswer')} *
             </label>
             {currentQuestion.question_type === "true_false" ? (
               <div className="grid grid-cols-2 gap-4">
@@ -662,32 +671,32 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                   onClick={() =>
                     setCurrentQuestion({
                       ...currentQuestion,
-                      correct_answer: "Vrai",
+                      correct_answer: trueFalseLabels.true,
                     })
                   }
                   className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    currentQuestion.correct_answer === "Vrai"
+                    currentQuestion.correct_answer === trueFalseLabels.true
                       ? "border-green-500 bg-green-50 text-green-700"
                       : "border-gray-200 hover:border-green-300"
                   }`}
                 >
-                  ✓ Vrai
+                  ✓ {trueFalseLabels.true}
                 </button>
                 <button
                   type="button"
                   onClick={() =>
                     setCurrentQuestion({
                       ...currentQuestion,
-                      correct_answer: "Faux",
+                      correct_answer: trueFalseLabels.false,
                     })
                   }
                   className={`p-4 rounded-lg border-2 transition-all font-medium ${
-                    currentQuestion.correct_answer === "Faux"
+                    currentQuestion.correct_answer === trueFalseLabels.false
                       ? "border-red-500 bg-red-50 text-red-700"
                       : "border-gray-200 hover:border-red-300"
                   }`}
                 >
-                  ✗ Faux
+                  ✗ {trueFalseLabels.false}
                 </button>
               </div>
             ) : currentQuestion.question_type === "mcq" ? (
@@ -732,8 +741,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Sélectionne une ou plusieurs réponses correctes (ex: Capitales
-                  d'Afrique du Sud)
+                  {t('createQuiz.multipleCorrect')}
                 </p>
               </div>
             ) : (
@@ -748,14 +756,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     })
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                  placeholder="Ex: Paris"
+                  placeholder={t('createQuiz.answerPlaceholder')}
                 />
 
                 {(currentQuestion.question_type === "text_free" ||
                   currentQuestion.question_type === "single_answer") && (
                   <>
                     <p className="text-xs text-gray-600 font-medium">
-                      Variantes acceptées (optionnel)
+                      {t('createQuiz.variants')}
                     </p>
                     {(currentQuestion.correct_answers || []).map(
                       (variant, index) => (
@@ -777,9 +785,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                               });
                             }}
                             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                            placeholder={`Variante ${
-                              index + 1
-                            } (ex: paris, PARIS)`}
+                            placeholder={t('createQuiz.variantPlaceholder').replace('{number}', String(index + 1))}
                           />
                           <button
                             type="button"
@@ -814,11 +820,10 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                       className="px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center"
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      Ajouter une variante
+                      {t('createQuiz.addVariant')}
                     </button>
                     <p className="text-xs text-gray-500">
-                      Ajoutez plusieurs variantes acceptées (ex: "Paris",
-                      "paris", "La capitale de la France")
+                      {t('createQuiz.variantsDesc')}
                     </p>
                   </>
                 )}
@@ -829,14 +834,14 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           {editingIndex !== null && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
               <p className="text-blue-700 font-medium">
-                Modification de la question #{editingIndex + 1}
+                {t('createQuiz.editingQuestion').replace('{number}', String(editingIndex + 1))}
               </p>
               <button
                 onClick={cancelEdit}
                 className="px-3 py-1 text-blue-600 hover:bg-blue-100 rounded transition-colors flex items-center text-sm"
               >
                 <X className="w-4 h-4 mr-1" />
-                Annuler
+                {t('common.cancel')}
               </button>
             </div>
           )}
@@ -848,7 +853,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center"
               >
                 <X className="w-5 h-5 mr-2" />
-                Annuler
+                {t('common.cancel')}
               </button>
             )}
             <button
@@ -858,12 +863,12 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               {editingIndex !== null ? (
                 <>
                   <Save className="w-5 h-5 mr-2" />
-                  Mettre à jour
+                  {t('createQuiz.updateQuestion')}
                 </>
               ) : (
                 <>
                   <Plus className="w-5 h-5 mr-2" />
-                  Ajouter cette question
+                  {t('createQuiz.addThisQuestion')}
                 </>
               )}
             </button>
@@ -874,7 +879,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       {questions.length > 0 && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Questions ajoutées ({questions.length})
+            {t('createQuiz.questionsAdded')} ({questions.length})
           </h2>
 
           <div className="space-y-3">
@@ -890,31 +895,26 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                     </p>
                     <div className="flex items-center space-x-3 text-sm text-gray-600">
                       <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {q.question_type === "mcq" && "QCM"}
-                        {q.question_type === "single_answer" &&
-                          "Réponse unique"}
-                        {q.question_type === "text_free" && "Texte libre"}
-                        {q.question_type === "true_false" && "Vrai / Faux"}
-                        {q.question_type === "map_click" && "Clic sur carte"}
+                        {getQuestionTypeLabel(q.question_type)}
                       </span>
-                      <span>{q.points} pts</span>
+                      <span>{q.points} {t('home.pts')}</span>
                     </div>
                     <p className="text-sm text-emerald-700 mt-2">
-                      Réponse: {q.correct_answer}
+                      {t('createQuiz.answer')}: {q.correct_answer}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => editQuestion(index)}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Modifier"
+                      title={t('quiz.edit')}
                     >
                       <Edit className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => removeQuestion(index)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Supprimer"
+                      title={t('quiz.delete')}
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -931,7 +931,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           onClick={() => onNavigate("quizzes")}
           className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
         >
-          Annuler
+          {t('common.cancel')}
         </button>
         <button
           onClick={saveQuiz}
@@ -939,7 +939,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
           className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           <Save className="w-5 h-5 mr-2" />
-          {saving ? "Enregistrement..." : "Enregistrer le quiz"}
+          {saving ? t('editQuiz.saving') : t('createQuiz.saveQuiz')}
         </button>
       </div>
     </div>

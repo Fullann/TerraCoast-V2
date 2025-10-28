@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { Clock, CheckCircle, XCircle, Trophy, ArrowLeft } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -25,6 +26,7 @@ export function PlayQuizPage({
   onNavigate,
 }: PlayQuizPageProps) {
   const { profile, refreshProfile } = useAuth();
+  const { t } = useLanguage();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -220,7 +222,7 @@ export function PlayQuizPage({
         : userAnswer;
 
     if (!answer.trim()) {
-      alert("Veuillez sélectionner ou entrer une réponse");
+      alert(t('playQuiz.selectAnswer'));
       return;
     }
 
@@ -509,12 +511,22 @@ export function PlayQuizPage({
     }
   };
 
+  const getTrueFalseLabel = (value: string) => {
+    if (value.toLowerCase() === 'vrai' || value.toLowerCase() === 'true') {
+      return t('createQuiz.trueFalse.true');
+    }
+    if (value.toLowerCase() === 'faux' || value.toLowerCase() === 'false') {
+      return t('createQuiz.trueFalse.false');
+    }
+    return value;
+  };
+
   if (!quiz || questions.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement du quiz...</p>
+          <p className="text-gray-600">{t('playQuiz.loadingQuiz')}</p>
         </div>
       </div>
     );
@@ -530,12 +542,12 @@ export function PlayQuizPage({
           <div className="text-center mb-8">
             <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              {trainingMode ? "Entraînement terminé!" : "Quiz terminé!"}
+              {trainingMode ? t('playQuiz.trainingComplete') : t('playQuiz.quizComplete')}
             </h1>
             <p className="text-gray-600">
               {trainingMode
-                ? "Bon travail! Continue à t’entraîner"
-                : "Félicitations pour avoir complété ce quiz"}
+                ? t('playQuiz.trainingMessage')
+                : t('playQuiz.congratsMessage')}
             </p>
           </div>
 
@@ -543,11 +555,11 @@ export function PlayQuizPage({
             {!trainingMode && (
               <>
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-emerald-100 text-sm mb-2">Score total</p>
+                  <p className="text-emerald-100 text-sm mb-2">{t('playQuiz.totalScore')}</p>
                   <p className="text-4xl font-bold">{totalScore}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-purple-100 text-sm mb-2">XP gagné</p>
+                  <p className="text-purple-100 text-sm mb-2">{t('playQuiz.xpGained')}</p>
                   <p className="text-4xl font-bold">+{xpGained}</p>
                 </div>
               </>
@@ -558,7 +570,7 @@ export function PlayQuizPage({
                 trainingMode ? "md:col-span-1" : ""
               }`}
             >
-              <p className="text-blue-100 text-sm mb-2">Précision</p>
+              <p className="text-blue-100 text-sm mb-2">{t('playQuiz.accuracy')}</p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
 
@@ -567,7 +579,7 @@ export function PlayQuizPage({
                 trainingMode ? "md:col-span-1" : ""
               }`}
             >
-              <p className="text-amber-100 text-sm mb-2">Bonnes réponses</p>
+              <p className="text-amber-100 text-sm mb-2">{t('playQuiz.correctAnswers')}</p>
               <p className="text-4xl font-bold">
                 {correctAnswers}/{questions.length}
               </p>
@@ -576,7 +588,7 @@ export function PlayQuizPage({
 
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              Récapitulatif
+              {t('playQuiz.summary')}
             </h2>
             <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
               {questions.map((question, index) => {
@@ -596,13 +608,13 @@ export function PlayQuizPage({
                           {index + 1}. {question.question_text}
                         </p>
                         <p className="text-sm text-gray-600">
-                          Votre réponse:{" "}
+                          {t('playQuiz.yourAnswer')}:{" "}
                           <span className="font-medium">
-                            {answer?.user_answer || "Pas de réponse"}
+                            {answer?.user_answer || t('playQuiz.noAnswer')}
                           </span>
                         </p>
                         <p className="text-sm text-gray-600">
-                          Bonne réponse:{" "}
+                          {t('playQuiz.correctAnswer')}:{" "}
                           <span className="font-medium text-emerald-600">
                             {question.correct_answer}
                           </span>
@@ -619,7 +631,7 @@ export function PlayQuizPage({
                     {!trainingMode && (
                       <div className="mt-2 text-sm text-gray-600">
                         <span className="font-medium">
-                          {answer?.points_earned || 0} points
+                          {answer?.points_earned || 0} {t('home.pts')}
                         </span>
                         {" • "}
                         {answer?.time_taken || 0}s
@@ -636,7 +648,7 @@ export function PlayQuizPage({
               onClick={() => onNavigate("quizzes")}
               className="flex-1 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
             >
-              Explorer d'autres quiz
+              {t('playQuiz.exploreOtherQuizzes')}
             </button>
             <button
               onClick={() => {
@@ -647,7 +659,7 @@ export function PlayQuizPage({
               }}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Rejouer
+              {t('playQuiz.playAgain')}
             </button>
           </div>
         </div>
@@ -680,9 +692,7 @@ export function PlayQuizPage({
         <button
           onClick={() => {
             if (
-              confirm(
-                "Êtes-vous sûr de vouloir quitter? Votre progression sera perdue."
-              )
+              confirm(t('playQuiz.confirmQuit'))
             ) {
               onNavigate("quizzes");
             }
@@ -690,7 +700,7 @@ export function PlayQuizPage({
           className="flex items-center text-gray-600 hover:text-gray-800"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
-          Quitter
+          {t('playQuiz.quit')}
         </button>
       </div>
 
@@ -700,7 +710,7 @@ export function PlayQuizPage({
             <h2 className="text-2xl font-bold text-gray-800">{quiz.title}</h2>
             {trainingMode && (
               <span className="inline-block mt-1 px-3 py-1 bg-teal-100 text-teal-700 text-sm rounded-full font-medium">
-                Mode Entraînement
+                {t('playQuiz.trainingMode')}
               </span>
             )}
           </div>
@@ -737,7 +747,7 @@ export function PlayQuizPage({
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
             <span>
-              Question {currentQuestionIndex + 1} / {questions.length}
+              {t('playQuiz.question')} {currentQuestionIndex + 1} / {questions.length}
             </span>
             <span>{Math.round(progress)}%</span>
           </div>
@@ -759,7 +769,7 @@ export function PlayQuizPage({
           <div className="mb-6 flex justify-center">
             <img
               src={currentQuestion.image_url}
-              alt="Question"
+              alt={t('playQuiz.questionImage')}
               className="max-w-full max-h-96 rounded-lg shadow-md object-contain"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -772,38 +782,38 @@ export function PlayQuizPage({
           {currentQuestion.question_type === "true_false" && (
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => setSelectedOption("Vrai")}
+                onClick={() => setSelectedOption(currentQuestion.correct_answer === t('createQuiz.trueFalse.true') ? t('createQuiz.trueFalse.true') : 'Vrai')}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === "Vrai"
+                  isAnswered && (currentQuestion.correct_answer === t('createQuiz.trueFalse.true') || currentQuestion.correct_answer === 'Vrai')
                     ? "border-green-500 bg-green-50 text-green-700"
                     : isAnswered &&
-                      selectedOption === "Vrai" &&
-                      currentQuestion.correct_answer !== "Vrai"
+                      selectedOption === t('createQuiz.trueFalse.true') &&
+                      currentQuestion.correct_answer !== t('createQuiz.trueFalse.true')
                     ? "border-red-500 bg-red-50 text-red-700"
-                    : selectedOption === "Vrai"
+                    : selectedOption === t('createQuiz.trueFalse.true')
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-200 hover:border-emerald-300"
                 } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                ✓ Vrai
+                ✓ {t('createQuiz.trueFalse.true')}
               </button>
               <button
-                onClick={() => setSelectedOption("Faux")}
+                onClick={() => setSelectedOption(currentQuestion.correct_answer === t('createQuiz.trueFalse.false') ? t('createQuiz.trueFalse.false') : 'Faux')}
                 disabled={isAnswered}
                 className={`p-6 rounded-lg border-2 transition-all font-bold text-lg ${
-                  isAnswered && currentQuestion.correct_answer === "Faux"
+                  isAnswered && (currentQuestion.correct_answer === t('createQuiz.trueFalse.false') || currentQuestion.correct_answer === 'Faux')
                     ? "border-green-500 bg-green-50 text-green-700"
                     : isAnswered &&
-                      selectedOption === "Faux" &&
-                      currentQuestion.correct_answer !== "Faux"
+                      selectedOption === t('createQuiz.trueFalse.false') &&
+                      currentQuestion.correct_answer !== t('createQuiz.trueFalse.false')
                     ? "border-red-500 bg-red-50 text-red-700"
-                    : selectedOption === "Faux"
+                    : selectedOption === t('createQuiz.trueFalse.false')
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-200 hover:border-emerald-300"
                 } ${isAnswered ? "cursor-not-allowed" : "cursor-pointer"}`}
               >
-                ✗ Faux
+                ✗ {t('createQuiz.trueFalse.false')}
               </button>
             </div>
           )}
@@ -887,14 +897,14 @@ export function PlayQuizPage({
               autoFocus
               disabled={isAnswered}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none disabled:bg-gray-100"
-              placeholder="Entrez votre réponse..."
+              placeholder={t('playQuiz.enterAnswer')}
             />
           )}
 
           {currentQuestion.question_type === "map_click" && (
             <div className="p-8 border-2 border-dashed border-gray-300 rounded-lg text-center">
               <p className="text-gray-600">
-                Fonctionnalité de clic sur carte à venir
+                {t('playQuiz.mapClickComing')}
               </p>
             </div>
           )}
@@ -922,7 +932,7 @@ export function PlayQuizPage({
                 <>
                   <CheckCircle className="w-8 h-8 text-green-600" />
                   <div>
-                    <p className="font-bold text-green-800">Correct!</p>
+                    <p className="font-bold text-green-800">{t('playQuiz.correct')}</p>
                     <p className="text-sm text-green-700">
                       +
                       {answers[answers.length - 1]?.points_earned ||
@@ -930,7 +940,7 @@ export function PlayQuizPage({
                           Math.round((Date.now() - questionStartTime) / 1000),
                           currentQuestion.points
                         )}{" "}
-                      points
+                      {t('home.pts')}
                     </p>
                   </div>
                 </>
@@ -938,9 +948,9 @@ export function PlayQuizPage({
                 <>
                   <XCircle className="w-8 h-8 text-red-600" />
                   <div>
-                    <p className="font-bold text-red-800">Incorrect</p>
+                    <p className="font-bold text-red-800">{t('playQuiz.incorrect')}</p>
                     <p className="text-sm text-red-700">
-                      La bonne réponse était: {currentQuestion.correct_answer}
+                      {t('playQuiz.correctAnswerWas')}: {currentQuestion.correct_answer}
                     </p>
                   </div>
                 </>
@@ -960,7 +970,7 @@ export function PlayQuizPage({
             }
             className="w-full py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Valider
+            {t('playQuiz.validate')}
           </button>
         )}
       </div>

@@ -63,9 +63,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const isOwnProfile = !userId || userId === currentUserProfile?.id;
   const targetUserId = userId || currentUserProfile?.id;
   const isAdmin = currentUserProfile?.role === "admin";
+  
   const getDayText = (count: number) => {
-    return count > 1 ? "jours" : "jour";
+    return count > 1 ? t("common.days") : t("common.day");
   };
+
   useEffect(() => {
     loadProfileData();
   }, [targetUserId]);
@@ -179,11 +181,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     });
 
     if (error) {
-      alert("Erreur lors de l'envoi de la demande");
+      alert(t("profile.friendRequestError"));
       return;
     }
 
-    alert("Demande d'ami envoyée !");
+    alert(t("profile.friendRequestSent"));
     setFriendshipStatus("pending");
   };
 
@@ -222,11 +224,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     setSending(false);
 
     if (error) {
-      alert("Erreur lors de l'envoi du signalement");
+      alert(t("profile.reportError"));
       return;
     }
 
-    alert("Signalement envoyé avec succès");
+    alert(t("profile.reportSuccess"));
     setShowWarnModal(false);
     setWarnReason("");
   };
@@ -234,7 +236,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   if (!profile) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center text-gray-600">Chargement...</div>
+        <div className="text-center text-gray-600">{t("common.loading")}</div>
       </div>
     );
   }
@@ -305,7 +307,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors"
               >
                 <UserPlus className="w-5 h-5 mr-2" />
-                Ajouter en ami
+                {t("profile.addFriend")}
               </button>
             )}
 
@@ -315,7 +317,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
               >
                 <Clock className="w-5 h-5 mr-2" />
-                Demande envoyée
+                {t("profile.requestSent")}
               </button>
             )}
 
@@ -325,7 +327,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg cursor-not-allowed"
               >
                 <UserCheck className="w-5 h-5 mr-2" />
-                Ami
+                {t("profile.friend")}
               </button>
             )}
 
@@ -335,7 +337,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
               >
                 <History className="w-5 h-5 mr-2" />
-                Historique
+                {t("profile.history")}
               </button>
             )}
 
@@ -345,7 +347,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 className="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
               >
                 <AlertTriangle className="w-5 h-5 mr-2" />
-                Signaler
+                {t("profile.report")}
               </button>
             )}
           </div>
@@ -355,7 +357,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-blue-900">
-                Parties jouées
+                {t("profile.gamesPlayed")}
               </h3>
               <TrendingUp className="w-5 h-5 text-blue-600" />
             </div>
@@ -367,7 +369,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-green-900">
-                Taux de réussite
+                {t("profile.successRate")}
               </h3>
               <Trophy className="w-5 h-5 text-green-600" />
             </div>
@@ -379,7 +381,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-orange-900">
-                Série en cours
+                {t("home.currentStreak")}
               </h3>
               <Flame className="w-5 h-5 text-orange-600" />
             </div>
@@ -396,7 +398,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               />
             </div>
             <p className="text-xs text-orange-700 mt-1">
-              Record: {profile?.longest_streak || 0}{" "}
+              {t("home.record")}: {profile?.longest_streak || 0}{" "}
               {getDayText(profile?.longest_streak || 0)}
             </p>
           </div>
@@ -407,7 +409,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <Star className="w-6 h-6 mr-2 text-amber-500" />
-            Titres ({titles.length})
+            {t("profile.titles")} ({titles.length})
           </h2>
           <div className="space-y-2">
             {titles.map((userTitle) => (
@@ -432,14 +434,14 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 </div>
                 {userTitle.is_active && (
                   <span className="px-2 py-1 bg-amber-500 text-white text-xs rounded-full font-medium">
-                    Actif
+                    {t("profile.active")}
                   </span>
                 )}
               </div>
             ))}
             {titles.length === 0 && (
               <p className="text-center text-gray-500 py-8">
-                Aucun titre obtenu
+                {t("profile.noTitles")}
               </p>
             )}
           </div>
@@ -448,7 +450,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <TrendingUp className="w-6 h-6 mr-2 text-blue-500" />
-            Points des 7 derniers jours
+            {t("profile.last7Days")}
           </h2>
           <div className="space-y-2">
             {dailyStats.length > 0 ? (
@@ -476,7 +478,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                         />
                       </div>
                       <span className="text-sm font-bold text-gray-800 w-16 text-right">
-                        {stat.points} pts
+                        {stat.points} {t("home.pts")}
                       </span>
                     </div>
                   </div>
@@ -484,18 +486,18 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 <div className="mt-4 pt-4 border-t border-gray-200">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-700">
-                      Total
+                      {t("profile.total")}
                     </span>
                     <span className="text-lg font-bold text-emerald-600">
                       {dailyStats.reduce((sum, stat) => sum + stat.points, 0)}{" "}
-                      pts
+                      {t("home.pts")}
                     </span>
                   </div>
                 </div>
               </>
             ) : (
               <p className="text-center text-gray-500 py-8">
-                Aucune partie jouée cette semaine
+                {t("profile.noGamesThisWeek")}
               </p>
             )}
           </div>
@@ -522,7 +524,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             ))}
             {badges.length === 0 && (
               <p className="col-span-3 text-center text-gray-500 py-8">
-                Aucun badge obtenu
+                {t("profile.noBadges")}
               </p>
             )}
           </div>
@@ -531,7 +533,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
             <Calendar className="w-6 h-6 mr-2 text-emerald-500" />
-            Dernières parties
+            {t("profile.recentGames")}
           </h2>
           <div className="space-y-3">
             {sessions.slice(0, 5).map((session) => (
@@ -542,10 +544,10 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="font-medium text-gray-800">
-                      Score: {session.score} pts
+                      {t("profile.score")}: {session.score} {t("home.pts")}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Précision: {session.accuracy_percentage.toFixed(1)}%
+                      {t("profile.accuracy")}: {session.accuracy_percentage.toFixed(1)}%
                     </p>
                   </div>
                   <div className="text-right">
@@ -558,7 +560,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             ))}
             {sessions.length === 0 && (
               <p className="text-center text-gray-500 py-8">
-                Aucune partie jouée
+                {t("profile.noGames")}
               </p>
             )}
           </div>
@@ -570,18 +572,17 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <AlertTriangle className="w-6 h-6 mr-2 text-red-600" />
-              Signaler {profile.pseudo}
+              {t("profile.reportUser").replace("{user}", profile.pseudo)}
             </h3>
 
             <p className="text-gray-600 mb-4">
-              Décrivez la raison de votre signalement. Un administrateur
-              examinera votre demande.
+              {t("profile.reportDescription")}
             </p>
 
             <textarea
               value={warnReason}
               onChange={(e) => setWarnReason(e.target.value)}
-              placeholder="Raison du signalement..."
+              placeholder={t("profile.reportReason")}
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none"
             />
@@ -602,7 +603,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 disabled={!warnReason.trim() || sending}
                 className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {sending ? "Envoi..." : "Envoyer"}
+                {sending ? t("profile.sending") : t("chat.send")}
               </button>
             </div>
           </div>
@@ -614,7 +615,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-bold text-gray-800">
-                Historique des avertissements - {profile.pseudo}
+                {t("profile.warningHistory")} - {profile.pseudo}
               </h3>
               <button
                 onClick={() => {
@@ -629,7 +630,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
             {warningHistory.length === 0 ? (
               <p className="text-center text-gray-600 py-8">
-                Aucun avertissement trouvé
+                {t("profile.noWarnings")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -681,21 +682,21 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
-                      Signalé par:{" "}
+                      {t("profile.reportedBy")}:{" "}
                       <span className="font-medium">
-                        {warning.reporter_user?.pseudo || "Inconnu"}
+                        {warning.reporter_user?.pseudo || t("profile.unknown")}
                       </span>
                     </p>
                     <div className="bg-gray-50 rounded p-3 mb-2">
                       <p className="text-xs font-medium text-gray-600 mb-1">
-                        Raison:
+                        {t("home.reason")}:
                       </p>
                       <p className="text-sm text-gray-800">{warning.reason}</p>
                     </div>
                     {warning.admin_notes && (
                       <div className="bg-blue-50 rounded p-3 mb-2">
                         <p className="text-xs font-medium text-blue-700 mb-1">
-                          Notes admin:
+                          {t("profile.adminNotes")}:
                         </p>
                         <p className="text-sm text-blue-900">
                           {warning.admin_notes}
@@ -705,7 +706,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     {warning.temp_ban_until && (
                       <div className="bg-red-50 rounded p-3">
                         <p className="text-xs font-medium text-red-700">
-                          Ban temporaire jusqu'au:{" "}
+                          {t("profile.tempBanUntil")}:{" "}
                           {new Date(warning.temp_ban_until).toLocaleString()}
                         </p>
                       </div>
@@ -722,7 +723,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               }}
               className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
             >
-              Fermer
+              {t("common.close")}
             </button>
           </div>
         </div>

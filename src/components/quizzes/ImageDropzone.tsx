@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 interface ImageDropzoneProps {
@@ -13,8 +14,9 @@ export function ImageDropzone({
   onImageUploaded,
   currentImageUrl,
   bucketName = "quiz-images",
-  label = "Image (URL)",
+  label,
 }: ImageDropzoneProps) {
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -53,13 +55,13 @@ export function ImageDropzone({
   const uploadImage = async (file: File) => {
     // Vérifier le type de fichier
     if (!file.type.startsWith("image/")) {
-      setError("Veuillez sélectionner une image (JPG, PNG, GIF, WebP)");
+      setError(t('imageDropzone.invalidType'));
       return;
     }
 
     // Vérifier la taille (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setError("L'image ne doit pas dépasser 5 MB");
+      setError(t('imageDropzone.fileTooLarge'));
       return;
     }
 
@@ -93,7 +95,7 @@ export function ImageDropzone({
 
       onImageUploaded(publicUrl);
     } catch (err: any) {
-      setError(err.message || "Erreur lors de l'upload");
+      setError(err.message || t('imageDropzone.uploadError'));
     } finally {
       setUploading(false);
     }
@@ -109,7 +111,7 @@ export function ImageDropzone({
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
+        {label || t('imageDropzone.imageLabel')}
       </label>
 
       <div
@@ -140,7 +142,7 @@ export function ImageDropzone({
           <div className="relative">
             <img
               src={currentImageUrl}
-              alt="Aperçu"
+              alt={t('imageDropzone.preview')}
               className="w-full max-h-48 object-contain rounded-lg"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
@@ -167,13 +169,13 @@ export function ImageDropzone({
               )}
             </div>
             <p className="text-gray-600 font-medium mb-1">
-              {uploading ? "Upload en cours..." : "Glissez une image ici"}
+              {uploading ? t('imageDropzone.uploading') : t('imageDropzone.dragHere')}
             </p>
             <p className="text-sm text-gray-500">
-              ou cliquez pour sélectionner
+              {t('imageDropzone.orClickToSelect')}
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              JPG, PNG, GIF, WebP (max 5 MB)
+              {t('imageDropzone.supportedFormats')}
             </p>
           </div>
         )}
