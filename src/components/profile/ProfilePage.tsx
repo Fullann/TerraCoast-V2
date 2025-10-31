@@ -3,7 +3,18 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { supabase } from "../../lib/supabase";
 import {
-   Award,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+
+import {
+  Award,
   Trophy,
   Star,
   Calendar,
@@ -43,6 +54,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const [badges, setBadges] = useState<UserBadge[]>([]);
   const [titles, setTitles] = useState<UserTitle[]>([]);
   const [sessions, setSessions] = useState<GameSession[]>([]);
+  const [currentUserDailyStats, setCurrentUserDailyStats] = useState<
+    { date: string; points: number }[]
+  >([]);
   const [stats, setStats] = useState({
     totalGames: 0,
     winRate: 0,
@@ -152,6 +166,36 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         })
       );
       setDailyStats(dailyStatsArray);
+    }
+    if (!isOwnProfile && currentUserProfile) {
+      const { data: myLast7DaysData } = await supabase
+        .from("game_sessions")
+        .select("score, completed_at")
+        .eq("player_id", currentUserProfile.id)
+        .eq("completed", true)
+        .gte(
+          "completed_at",
+          new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+        )
+        .order("completed_at", { ascending: true });
+
+      if (myLast7DaysData) {
+        const myDailyPointsMap = new Map<string, number>();
+        myLast7DaysData.forEach((session) => {
+          const date = new Date(session.completed_at!).toLocaleDateString();
+          myDailyPointsMap.set(
+            date,
+            (myDailyPointsMap.get(date) || 0) + session.score
+          );
+        });
+        const myDailyStatsArray = Array.from(myDailyPointsMap.entries()).map(
+          ([date, points]) => ({
+            date,
+            points,
+          })
+        );
+        setCurrentUserDailyStats(myDailyStatsArray);
+      }
     }
   };
 
@@ -275,7 +319,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                   {activeTitle.emoji} {activeTitle.name}
                 </p>
               )}
-              <div className="flex items-center space-x-4 text-gray-600">
+              <div className="flex items-center space-x-4 text-gray-600 mb-3">
                 <div className="flex items-center">
                   <Trophy className="w-5 h-5 mr-1 text-yellow-500" />
                   <span className="font-medium">
@@ -287,6 +331,30 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                   <span className="font-medium">
                     {profile.experience_points} {t("profile.xp")}
                   </span>
+                </div>
+              </div>
+
+              {/* ✅ Barre de progression XP */}
+              <div className="w-full max-w-md">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-medium text-gray-600">
+                    {t("profile.level")} {profile.level}
+                  </span>
+                  <span className="text-xs font-medium text-gray-600">
+                    {t("profile.level")} {profile.level + 1}
+                  </span>
+                </div>
+                <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${
+                        ((profile.experience_points % 1000) / 1000) * 100
+                      }%`,
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-white opacity-20 animate-pulse"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -473,55 +541,151 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             <TrendingUp className="w-6 h-6 mr-2 text-blue-500" />
             {t("profile.last7Days")}
           </h2>
-          <div className="space-y-2">
-            {dailyStats.length > 0 ? (
-              <>
-                {dailyStats.map((stat, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <span className="text-sm font-medium text-gray-700">
-                      {stat.date}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-32 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-emerald-500 h-2 rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              (stat.points /
-                                Math.max(...dailyStats.map((s) => s.points))) *
-                                100,
-                              100
-                            )}%`,
-                          }}
-                        />
+
+          {dailyStats.length > 0 || currentUserDailyStats.length > 0 ? (
+            <div className="space-y-4">
+              {/* Préparer les données pour le graphique */}
+              {(() => {
+                // Créer un Set de toutes les dates
+                const allDates = new Set<string>();
+                const allDaysData: any[] = [];
+
+                // Générer les 7 derniers jours
+                for (let i = 6; i >= 0; i--) {
+                  const date = new Date();
+                  date.setDate(date.getDate() - i);
+                  const dateStr = date.toLocaleDateString();
+                  const dayLabel = date.toLocaleDateString("en-US", {
+                    weekday: "short",
+                  });
+
+                  const targetPoints =
+                    dailyStats.find((s) => s.date === dateStr)?.points || null;
+                  const currentPoints =
+                    currentUserDailyStats.find((s) => s.date === dateStr)
+                      ?.points || null;
+
+                  allDaysData.push({
+                    name: dayLabel,
+                    [isOwnProfile ? profile.pseudo : profile.pseudo]:
+                      targetPoints,
+                    ...(!isOwnProfile && currentUserDailyStats.length > 0
+                      ? {
+                          [currentUserProfile?.pseudo || "You"]: currentPoints,
+                        }
+                      : {}),
+                  });
+                }
+
+                const targetTotal = dailyStats.reduce(
+                  (sum, stat) => sum + stat.points,
+                  0
+                );
+                const currentTotal = currentUserDailyStats.reduce(
+                  (sum, stat) => sum + stat.points,
+                  0
+                );
+
+                return (
+                  <>
+                    {/* Affichage des totaux */}
+                    <div className="flex items-center justify-between mb-4 p-4 bg-gradient-to-r from-blue-50 to-emerald-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {isOwnProfile ? t("profile.you") : profile.pseudo}
+                          </span>
+                        </div>
+                        <span className="text-2xl font-bold text-blue-600">
+                          {targetTotal} {t("home.pts")}
+                        </span>
                       </div>
-                      <span className="text-sm font-bold text-gray-800 w-16 text-right">
-                        {stat.points} {t("home.pts")}
-                      </span>
+
+                      {!isOwnProfile && currentUserDailyStats.length > 0 && (
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {currentUserProfile?.pseudo}
+                            </span>
+                          </div>
+                          <span className="text-2xl font-bold text-purple-600">
+                            {currentTotal} {t("home.pts")}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      {t("profile.total")}
-                    </span>
-                    <span className="text-lg font-bold text-emerald-600">
-                      {dailyStats.reduce((sum, stat) => sum + stat.points, 0)}{" "}
-                      {t("home.pts")}
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="text-center text-gray-500 py-8">
-                {t("profile.noGamesThisWeek")}
-              </p>
-            )}
-          </div>
+
+                    {/* Graphique en ligne */}
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart
+                        data={allDaysData}
+                        margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="name"
+                          stroke="#9ca3af"
+                          style={{ fontSize: "12px" }}
+                        />
+                        <YAxis stroke="#9ca3af" style={{ fontSize: "12px" }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "#1f2937",
+                            border: "1px solid #4b5563",
+                            borderRadius: "8px",
+                            color: "#fff",
+                          }}
+                          cursor={{ stroke: "#e5e7eb", strokeWidth: 2 }}
+                          formatter={(value: any) =>
+                            value !== null ? [value, "pts"] : ["-", "pts"]
+                          }
+                        />
+                        <Legend
+                          wrapperStyle={{
+                            paddingTop: "20px",
+                            fontSize: "12px",
+                          }}
+                          iconType="circle"
+                        />
+
+                        {/* Ligne pour le profil visité */}
+                        <Line
+                          type="monotone"
+                          dataKey={
+                            isOwnProfile ? profile.pseudo : profile.pseudo
+                          }
+                          stroke="#3b82f6"
+                          strokeWidth={3}
+                          dot={{ fill: "#3b82f6", r: 5 }}
+                          activeDot={{ r: 7 }}
+                          connectNulls
+                        />
+
+                        {/* Ligne pour l'utilisateur actuel (comparaison) */}
+                        {!isOwnProfile && currentUserDailyStats.length > 0 && (
+                          <Line
+                            type="monotone"
+                            dataKey={currentUserProfile?.pseudo || "You"}
+                            stroke="#a855f7"
+                            strokeWidth={3}
+                            dot={{ fill: "#a855f7", r: 5 }}
+                            activeDot={{ r: 7 }}
+                            connectNulls
+                          />
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500 py-8">
+              {t("profile.noGamesThisWeek")}
+            </p>
+          )}
         </div>
       </div>
 

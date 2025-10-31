@@ -1,8 +1,20 @@
-import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useNotifications } from '../../contexts/NotificationContext';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { Trophy, User, LogOut, Home, BookOpen, Users, Shield, Swords, MessageCircle, Menu, X } from 'lucide-react';
+import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNotifications } from "../../contexts/NotificationContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import {
+  Trophy,
+  User,
+  LogOut,
+  Home,
+  BookOpen,
+  Users,
+  Shield,
+  Swords,
+  MessageCircle,
+  Menu,
+  X,
+} from "lucide-react";
 
 interface NavbarProps {
   currentView: string;
@@ -11,7 +23,8 @@ interface NavbarProps {
 
 export function Navbar({ currentView, onNavigate }: NavbarProps) {
   const { profile, signOut } = useAuth();
-  const { unreadMessages, pendingDuels, pendingFriendRequests } = useNotifications();
+  const { unreadMessages, pendingDuels, pendingFriendRequests } =
+    useNotifications();
   const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -19,7 +32,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     try {
       await signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
@@ -28,58 +41,68 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-2">
-              <Trophy className="w-8 h-8 text-emerald-600" />
-              <span className="text-xl font-bold text-gray-800">TerraCoast</span>
+            <div className="flex items-center">
+              <img
+                src="/logo.png"
+                alt="TerraCoast Logo"
+                className="h-12 w-auto"
+                onError={(e) => {
+                  // Fallback si le logo n'existe pas encore
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+              <span className="ml-3 text-2xl font-bold text-emerald-600">
+                TerraCoast
+              </span>
             </div>
 
             <div className="hidden md:flex space-x-1">
               <button
-                onClick={() => onNavigate('home')}
+                onClick={() => onNavigate("home")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'home'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "home"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Home className="w-5 h-5 inline mr-2" />
-                {t('nav.home')}
+                {t("nav.home")}
               </button>
 
               <button
-                onClick={() => onNavigate('quizzes')}
+                onClick={() => onNavigate("quizzes")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'quizzes'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "quizzes"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <BookOpen className="w-5 h-5 inline mr-2" />
-                {t('nav.quizzes')}
+                {t("nav.quizzes")}
               </button>
 
               <button
-                onClick={() => onNavigate('leaderboard')}
+                onClick={() => onNavigate("leaderboard")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  currentView === 'leaderboard'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "leaderboard"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Trophy className="w-5 h-5 inline mr-2" />
-                {t('nav.leaderboard')}
+                {t("nav.leaderboard")}
               </button>
 
               <button
-                onClick={() => onNavigate('friends')}
+                onClick={() => onNavigate("friends")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                  currentView === 'friends'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "friends"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Users className="w-5 h-5 inline mr-2" />
-                {t('nav.friends')}
+                {t("nav.friends")}
                 {pendingFriendRequests > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {pendingFriendRequests}
@@ -88,15 +111,15 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </button>
 
               <button
-                onClick={() => onNavigate('duels')}
+                onClick={() => onNavigate("duels")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                  currentView === 'duels'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "duels"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Swords className="w-5 h-5 inline mr-2" />
-                {t('nav.duels')}
+                {t("nav.duels")}
                 {pendingDuels > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {pendingDuels}
@@ -105,15 +128,15 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </button>
 
               <button
-                onClick={() => onNavigate('chat')}
+                onClick={() => onNavigate("chat")}
                 className={`px-4 py-2 rounded-lg font-medium transition-colors relative ${
-                  currentView === 'chat'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "chat"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <MessageCircle className="w-5 h-5 inline mr-2" />
-                {t('nav.chat')}
+                {t("nav.chat")}
                 {unreadMessages > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
                     {unreadMessages}
@@ -121,17 +144,17 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 )}
               </button>
 
-              {profile?.role === 'admin' && (
+              {profile?.role === "admin" && (
                 <button
-                  onClick={() => onNavigate('admin')}
+                  onClick={() => onNavigate("admin")}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    currentView === 'admin'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    currentView === "admin"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   <Shield className="w-5 h-5 inline mr-2" />
-                  {t('nav.admin')}
+                  {t("nav.admin")}
                 </button>
               )}
             </div>
@@ -139,19 +162,23 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => onNavigate('profile')}
+              onClick={() => onNavigate("profile")}
               className="hidden md:block text-right hover:bg-gray-50 p-2 rounded-lg transition-colors"
             >
-              <p className="text-sm font-medium text-gray-800">{profile?.pseudo}</p>
-              <p className="text-xs text-gray-500">{t('profile.level')} {profile?.level}</p>
+              <p className="text-sm font-medium text-gray-800">
+                {profile?.pseudo}
+              </p>
+              <p className="text-xs text-gray-500">
+                {t("profile.level")} {profile?.level}
+              </p>
             </button>
 
             <button
-              onClick={() => onNavigate('profile')}
+              onClick={() => onNavigate("profile")}
               className={`hidden md:block p-2 rounded-lg transition-colors ${
-                currentView === 'profile'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "profile"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <User className="w-6 h-6" />
@@ -160,7 +187,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <button
               onClick={handleSignOut}
               className="hidden md:block p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              title={t('nav.logout')}
+              title={t("nav.logout")}
             >
               <LogOut className="w-6 h-6" />
             </button>
@@ -169,7 +196,11 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
@@ -179,56 +210,72 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-4 py-2 space-y-1">
             <div className="py-3 border-b border-gray-200">
-              <p className="text-sm font-medium text-gray-800">{profile?.pseudo}</p>
-              <p className="text-xs text-gray-500">{t('profile.level')} {profile?.level}</p>
+              <p className="text-sm font-medium text-gray-800">
+                {profile?.pseudo}
+              </p>
+              <p className="text-xs text-gray-500">
+                {t("profile.level")} {profile?.level}
+              </p>
             </div>
 
             <button
-              onClick={() => { onNavigate('home'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("home");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'home'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "home"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <Home className="w-5 h-5 inline mr-2" />
-              {t('nav.home')}
+              {t("nav.home")}
             </button>
 
             <button
-              onClick={() => { onNavigate('quizzes'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("quizzes");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'quizzes'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "quizzes"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <BookOpen className="w-5 h-5 inline mr-2" />
-              {t('nav.quizzes')}
+              {t("nav.quizzes")}
             </button>
 
             <button
-              onClick={() => { onNavigate('leaderboard'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("leaderboard");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'leaderboard'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "leaderboard"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <Trophy className="w-5 h-5 inline mr-2" />
-              {t('nav.leaderboard')}
+              {t("nav.leaderboard")}
             </button>
 
             <button
-              onClick={() => { onNavigate('friends'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("friends");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors relative ${
-                currentView === 'friends'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "friends"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <Users className="w-5 h-5 inline mr-2" />
-              {t('nav.friends')}
+              {t("nav.friends")}
               {pendingFriendRequests > 0 && (
                 <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {pendingFriendRequests}
@@ -237,61 +284,76 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             </button>
 
             <button
-              onClick={() => { onNavigate('duels'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("duels");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'duels'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "duels"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <Swords className="w-5 h-5 inline mr-2" />
-              {t('nav.duels')}
+              {t("nav.duels")}
             </button>
 
             <button
-              onClick={() => { onNavigate('chat'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("chat");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'chat'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "chat"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <MessageCircle className="w-5 h-5 inline mr-2" />
-              {t('nav.chat')}
+              {t("nav.chat")}
             </button>
 
-            {profile?.role === 'admin' && (
+            {profile?.role === "admin" && (
               <button
-                onClick={() => { onNavigate('admin'); setMobileMenuOpen(false); }}
+                onClick={() => {
+                  onNavigate("admin");
+                  setMobileMenuOpen(false);
+                }}
                 className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentView === 'admin'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  currentView === "admin"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <Shield className="w-5 h-5 inline mr-2" />
-                {t('nav.admin')}
+                {t("nav.admin")}
               </button>
             )}
 
             <button
-              onClick={() => { onNavigate('profile'); setMobileMenuOpen(false); }}
+              onClick={() => {
+                onNavigate("profile");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                currentView === 'profile'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+                currentView === "profile"
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               <User className="w-5 h-5 inline mr-2" />
-              {t('nav.profile')}
+              {t("nav.profile")}
             </button>
 
             <button
-              onClick={() => { handleSignOut(); setMobileMenuOpen(false); }}
+              onClick={() => {
+                handleSignOut();
+                setMobileMenuOpen(false);
+              }}
               className="w-full text-left px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="w-5 h-5 inline mr-2" />
-              {t('nav.logout')}
+              {t("nav.logout")}
             </button>
           </div>
         </div>
