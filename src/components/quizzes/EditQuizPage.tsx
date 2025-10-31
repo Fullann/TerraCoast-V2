@@ -275,11 +275,21 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       return;
     }
 
+    if (!difficulty) {
+      setError("La difficulté est obligatoire");
+      return;
+    }
+
     if (questions.length === 0) {
       setError(t("editQuiz.atLeastOneQuestion"));
       return;
     }
 
+    const hasInvalidPoints = questions.some((q) => q.points > 500);
+    if (hasInvalidPoints) {
+      setError("Une ou plusieurs questions dépassent 500 points maximum");
+      return;
+    }
     setSaving(true);
     setError("");
 
@@ -422,8 +432,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         <p className="text-gray-600 mb-8">{t("editQuiz.subtitle")}</p>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">⚠️ Erreur</h3>
+                <button
+                  onClick={() => setError("")}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+              <p className="text-gray-600 mb-6">{error}</p>
+              <button
+                onClick={() => setError("")}
+                className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         )}
 
@@ -706,17 +733,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           <input
                             type="number"
                             value={editingQuestion.points}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              let value = parseInt(e.target.value) || 10;
+                              if (value > 500) value = 500;
+                              if (value < 10) value = 10;
                               setEditingQuestion({
                                 ...editingQuestion,
-                                points: parseInt(e.target.value) || 100,
-                              })
-                            }
+                                points: value,
+                              });
+                            }}
                             min="10"
-                            max="1000"
+                            max="500"
                             step="10"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                           />
+                          {editingQuestion.points > 500 && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Max 500 points par question
+                            </p>
+                          )}
                         </div>
                       </div>
 

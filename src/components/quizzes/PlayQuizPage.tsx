@@ -178,6 +178,22 @@ export function PlayQuizPage({
     sessionId,
   ]);
 
+  const normalizeAnswer = (answer: string): string => {
+    return (
+      answer
+        .toLowerCase()
+        .trim()
+        // Supprimer les accents
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        // Garder seulement les lettres, chiffres, espaces et tirets
+        .replace(/[^\w\s-]/g, "")
+        // Réduire les espaces multiples
+        .replace(/\s+/g, " ")
+        .trim()
+    );
+  };
+
   useEffect(() => {
     if (gameComplete || isAnswered || trainingMode) return;
 
@@ -303,8 +319,9 @@ export function PlayQuizPage({
         : [currentQuestion.correct_answer];
 
     const isCorrect = correctAnswers.some(
-      (ca) => answer.toLowerCase().trim() === ca.toLowerCase().trim()
+      (ca) => normalizeAnswer(answer) === normalizeAnswer(ca)
     );
+
     const pointsEarned = isCorrect
       ? calculatePoints(timeTaken, currentQuestion.points)
       : 0;
@@ -568,7 +585,13 @@ export function PlayQuizPage({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div
+            className={`grid gap-6 mb-8 ${
+              trainingMode
+                ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
+                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+            }`}
+          >
             {!trainingMode && (
               <>
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
@@ -586,22 +609,14 @@ export function PlayQuizPage({
               </>
             )}
 
-            <div
-              className={`bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center ${
-                trainingMode ? "md:col-span-1" : ""
-              }`}
-            >
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center">
               <p className="text-blue-100 text-sm mb-2">
                 {t("playQuiz.accuracy")}
               </p>
               <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
             </div>
 
-            <div
-              className={`bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white text-center ${
-                trainingMode ? "md:col-span-1" : ""
-              }`}
-            >
+            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white text-center">
               <p className="text-amber-100 text-sm mb-2">
                 {t("playQuiz.correctAnswers")}
               </p>
@@ -627,11 +642,11 @@ export function PlayQuizPage({
                     question.correct_answers.length > 0
                       ? question.correct_answers.some(
                           (ca) =>
-                            answer.user_answer.toLowerCase().trim() ===
-                            ca.toLowerCase().trim()
+                            normalizeAnswer(answer.user_answer) ===
+                            normalizeAnswer(ca)
                         )
-                      : answer.user_answer.toLowerCase().trim() ===
-                        question.correct_answer.toLowerCase().trim()));
+                      : normalizeAnswer(answer.user_answer) ===
+                        normalizeAnswer(question.correct_answer)));
 
                 return (
                   <div
@@ -1011,14 +1026,14 @@ export function PlayQuizPage({
               (isAnswered &&
                 (currentQuestion.question_type === "mcq" ||
                 currentQuestion.question_type === "true_false"
-                  ? selectedOption === currentQuestion.correct_answer
+                  ? normalizeAnswer(selectedOption) ===
+                    normalizeAnswer(currentQuestion.correct_answer)
                   : [
                       currentQuestion.correct_answer,
                       ...(currentQuestion.correct_answers || []),
                     ].some(
                       (ca) =>
-                        userAnswer.toLowerCase().trim() ===
-                        ca.toLowerCase().trim()
+                        normalizeAnswer(userAnswer) === normalizeAnswer(ca)
                     )))
                 ? "bg-green-50 border-2 border-green-300"
                 : "bg-red-50 border-2 border-red-300"
@@ -1029,14 +1044,14 @@ export function PlayQuizPage({
               (isAnswered &&
                 (currentQuestion.question_type === "mcq" ||
                 currentQuestion.question_type === "true_false"
-                  ? selectedOption === currentQuestion.correct_answer
+                  ? normalizeAnswer(selectedOption) ===
+                    normalizeAnswer(currentQuestion.correct_answer)
                   : [
                       currentQuestion.correct_answer,
                       ...(currentQuestion.correct_answers || []),
                     ].some(
                       (ca) =>
-                        userAnswer.toLowerCase().trim() ===
-                        ca.toLowerCase().trim()
+                        normalizeAnswer(userAnswer) === normalizeAnswer(ca)
                     ))) ? (
                 <>
                   <CheckCircle className="w-8 h-8 text-green-600" />
