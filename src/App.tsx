@@ -23,6 +23,7 @@ import { DifficultyManagementPage } from "./components/admin/DifficultyManagemen
 import { QuizValidationPage } from "./components/admin/QuizValidationPage";
 import { WarningsManagementPage } from "./components/admin/WarningsManagementPage";
 import { QuizTypeManagementPage } from "./components/admin/QuizTypeManagementPage";
+import { UserManagementPage } from "./components/admin/UserManagementPage";
 import { DuelsPage } from "./components/duels/DuelsPage";
 import { ChatPage } from "./components/chat/ChatPage";
 import { LandingPage } from "./components/landing/LandingPage";
@@ -182,6 +183,8 @@ function AppContent() {
         {currentView === "quiz-validation" && <QuizValidationPage />}
         {currentView === "warnings-management" && <WarningsManagementPage />}
         {currentView === "quiz-type-management" && <QuizTypeManagementPage />}
+        {currentView === "user-management" && <UserManagementPage />}
+
       </main>
     </div>
   );
