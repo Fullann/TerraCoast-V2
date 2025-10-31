@@ -63,6 +63,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState("");
 
   useEffect(() => {
     loadQuiz();
@@ -100,6 +102,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       setRandomizeAnswers(quizData.randomize_answers || false);
       setIsPublic(quizData.is_public || false);
       setIsGlobal(quizData.is_global || false);
+      setTags(quizData.tags || []);
 
       const { data: questionsData } = await supabase
         .from("questions")
@@ -134,6 +137,17 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
   const cancelEditingQuestion = () => {
     setEditingQuestion(null);
+  };
+  const addTag = () => {
+    const trimmedTag = currentTag.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
+      setTags([...tags, trimmedTag]);
+      setCurrentTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const saveQuestion = () => {
@@ -307,6 +321,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
           quiz_type_id: selectedQuizType || null,
           randomize_questions: randomizeQuestions,
           randomize_answers: randomizeAnswers,
+          tags: tags.length > 0 ? tags : null,
         })
         .eq("id", quizId);
 
@@ -492,6 +507,56 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                 onImageUploaded={(url) => setCoverImageUrl(url)}
                 bucketName="quiz-images"
               />
+              <div className="col-span-full">
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    {t("createQuiz.searchTags")}
+  </label>
+  <div className="flex gap-2 mb-2">
+    <input
+      type="text"
+      value={currentTag}
+      onChange={(e) => setCurrentTag(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addTag();
+        }
+      }}
+      placeholder={t("createQuiz.addTagPlaceholder")}
+      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+      maxLength={20}
+    />
+    <button
+      type="button"
+      onClick={addTag}
+      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+    >
+      <Plus className="w-5 h-5" />
+    </button>
+  </div>
+
+  {tags.length > 0 && (
+    <div className="flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium flex items-center gap-2"
+        >
+          #{tag}
+          <button
+            onClick={() => removeTag(tag)}
+            className="text-emerald-700 hover:text-emerald-900"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  )}
+  <p className="text-xs text-gray-500 mt-2">
+    {t("createQuiz.maxTags")} • {tags.length}/10
+  </p>
+</div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

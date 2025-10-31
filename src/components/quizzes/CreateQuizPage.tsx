@@ -61,6 +61,8 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const [randomizeQuestions, setRandomizeQuestions] = useState(false);
   const [randomizeAnswers, setRandomizeAnswers] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [currentTag, setCurrentTag] = useState("");
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -113,6 +115,17 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
       true: t("createQuiz.trueFalse.true"),
       false: t("createQuiz.trueFalse.false"),
     };
+  };
+  const addTag = () => {
+    const trimmedTag = currentTag.trim().toLowerCase();
+    if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
+      setTags([...tags, trimmedTag]);
+      setCurrentTag("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
   const addQuestion = () => {
@@ -253,6 +266,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
         randomize_answers: randomizeAnswers,
         language: quizLanguage,
         quiz_type_id: selectedQuizType || null,
+        tags: tags.length > 0 ? tags : null,
       };
 
       if (profile.role === "admin") {
@@ -400,6 +414,56 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               rows={3}
               placeholder={t("editQuiz.descriptionPlaceholder")}
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t("createQuiz.searchTags")}
+            </label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={currentTag}
+                placeholder={t("createQuiz.addTagPlaceholder")}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                maxLength={20}
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium flex items-center gap-2"
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="text-emerald-700 hover:text-emerald-900"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              {t("createQuiz.maxTags")}  • {tags.length}/10
+            </p>
           </div>
 
           <div>

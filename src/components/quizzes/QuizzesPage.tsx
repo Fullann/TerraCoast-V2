@@ -199,6 +199,12 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       .or("is_public.eq.true,is_global.eq.true")
       .order("total_plays", { ascending: false });
 
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      query = query.or(
+        `title.ilike.%${searchLower}%,description.ilike.%${searchLower}%,tags.cs.{"${searchLower}"}`
+      );
+    }
     if (categoryFilter !== "all") {
       query = query.eq("category", categoryFilter);
     }
@@ -248,7 +254,9 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   ).filter(
     (quiz) =>
       quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quiz.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      quiz.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quiz.tags &&
+        quiz.tags.some((tag) => tag.includes(searchTerm.toLowerCase())))
   );
 
   const getCategoryLabel = (categoryName: string) => {
@@ -460,6 +468,18 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                     >
                       {quiz.quiz_types.name}
                     </span>
+                  )}{" "}
+                  {quiz.tags && quiz.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {quiz.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full font-medium"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
 

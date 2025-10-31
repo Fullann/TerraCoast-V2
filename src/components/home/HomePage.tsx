@@ -48,21 +48,38 @@ export function HomePage({
   const loadData = async () => {
     if (!profile) return;
 
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    try {
+      const { data: allQuizzes, error } = await supabase
+        .from("quizzes")
+        .select("*")
+        .or("is_public.eq.true,is_global.eq.true");
 
-    const { data: quizzes } = await supabase
-      .from("quizzes")
-      .select("*")
-      .or("is_public.eq.true,is_global.eq.true")
-      .eq("validation_status", "approved")
-      .gte("created_at", thirtyDaysAgo.toISOString())
-      .gte("total_plays", 1)
-      .order("total_plays", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(4);
+      if (error) {
+        console.error("Erreur chargement quiz:", error);
+        return;
+      }
 
-    if (quizzes) setRecentQuizzes(quizzes);
+      if (allQuizzes && allQuizzes.length > 0) {
+        const now = Date.now();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+        const trendingQuizzes = allQuizzes
+          .map((quiz: any) => {
+            const quizAge = now - new Date(quiz.created_at).getTime();
+            const recencyScore = Math.max(0, 1 - quizAge / thirtyDaysMs);
+            const popularityScore = Math.min(1, (quiz.total_plays || 0) / 100);
+            const trendScore = popularityScore * 0.7 + recencyScore * 0.3;
+
+            return { ...quiz, trendScore };
+          })
+          .sort((a: any, b: any) => b.trendScore - a.trendScore)
+          .slice(0, 4);
+
+        setRecentQuizzes(trendingQuizzes);
+      }
+    } catch (err) {
+      console.error("Erreur:", err);
+    }
 
     const { data: sessions } = await supabase
       .from("game_sessions")
@@ -226,9 +243,7 @@ export function HomePage({
             <span className="text-3xl font-bold">{stats.totalPlays}</span>
           </div>
           <h3 className="text-lg font-semibold">{t("home.gamesPlayed")}</h3>
-          <p className="text-emerald-100 text-sm">
-            {t("home.totalSessions")}
-          </p>
+          <p className="text-emerald-100 text-sm">{t("home.totalSessions")}</p>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
