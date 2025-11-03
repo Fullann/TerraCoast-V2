@@ -459,6 +459,12 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
+    "profile.streakStartedOn": "Série commencée le",
+    "profile.streakTip": "Joue chaque jour pour prolonger ta série !",
+    "profile.daysToGo": "Jours restants",
+    "profile.noActiveStreak": "Aucune série active",
+    "profile.playToStartStreak": "Joue un quiz pour commencer une série",
+    "common.clickForDetails": "Clique pour plus de détails",
   },
   en: {
     "app.title": "TerraCoast",

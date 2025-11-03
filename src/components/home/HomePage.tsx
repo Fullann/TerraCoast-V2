@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Ban,
   TrendingUp,
+  X,
 } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 
@@ -30,6 +31,7 @@ export function HomePage({
   const [recentQuizzes, setRecentQuizzes] = useState<Quiz[]>([]);
   const [recentSessions, setRecentSessions] = useState<GameSession[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const [stats, setStats] = useState({
     totalPlays: 0,
     averageScore: 0,
@@ -39,6 +41,15 @@ export function HomePage({
 
   const getDayText = (count: number) => {
     return count > 1 ? t("common.days") : t("common.day");
+  };
+  const getStreakStartDate = () => {
+    if (!profile?.current_streak || profile.current_streak === 0) return null;
+
+    const today = new Date();
+    const streakStartDate = new Date();
+    streakStartDate.setDate(today.getDate() - (profile.current_streak - 1));
+
+    return streakStartDate;
   };
 
   useEffect(() => {
@@ -246,7 +257,10 @@ export function HomePage({
           <p className="text-emerald-100 text-sm">{t("home.totalSessions")}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg">
+        <div
+          className="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-6 text-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => setShowStreakModal(true)}
+        >
           <div className="flex items-center justify-between mb-4">
             <Flame className="w-10 h-10" />
             <div className="flex items-center space-x-2">
@@ -266,6 +280,9 @@ export function HomePage({
           <p className="text-orange-100 text-sm">
             {t("home.record")}: {profile?.longest_streak || 0}{" "}
             {getDayText(profile?.longest_streak || 0)}
+          </p>
+          <p className="text-xs text-orange-200 mt-2 cursor-pointer hover:underline">
+            {t("common.clickForDetails")}
           </p>
         </div>
 
@@ -454,6 +471,108 @@ export function HomePage({
           </div>
         </div>
       </div>
+      {showStreakModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                <Flame className="w-6 h-6 mr-2 text-orange-600" />
+                {t("home.currentStreak")}
+              </h3>
+              <button
+                onClick={() => setShowStreakModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            {profile?.current_streak && profile.current_streak > 0 ? (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-lg text-center">
+                  <p className="text-5xl font-bold text-orange-600 mb-2">
+                    {profile.current_streak}
+                  </p>
+                  <p className="text-sm text-orange-700 font-medium">
+                    {t("home.currentStreak")}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">
+                    {t("profile.streakStartedOn")}:
+                  </p>
+                  <p className="text-lg font-bold text-gray-800">
+                    {getStreakStartDate()?.toLocaleDateString(undefined, {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-700 font-medium">
+                    💡 {t("profile.streakTip")}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t("home.record")}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-800">
+                      {profile.longest_streak || 0}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {getDayText(profile.longest_streak || 0)}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t("profile.daysToGo")}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-800">
+                      {Math.max(
+                        0,
+                        (profile.longest_streak || 0) -
+                          (profile.current_streak || 0)
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {getDayText(
+                        Math.max(
+                          0,
+                          (profile.longest_streak || 0) -
+                            (profile.current_streak || 0)
+                        )
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Flame className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600">{t("profile.noActiveStreak")}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {t("profile.playToStartStreak")}
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowStreakModal(false)}
+              className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+            >
+              {t("common.close")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

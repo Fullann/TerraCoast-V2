@@ -68,6 +68,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
   const [showWarnModal, setShowWarnModal] = useState(false);
   const [warnReason, setWarnReason] = useState("");
   const [sending, setSending] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
   const [friendshipStatus, setFriendshipStatus] = useState<
     "none" | "pending" | "friends" | "blocked"
   >("none");
@@ -152,6 +153,16 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
     if (last7DaysData) {
       const dailyPointsMap = new Map<string, number>();
+
+      // Initialiser les 7 derniers jours à 0
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toLocaleDateString();
+        dailyPointsMap.set(dateStr, 0);
+      }
+
+      // Ajouter/Mettre à jour avec les données réelles
       last7DaysData.forEach((session) => {
         const date = new Date(session.completed_at!).toLocaleDateString();
         dailyPointsMap.set(
@@ -159,6 +170,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
           (dailyPointsMap.get(date) || 0) + session.score
         );
       });
+
+      // Convertir en array maintenant que tous les jours sont présents
       const dailyStatsArray = Array.from(dailyPointsMap.entries()).map(
         ([date, points]) => ({
           date,
@@ -181,6 +194,14 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
       if (myLast7DaysData) {
         const myDailyPointsMap = new Map<string, number>();
+
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toLocaleDateString();
+          myDailyPointsMap.set(dateStr, 0);
+        }
+
         myLast7DaysData.forEach((session) => {
           const date = new Date(session.completed_at!).toLocaleDateString();
           myDailyPointsMap.set(
@@ -188,6 +209,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             (myDailyPointsMap.get(date) || 0) + session.score
           );
         });
+
         const myDailyStatsArray = Array.from(myDailyPointsMap.entries()).map(
           ([date, points]) => ({
             date,
@@ -197,6 +219,15 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
         setCurrentUserDailyStats(myDailyStatsArray);
       }
     }
+  };
+  const getStreakStartDate = () => {
+    if (!profile?.current_streak || profile.current_streak === 0) return null;
+
+    const today = new Date();
+    const streakStartDate = new Date();
+    streakStartDate.setDate(today.getDate() - (profile.current_streak - 1));
+
+    return streakStartDate;
   };
 
   const loadFriendshipStatus = async () => {
@@ -455,7 +486,10 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
               </h3>
               <Flame className="w-5 h-5 text-orange-600" />
             </div>
-            <div className="flex items-center space-x-2">
+            <div
+              className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setShowStreakModal(true)}
+            >
               <p className="text-3xl font-bold text-orange-900">
                 {profile?.current_streak || 0}
               </p>
@@ -470,6 +504,9 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             <p className="text-xs text-orange-700 mt-1">
               {t("home.record")}: {profile?.longest_streak || 0}{" "}
               {getDayText(profile?.longest_streak || 0)}
+            </p>
+            <p className="text-xs text-orange-600 mt-2 cursor-pointer hover:underline">
+              {t("common.clickForDetails")}
             </p>
           </div>
         </div>
@@ -542,15 +579,12 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
             {t("profile.last7Days")}
           </h2>
 
-          {dailyStats.length > 0 || currentUserDailyStats.length > 0 ? (
+          {dailyStats.length > 0 ? (
             <div className="space-y-4">
-              {/* Préparer les données pour le graphique */}
               {(() => {
-                // Créer un Set de toutes les dates
-                const allDates = new Set<string>();
                 const allDaysData: any[] = [];
 
-                // Générer les 7 derniers jours
+                // Générer les 7 derniers jours avec les données
                 for (let i = 6; i >= 0; i--) {
                   const date = new Date();
                   date.setDate(date.getDate() - i);
@@ -559,11 +593,12 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     weekday: "short",
                   });
 
+                  // ✅ Récupérer les points (0 si pas de données)
                   const targetPoints =
-                    dailyStats.find((s) => s.date === dateStr)?.points || null;
+                    dailyStats.find((s) => s.date === dateStr)?.points || 0;
                   const currentPoints =
                     currentUserDailyStats.find((s) => s.date === dateStr)
-                      ?.points || null;
+                      ?.points || 0;
 
                   allDaysData.push({
                     name: dayLabel,
@@ -638,9 +673,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                             color: "#fff",
                           }}
                           cursor={{ stroke: "#e5e7eb", strokeWidth: 2 }}
-                          formatter={(value: any) =>
-                            value !== null ? [value, "pts"] : ["-", "pts"]
-                          }
+                          formatter={(value: any) => [value, "pts"]}
                         />
                         <Legend
                           wrapperStyle={{
@@ -652,7 +685,7 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
                         {/* Ligne pour le profil visité */}
                         <Line
-                          type="monotone"
+                          type="linear"
                           dataKey={
                             isOwnProfile ? profile.pseudo : profile.pseudo
                           }
@@ -660,19 +693,17 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                           strokeWidth={3}
                           dot={{ fill: "#3b82f6", r: 5 }}
                           activeDot={{ r: 7 }}
-                          connectNulls
                         />
 
                         {/* Ligne pour l'utilisateur actuel (comparaison) */}
                         {!isOwnProfile && currentUserDailyStats.length > 0 && (
                           <Line
-                            type="monotone"
+                            type="linear"
                             dataKey={currentUserProfile?.pseudo || "You"}
                             stroke="#a855f7"
                             strokeWidth={3}
                             dot={{ fill: "#a855f7", r: 5 }}
                             activeDot={{ r: 7 }}
-                            connectNulls
                           />
                         )}
                       </LineChart>
@@ -941,6 +972,108 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 setShowWarningHistory(false);
                 setWarningHistory([]);
               }}
+              className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
+            >
+              {t("common.close")}
+            </button>
+          </div>
+        </div>
+      )}
+      {showStreakModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+                <Flame className="w-6 h-6 mr-2 text-orange-600" />
+                {t("home.currentStreak")}
+              </h3>
+              <button
+                onClick={() => setShowStreakModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+
+            {profile?.current_streak && profile.current_streak > 0 ? (
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-orange-50 to-red-100 p-6 rounded-lg text-center">
+                  <p className="text-5xl font-bold text-orange-600 mb-2">
+                    {profile.current_streak}
+                  </p>
+                  <p className="text-sm text-orange-700 font-medium">
+                    {t("home.currentStreak")}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">
+                    {t("profile.streakStartedOn")}:
+                  </p>
+                  <p className="text-lg font-bold text-gray-800">
+                    {getStreakStartDate()?.toLocaleDateString(undefined, {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-700 font-medium">
+                    💡 {t("profile.streakTip")}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t("home.record")}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-800">
+                      {profile.longest_streak || 0}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {getDayText(profile.longest_streak || 0)}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg text-center">
+                    <p className="text-xs text-gray-600 mb-1">
+                      {t("profile.daysToGo")}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-800">
+                      {Math.max(
+                        0,
+                        (profile.longest_streak || 0) -
+                          (profile.current_streak || 0)
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {getDayText(
+                        Math.max(
+                          0,
+                          (profile.longest_streak || 0) -
+                            (profile.current_streak || 0)
+                        )
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Flame className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600">{t("profile.noActiveStreak")}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {t("profile.playToStartStreak")}
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowStreakModal(false)}
               className="w-full mt-6 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors"
             >
               {t("common.close")}
