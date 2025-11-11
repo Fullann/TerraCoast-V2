@@ -89,6 +89,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       .single();
 
     if (quizData) {
+      if (quizData.creator_id !== profile?.id && profile?.role !== "admin") {
+        setError("Tu n'as pas la permission d'éditer ce quiz");
+        setLoading(false);
+        return;
+      }
+
       setQuiz(quizData);
       setTitle(quizData.title);
       setDescription(quizData.description || "");
@@ -138,6 +144,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const cancelEditingQuestion = () => {
     setEditingQuestion(null);
   };
+
   const addTag = () => {
     const trimmedTag = currentTag.trim().toLowerCase();
     if (trimmedTag && !tags.includes(trimmedTag) && tags.length < 10) {
@@ -149,19 +156,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
+const saveQuestion = () => {
+  if (!editingQuestion) return;
 
-  const saveQuestion = () => {
-    if (!editingQuestion) return;
+  const index = questions.findIndex((q) => q.id === editingQuestion.id);
+  
+  if (index >= 0) {
+    const newQuestions = [...questions];
+    newQuestions[index] = editingQuestion;
+    setQuestions(newQuestions);
+  } else {
+    setQuestions([
+      ...questions,
+      { ...editingQuestion, order_index: questions.length },
+    ]);
+  }
 
-    const index = questions.findIndex((q) => q.id === editingQuestion.id);
-    if (index >= 0) {
-      const newQuestions = [...questions];
-      newQuestions[index] = editingQuestion;
-      setQuestions(newQuestions);
-    }
+  setEditingQuestion(null);
+};
 
-    setEditingQuestion(null);
-  };
 
   const addNewQuestion = () => {
     const newQuestion: any = {
@@ -186,13 +199,11 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const deleteQuestion = async (questionId: string) => {
     if (!confirm(t("editQuiz.confirmDeleteQuestion"))) return;
 
-    // Si c'est une nouvelle question (pas encore en DB), supprimer juste localement
     if (questionId.startsWith("temp_")) {
       setQuestions(questions.filter((q) => q.id !== questionId));
       return;
     }
 
-    // Sinon, supprimer de la base de données
     const { error } = await supabase
       .from("questions")
       .delete()
@@ -204,11 +215,10 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       return;
     }
 
-    // Mettre à jour la liste locale
     setQuestions(questions.filter((q) => q.id !== questionId));
-
     alert(t("editQuiz.deleteQuestionSuccess"));
   };
+
   const updateOption = (index: number, value: string) => {
     if (!editingQuestion) return;
 
@@ -282,130 +292,145 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   };
 
   const saveQuiz = async () => {
-    if (!profile || !quiz) return;
+  if (!profile || !quiz) return;
 
-    if (!title.trim()) {
-      setError(t("editQuiz.titleRequired"));
-      return;
-    }
+  if (!title.trim()) {
+    setError(t("editQuiz.titleRequired"));
+    return;
+  }
 
-    if (!difficulty) {
-      setError("La difficulté est obligatoire");
-      return;
-    }
+  if (!difficulty) {
+    setError("La difficulté est obligatoire");
+    return;
+  }
 
-    if (questions.length === 0) {
-      setError(t("editQuiz.atLeastOneQuestion"));
-      return;
-    }
+  if (questions.length === 0) {
+    setError(t("editQuiz.atLeastOneQuestion"));
+    return;
+  }
 
-    const hasInvalidPoints = questions.some((q) => q.points > 500);
-    if (hasInvalidPoints) {
-      setError("Une ou plusieurs questions dépassent 500 points maximum");
-      return;
-    }
-    setSaving(true);
-    setError("");
+  const hasInvalidPoints = questions.some((q) => q.points > 500);
+  if (hasInvalidPoints) {
+    setError("Une ou plusieurs questions dépassent 500 points maximum");
+    return;
+  }
 
-    try {
-      await supabase
-        .from("quizzes")
-        .update({
-          title,
-          description,
-          category,
-          difficulty,
-          time_limit_seconds: timeLimitSeconds,
-          cover_image_url: coverImageUrl || null,
-          language: quizLanguage,
-          quiz_type_id: selectedQuizType || null,
-          randomize_questions: randomizeQuestions,
-          randomize_answers: randomizeAnswers,
-          tags: tags.length > 0 ? tags : null,
-        })
-        .eq("id", quizId);
+  setSaving(true);
+  setError("");
 
-      const { data: existingQuestions } = await supabase
-        .from("questions")
-        .select("id")
-        .eq("quiz_id", quizId);
+  try {
+    // ✅ 1. Sauvegarder le quiz
+    await supabase
+      .from("quizzes")
+      .update({
+        title,
+        description,
+        category,
+        difficulty,
+        time_limit_seconds: timeLimitSeconds,
+        cover_image_url: coverImageUrl || null,
+        language: quizLanguage,
+        quiz_type_id: selectedQuizType || null,
+        randomize_questions: randomizeQuestions,
+        randomize_answers: randomizeAnswers,
+        tags: tags.length > 0 ? tags : null,
+      })
+      .eq("id", quizId);
 
-      if (existingQuestions) {
-        const currentQuestionIds = questions
-          .filter((q) => !q.isNew)
-          .map((q) => q.id);
+    // ✅ 2. Récupérer les questions existantes en BD
+    const { data: existingQuestions } = await supabase
+      .from("questions")
+      .select("id")
+      .eq("quiz_id", quizId);
 
-        const questionsToDelete = existingQuestions
-          .filter((eq) => !currentQuestionIds.includes(eq.id))
-          .map((eq) => eq.id);
+    if (existingQuestions) {
+      // ✅ 3. Trouver les questions à supprimer
+      const currentQuestionIds = questions
+        .filter((q) => !q.isNew)
+        .map((q) => q.id);
 
-        if (questionsToDelete.length > 0) {
-          await supabase.from("questions").delete().in("id", questionsToDelete);
-        }
+      const questionsToDelete = existingQuestions
+        .filter((eq) => !currentQuestionIds.includes(eq.id))
+        .map((eq) => eq.id);
+
+      if (questionsToDelete.length > 0) {
+        await supabase.from("questions").delete().in("id", questionsToDelete);
       }
+    }
 
-      // Sauvegarder ou mettre à jour les questions
-      for (const question of questions) {
-        if (question.isNew) {
-          const { id, isNew, ...questionData } = question;
-          await supabase.from("questions").insert({
-            ...questionData,
-            options:
-              question.question_type === "mcq"
-                ? (Array.isArray(question.options)
-                    ? question.options
-                    : []
-                  ).filter((opt: string) => opt.trim())
-                : null,
+    // ✅ 4. Boucler sur chaque question et la sauvegarder
+    for (const question of questions) {
+      if (question.isNew) {
+        // ✅ Nouvelle question - l'insérer
+        const { id, isNew, ...questionData } = question;
+        await supabase.from("questions").insert({
+          ...questionData,
+          options:
+            question.question_type === "mcq"
+              ? (Array.isArray(question.options) ? question.options : []).filter(
+                  (opt: string) => opt.trim()
+                )
+              : null,
+          correct_answers:
+            question.question_type === "mcq"
+              ? Array.isArray(question.correct_answers)
+                ? question.correct_answers.filter((v: string) => v.trim())
+                : []
+              : question.question_type === "single_answer" ||
+                question.question_type === "text_free"
+              ? Array.isArray(question.correct_answers)
+                ? question.correct_answers.filter((v: string) => v.trim())
+                : []
+              : null,
+        });
+      } else {
+        // ✅ Question existante - la mettre à jour
+        const { isNew, ...questionData } = question;
+        await supabase
+          .from("questions")
+          .update({
+            question_text: questionData.question_text,
+            question_type: questionData.question_type,
+            correct_answer: questionData.correct_answer,
             correct_answers:
-              question.question_type === "single_answer" ||
-              question.question_type === "text_free"
-                ? Array.isArray(question.correct_answers)
-                  ? question.correct_answers.filter((v: string) => v.trim())
+              questionData.question_type === "mcq"
+                ? Array.isArray(questionData.correct_answers)
+                  ? questionData.correct_answers.filter((v: string) =>
+                      v.trim()
+                    )
+                  : []
+                : questionData.question_type === "single_answer" ||
+                  questionData.question_type === "text_free"
+                ? Array.isArray(questionData.correct_answers)
+                  ? questionData.correct_answers.filter((v: string) =>
+                      v.trim()
+                    )
                   : []
                 : null,
-          });
-        } else {
-          const { isNew, ...questionData } = question;
-          await supabase
-            .from("questions")
-            .update({
-              question_text: questionData.question_text,
-              question_type: questionData.question_type,
-              correct_answer: questionData.correct_answer,
-              correct_answers:
-                questionData.question_type === "single_answer" ||
-                questionData.question_type === "text_free"
-                  ? Array.isArray(questionData.correct_answers)
-                    ? questionData.correct_answers.filter((v: string) =>
-                        v.trim()
-                      )
-                    : []
-                  : null,
-              options:
-                questionData.question_type === "mcq"
-                  ? (Array.isArray(questionData.options)
-                      ? questionData.options
-                      : []
-                    ).filter((opt: string) => opt.trim())
-                  : null,
-              image_url: questionData.image_url,
-              option_images: questionData.option_images || null,
-              points: questionData.points,
-              order_index: questionData.order_index,
-            })
-            .eq("id", question.id);
-        }
+            options:
+              questionData.question_type === "mcq"
+                ? (Array.isArray(questionData.options) ? questionData.options : []).filter(
+                    (opt: string) => opt.trim()
+                  )
+                : null,
+            image_url: questionData.image_url,
+            option_images: questionData.option_images || null,
+            points: questionData.points,
+            order_index: questionData.order_index,
+          })
+          .eq("id", question.id);
       }
-
-      alert(t("editQuiz.updateSuccess"));
-      onNavigate("quizzes");
-    } catch (err: any) {
-      setError(err.message || t("editQuiz.updateError"));
-    } finally {
-      setSaving(false);
     }
-  };
+
+    alert(t("editQuiz.updateSuccess"));
+    onNavigate("quizzes");
+  } catch (err: any) {
+    setError(err.message || t("editQuiz.updateError"));
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const getCategoryLabel = (cat: string) => {
     return t(`quizzes.category.${cat}` as any);
@@ -507,56 +532,57 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                 onImageUploaded={(url) => setCoverImageUrl(url)}
                 bucketName="quiz-images"
               />
-              <div className="col-span-full">
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    {t("createQuiz.searchTags")}
-  </label>
-  <div className="flex gap-2 mb-2">
-    <input
-      type="text"
-      value={currentTag}
-      onChange={(e) => setCurrentTag(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          addTag();
-        }
-      }}
-      placeholder={t("createQuiz.addTagPlaceholder")}
-      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-      maxLength={20}
-    />
-    <button
-      type="button"
-      onClick={addTag}
-      className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-    >
-      <Plus className="w-5 h-5" />
-    </button>
-  </div>
 
-  {tags.length > 0 && (
-    <div className="flex flex-wrap gap-2">
-      {tags.map((tag) => (
-        <span
-          key={tag}
-          className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium flex items-center gap-2"
-        >
-          #{tag}
-          <button
-            onClick={() => removeTag(tag)}
-            className="text-emerald-700 hover:text-emerald-900"
-          >
-            ×
-          </button>
-        </span>
-      ))}
-    </div>
-  )}
-  <p className="text-xs text-gray-500 mt-2">
-    {t("createQuiz.maxTags")} • {tags.length}/10
-  </p>
-</div>
+              <div className="col-span-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t("createQuiz.searchTags")}
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={currentTag}
+                    onChange={(e) => setCurrentTag(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                    placeholder={t("createQuiz.addTagPlaceholder")}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    maxLength={20}
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium flex items-center gap-2"
+                      >
+                        #{tag}
+                        <button
+                          onClick={() => removeTag(tag)}
+                          className="text-emerald-700 hover:text-emerald-900"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  {t("createQuiz.maxTags")} • {tags.length}/10
+                </p>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -684,7 +710,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                 </label>
               </div>
 
-              {/* Gestion publication */}
               {quiz && (quiz.is_public || quiz.is_global) && (
                 <div className="border-t pt-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
@@ -865,7 +890,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           </div>
                         </div>
                       )}
-
                       {editingQuestion.question_type === "mcq" && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -911,28 +935,78 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           {t("editQuiz.correctAnswer")} *
                         </label>
                         {editingQuestion.question_type === "mcq" ? (
-                          <select
-                            value={editingQuestion.correct_answer}
-                            onChange={(e) =>
-                              setEditingQuestion({
-                                ...editingQuestion,
-                                correct_answer: e.target.value,
-                              })
-                            }
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                          >
-                            <option value="">{t("editQuiz.select")}</option>
-                            {(Array.isArray(editingQuestion.options)
-                              ? editingQuestion.options
-                              : []
-                            )
-                              .filter((opt: string) => opt.trim())
-                              .map((option: string, idx: number) => (
-                                <option key={idx} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                          </select>
+                          <div className="space-y-2">
+                            <div className="space-y-2">
+                              {(Array.isArray(editingQuestion.options)
+                                ? editingQuestion.options
+                                : []
+                              )
+                                .filter((opt: string) => opt.trim())
+                                .map((option: string, idx: number) => {
+                                  // ✅ Vérifier si cette option est dans correct_answers
+                                  const isSelected = (
+                                    editingQuestion.correct_answers || []
+                                  ).includes(option);
+
+                                  return (
+                                    <label
+                                      key={idx}
+                                      className={`flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                        isSelected
+                                          ? "border-emerald-500 bg-emerald-50"
+                                          : "border-gray-200 hover:border-gray-300"
+                                      }`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={(e) => {
+                                          const answers =
+                                            editingQuestion.correct_answers ||
+                                            [];
+                                          if (e.target.checked) {
+                                            // ✅ Ajouter à la liste des bonnes réponses
+                                            setEditingQuestion({
+                                              ...editingQuestion,
+                                              correct_answers: [
+                                                ...answers,
+                                                option,
+                                              ],
+                                              correct_answer: option,
+                                            });
+                                          } else {
+                                            // ✅ Retirer de la liste des bonnes réponses
+                                            const newAnswers = answers.filter(
+                                              (a: string) => a !== option
+                                            );
+                                            setEditingQuestion({
+                                              ...editingQuestion,
+                                              correct_answers: newAnswers,
+                                              correct_answer:
+                                                newAnswers[0] || "",
+                                            });
+                                          }
+                                        }}
+                                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                      />
+                                      <span
+                                        className={`font-medium ${
+                                          isSelected
+                                            ? "text-emerald-700"
+                                            : "text-gray-700"
+                                        }`}
+                                      >
+                                        {option}
+                                        {isSelected && " ✓"}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                              {t("createQuiz.multipleCorrect")}
+                            </p>
+                          </div>
                         ) : editingQuestion.question_type !== "true_false" ? (
                           <input
                             type="text"

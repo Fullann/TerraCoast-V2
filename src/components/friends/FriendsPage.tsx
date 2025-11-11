@@ -222,49 +222,6 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
         </div>
       )}
 
-      {suggestions.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-            <Sparkles className="w-5 h-5 mr-2 text-amber-500" />
-            {t("friends.suggestions")}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {suggestions
-              .filter((s) => !existingFriendIds.has(s.id))
-              .map((user) => (
-                <div
-                  key={user.id}
-                  className="bg-white p-4 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors text-center"
-                >
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-blue-600 font-bold text-xl">
-                      {user.pseudo.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="font-semibold text-gray-800 truncate">
-                    {user.pseudo}
-                  </p>
-                  <p className="text-xs text-gray-600 mb-3">
-                    {t("profile.level")} {user.level}
-                  </p>
-                  <button
-                    onClick={() => {
-                      sendFriendRequest(user.id);
-                      setSuggestions((prev) =>
-                        prev.filter((s) => s.id !== user.id)
-                      );
-                    }}
-                    className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-                  >
-                    <UserPlus className="w-3 h-3 mr-1" />
-                    {t("friends.add")}
-                  </button>
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           {t("friends.searchTitle")}
@@ -385,6 +342,49 @@ export function FriendsPage({ onNavigate }: FriendsPageProps = {}) {
           </div>
         )}
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-emerald-50 border-2 border-blue-200 rounded-xl p-6 mt-8">
+          <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <Sparkles className="w-5 h-5 mr-2 text-amber-500" />
+            {t("friends.suggestions")}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {suggestions
+              .filter((s) => !existingFriendIds.has(s.id))
+              .map((user) => (
+                <div
+                  key={user.id}
+                  className="bg-white p-4 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors text-center"
+                >
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-blue-600 font-bold text-xl">
+                      {user.pseudo.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="font-semibold text-gray-800 truncate">
+                    {user.pseudo}
+                  </p>
+                  <p className="text-xs text-gray-600 mb-3">
+                    {t("profile.level")} {user.level}
+                  </p>
+                  <button
+                    onClick={() => {
+                      sendFriendRequest(user.id);
+                      setSuggestions((prev) =>
+                        prev.filter((s) => s.id !== user.id)
+                      );
+                    }}
+                    className="w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+                  >
+                    <UserPlus className="w-3 h-3 mr-1" />
+                    {t("friends.add")}
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
