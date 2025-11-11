@@ -286,110 +286,109 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
   };
 
   const deleteUserAccount = async (userId: string, userName: string) => {
-  if (
-    !confirm(
-      `Es-tu sûr de vouloir SUPPRIMER le compte de ${userName} ? Cette action est irréversible !`
+    if (
+      !confirm(
+        `Es-tu sûr de vouloir SUPPRIMER le compte de ${userName} ? Cette action est irréversible !`
+      )
     )
-  )
-    return;
+      return;
 
-  const confirmDelete = prompt(
-    `Tape "${userName}" pour confirmer la suppression:`
-  );
-  if (confirmDelete !== userName) {
-    alert("Suppression annulée");
-    return;
-  }
-
-  try {
-    console.log("Début suppression pour user:", userId);
-
-    // Supprimer toutes les données associées à l'utilisateur
-    console.log("Suppression user_badges...");
-    await supabase.from("user_badges").delete().eq("user_id", userId);
-
-    console.log("Suppression user_titles...");
-    await supabase.from("user_titles").delete().eq("user_id", userId);
-
-    console.log("Suppression game_sessions...");
-    await supabase.from("game_sessions").delete().eq("player_id", userId);
-
-    console.log("Suppression quiz_shares...");
-    await supabase
-      .from("quiz_shares")
-      .delete()
-      .eq("shared_with_user_id", userId);
-
-    console.log("Suppression friendships...");
-    await supabase
-      .from("friendships")
-      .delete()
-      .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
-
-    console.log("Suppression warnings...");
-    await supabase
-      .from("warnings")
-      .delete()
-      .or(`reported_user_id.eq.${userId},reporter_user_id.eq.${userId}`);
-
-    console.log("Suppression notifications...");
-    await supabase.from("notifications").delete().eq("user_id", userId);
-
-    console.log("Suppression chat_messages...");
-    await supabase
-      .from("chat_messages")
-      .delete()
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
-
-    console.log("Suppression monthly_rankings_history...");
-    await supabase
-      .from("monthly_rankings_history")
-      .delete()
-      .eq("user_id", userId);
-
-    // Supprimer les quiz créés par l'utilisateur
-    console.log("Récupération des quiz...");
-    const { data: userQuizzes, error: quizzesError } = await supabase
-      .from("quizzes")
-      .select("id")
-      .eq("creator_id", userId);
-
-    if (quizzesError) {
-      console.error("Erreur récupération quiz:", quizzesError);
-    }
-
-    if (userQuizzes && userQuizzes.length > 0) {
-      console.log(`Suppression de ${userQuizzes.length} quiz...`);
-      for (const quiz of userQuizzes) {
-        // Supprimer les questions du quiz
-        await supabase.from("questions").delete().eq("quiz_id", quiz.id);
-        // Supprimer le quiz
-        await supabase.from("quizzes").delete().eq("id", quiz.id);
-      }
-    }
-
-    // Supprimer le profil
-    console.log("Suppression du profil...");
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", userId);
-
-    if (profileError) {
-      console.error("Erreur suppression profil:", profileError);
-      alert(`Erreur: ${profileError.message}`);
+    const confirmDelete = prompt(
+      `Tape "${userName}" pour confirmer la suppression:`
+    );
+    if (confirmDelete !== userName) {
+      alert("Suppression annulée");
       return;
     }
 
-    console.log("Suppression complétée avec succès");
-    alert(`Compte de ${userName} supprimé avec succès !`);
-    loadUsers();
-  } catch (error: any) {
-    console.error("Erreur complète:", error);
-    alert(`Erreur lors de la suppression: ${error.message}`);
-  }
-};
+    try {
+      console.log("Début suppression pour user:", userId);
 
+      // Supprimer toutes les données associées à l'utilisateur
+      console.log("Suppression user_badges...");
+      await supabase.from("user_badges").delete().eq("user_id", userId);
+
+      console.log("Suppression user_titles...");
+      await supabase.from("user_titles").delete().eq("user_id", userId);
+
+      console.log("Suppression game_sessions...");
+      await supabase.from("game_sessions").delete().eq("player_id", userId);
+
+      console.log("Suppression quiz_shares...");
+      await supabase
+        .from("quiz_shares")
+        .delete()
+        .eq("shared_with_user_id", userId);
+
+      console.log("Suppression friendships...");
+      await supabase
+        .from("friendships")
+        .delete()
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
+
+      console.log("Suppression warnings...");
+      await supabase
+        .from("warnings")
+        .delete()
+        .or(`reported_user_id.eq.${userId},reporter_user_id.eq.${userId}`);
+
+      console.log("Suppression notifications...");
+      await supabase.from("notifications").delete().eq("user_id", userId);
+
+      console.log("Suppression chat_messages...");
+      await supabase
+        .from("chat_messages")
+        .delete()
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+      console.log("Suppression monthly_rankings_history...");
+      await supabase
+        .from("monthly_rankings_history")
+        .delete()
+        .eq("user_id", userId);
+
+      // Supprimer les quiz créés par l'utilisateur
+      console.log("Récupération des quiz...");
+      const { data: userQuizzes, error: quizzesError } = await supabase
+        .from("quizzes")
+        .select("id")
+        .eq("creator_id", userId);
+
+      if (quizzesError) {
+        console.error("Erreur récupération quiz:", quizzesError);
+      }
+
+      if (userQuizzes && userQuizzes.length > 0) {
+        console.log(`Suppression de ${userQuizzes.length} quiz...`);
+        for (const quiz of userQuizzes) {
+          // Supprimer les questions du quiz
+          await supabase.from("questions").delete().eq("quiz_id", quiz.id);
+          // Supprimer le quiz
+          await supabase.from("quizzes").delete().eq("id", quiz.id);
+        }
+      }
+
+      // Supprimer le profil
+      console.log("Suppression du profil...");
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("Erreur suppression profil:", profileError);
+        alert(`Erreur: ${profileError.message}`);
+        return;
+      }
+
+      console.log("Suppression complétée avec succès");
+      alert(`Compte de ${userName} supprimé avec succès !`);
+      loadUsers();
+    } catch (error: any) {
+      console.error("Erreur complète:", error);
+      alert(`Erreur lors de la suppression: ${error.message}`);
+    }
+  };
 
   if (profile?.role !== "admin") {
     return (
@@ -411,14 +410,6 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <button
-        onClick={() => onNavigate?.("admin")}
-        className="flex items-center text-gray-600 hover:text-gray-800 mb-6"
-      >
-        <ArrowLeft className="w-5 h-5 mr-2" />
-        Retour à l'administration
-      </button>
-
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
           <Users className="w-10 h-10 mr-3 text-emerald-600" />

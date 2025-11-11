@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer components {
+
   /* Custom select styling */
   select {
     @apply appearance-none bg-white;
@@ -11,5 +12,21 @@
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
     padding-right: 2.5rem;
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
   }
 }

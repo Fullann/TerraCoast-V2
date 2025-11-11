@@ -218,11 +218,15 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
         </button>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
+        <button
+          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow cursor-pointer text-left"
+          onClick={() => onNavigate?.("quiz-management")}
+        >
           <BookOpen className="w-10 h-10 mb-3" />
-          <p className="text-emerald-100 text-sm">Quiz</p>
+          <p className="text-blue-100 text-sm">Quiz</p>
           <p className="text-4xl font-bold">{stats.totalQuizzes}</p>
-        </div>
+          <p className="text-amber-100 text-xs">Cliquez pour traiter</p>
+        </button>
 
         <button
           onClick={() => onNavigate?.("warnings-management")}
@@ -299,116 +303,6 @@ export function AdminPage({ onNavigate }: AdminPageProps) {
           <p className="text-xs text-indigo-100 mt-2">QCM, Texte, Mixte... →</p>
         </button>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <BookOpen className="w-6 h-6 mr-2 text-emerald-600" />
-            Quiz récents
-          </h2>
-
-          <div className="mb-4">
-            <input
-              type="text"
-              value={quizSearch}
-              onChange={(e) => {
-                setQuizSearch(e.target.value);
-                searchQuizzes(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setQuizSearch("");
-                  setQuizSearchResults([]);
-                }
-              }}
-              placeholder="Rechercher un quiz..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            />
-          </div>
-
-          <div className="space-y-3">
-            {(quizSearch.trim().length >= 2 ? quizSearchResults : quizzes).map(
-              (quiz) => (
-                <div
-                  key={quiz.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-800">{quiz.title}</p>
-                    <div className="flex items-center space-x-3 mt-1">
-                      <span className="text-xs text-gray-600">
-                        {quiz.category}
-                      </span>
-                      <span className="text-xs text-gray-600">
-                        {quiz.difficulty}
-                      </span>
-                      <span className="text-xs text-gray-600">
-                        {quiz.total_plays} parties
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() =>
-                        onNavigate?.(`edit-quiz`, { quizId: quiz.id })
-                      }
-                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => deleteQuiz(quiz.id)}
-                      className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
-                    >
-                      Supprimer
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      </div>
-
-      {reports.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <AlertTriangle className="w-6 h-6 mr-2 text-amber-600" />
-            Signalements en attente
-          </h2>
-
-          <div className="space-y-3">
-            {reports.map((report) => (
-              <div
-                key={report.id}
-                className="p-4 border-2 border-amber-200 bg-amber-50 rounded-lg"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-800">
-                      {report.reason}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {report.description}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {new Date(report.created_at).toLocaleString("fr-FR")}
-                    </p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
-                      Résoudre
-                    </button>
-                    <button className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
-                      Rejeter
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

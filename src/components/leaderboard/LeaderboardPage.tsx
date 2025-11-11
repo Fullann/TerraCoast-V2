@@ -45,7 +45,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
 
       profiles = data || [];
     } else if (view === "friends" && profile) {
-      // ✅ Récupérer SANS filtrer sur is_banned dans la requête
+ 
       const { data: friendshipsAsSender } = await supabase
         .from("friendships")
         .select("friend_profile:profiles!friendships_friend_id_fkey(*)")
@@ -58,7 +58,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
         .eq("friend_id", profile.id)
         .eq("status", "accepted");
 
-      // ✅ Filtrer les amis bannis APRÈS la récupération
+      
       const senderFriends = (
         friendshipsAsSender?.map((f: any) => f.friend_profile) || []
       ).filter((f) => f && !f.is_banned);
@@ -67,7 +67,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
         friendshipsAsReceiver?.map((f: any) => f.user_profile) || []
       ).filter((f) => f && !f.is_banned);
 
-      // ✅ Combiner et dédupliquer les amis
+      
       const friendIds = new Set<string>();
       const uniqueFriends: Profile[] = [];
 
@@ -78,7 +78,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
         }
       }
 
-      // ✅ Ajouter l'utilisateur courant et trier
+      
       profiles = [profile, ...uniqueFriends];
     }
 
@@ -92,7 +92,7 @@ export function LeaderboardPage({ onNavigate }: LeaderboardPageProps = {}) {
               games_played: p.monthly_games_played || 0,
             };
           } else {
-            // ✅ Pour "tout temps" : additionner monthly_rankings_history + score du mois actuel
+          
             const { data: monthlyHistory } = await supabase
               .from("monthly_rankings_history")
               .select("score, games_played")
