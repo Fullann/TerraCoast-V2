@@ -156,25 +156,24 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
-const saveQuestion = () => {
-  if (!editingQuestion) return;
+  const saveQuestion = () => {
+    if (!editingQuestion) return;
 
-  const index = questions.findIndex((q) => q.id === editingQuestion.id);
-  
-  if (index >= 0) {
-    const newQuestions = [...questions];
-    newQuestions[index] = editingQuestion;
-    setQuestions(newQuestions);
-  } else {
-    setQuestions([
-      ...questions,
-      { ...editingQuestion, order_index: questions.length },
-    ]);
-  }
+    const index = questions.findIndex((q) => q.id === editingQuestion.id);
 
-  setEditingQuestion(null);
-};
+    if (index >= 0) {
+      const newQuestions = [...questions];
+      newQuestions[index] = editingQuestion;
+      setQuestions(newQuestions);
+    } else {
+      setQuestions([
+        ...questions,
+        { ...editingQuestion, order_index: questions.length },
+      ]);
+    }
 
+    setEditingQuestion(null);
+  };
 
   const addNewQuestion = () => {
     const newQuestion: any = {
@@ -292,145 +291,145 @@ const saveQuestion = () => {
   };
 
   const saveQuiz = async () => {
-  if (!profile || !quiz) return;
+    if (!profile || !quiz) return;
 
-  if (!title.trim()) {
-    setError(t("editQuiz.titleRequired"));
-    return;
-  }
-
-  if (!difficulty) {
-    setError("La difficulté est obligatoire");
-    return;
-  }
-
-  if (questions.length === 0) {
-    setError(t("editQuiz.atLeastOneQuestion"));
-    return;
-  }
-
-  const hasInvalidPoints = questions.some((q) => q.points > 500);
-  if (hasInvalidPoints) {
-    setError("Une ou plusieurs questions dépassent 500 points maximum");
-    return;
-  }
-
-  setSaving(true);
-  setError("");
-
-  try {
-    // ✅ 1. Sauvegarder le quiz
-    await supabase
-      .from("quizzes")
-      .update({
-        title,
-        description,
-        category,
-        difficulty,
-        time_limit_seconds: timeLimitSeconds,
-        cover_image_url: coverImageUrl || null,
-        language: quizLanguage,
-        quiz_type_id: selectedQuizType || null,
-        randomize_questions: randomizeQuestions,
-        randomize_answers: randomizeAnswers,
-        tags: tags.length > 0 ? tags : null,
-      })
-      .eq("id", quizId);
-
-    // ✅ 2. Récupérer les questions existantes en BD
-    const { data: existingQuestions } = await supabase
-      .from("questions")
-      .select("id")
-      .eq("quiz_id", quizId);
-
-    if (existingQuestions) {
-      // ✅ 3. Trouver les questions à supprimer
-      const currentQuestionIds = questions
-        .filter((q) => !q.isNew)
-        .map((q) => q.id);
-
-      const questionsToDelete = existingQuestions
-        .filter((eq) => !currentQuestionIds.includes(eq.id))
-        .map((eq) => eq.id);
-
-      if (questionsToDelete.length > 0) {
-        await supabase.from("questions").delete().in("id", questionsToDelete);
-      }
+    if (!title.trim()) {
+      setError(t("editQuiz.titleRequired"));
+      return;
     }
 
-    // ✅ 4. Boucler sur chaque question et la sauvegarder
-    for (const question of questions) {
-      if (question.isNew) {
-        // ✅ Nouvelle question - l'insérer
-        const { id, isNew, ...questionData } = question;
-        await supabase.from("questions").insert({
-          ...questionData,
-          options:
-            question.question_type === "mcq"
-              ? (Array.isArray(question.options) ? question.options : []).filter(
-                  (opt: string) => opt.trim()
-                )
-              : null,
-          correct_answers:
-            question.question_type === "mcq"
-              ? Array.isArray(question.correct_answers)
-                ? question.correct_answers.filter((v: string) => v.trim())
-                : []
-              : question.question_type === "single_answer" ||
-                question.question_type === "text_free"
-              ? Array.isArray(question.correct_answers)
-                ? question.correct_answers.filter((v: string) => v.trim())
-                : []
-              : null,
-        });
-      } else {
-        // ✅ Question existante - la mettre à jour
-        const { isNew, ...questionData } = question;
-        await supabase
-          .from("questions")
-          .update({
-            question_text: questionData.question_text,
-            question_type: questionData.question_type,
-            correct_answer: questionData.correct_answer,
-            correct_answers:
-              questionData.question_type === "mcq"
-                ? Array.isArray(questionData.correct_answers)
-                  ? questionData.correct_answers.filter((v: string) =>
-                      v.trim()
-                    )
-                  : []
-                : questionData.question_type === "single_answer" ||
-                  questionData.question_type === "text_free"
-                ? Array.isArray(questionData.correct_answers)
-                  ? questionData.correct_answers.filter((v: string) =>
-                      v.trim()
-                    )
-                  : []
-                : null,
+    if (!difficulty) {
+      setError("La difficulté est obligatoire");
+      return;
+    }
+
+    if (questions.length === 0) {
+      setError(t("editQuiz.atLeastOneQuestion"));
+      return;
+    }
+
+    const hasInvalidPoints = questions.some((q) => q.points > 500);
+    if (hasInvalidPoints) {
+      setError("Une ou plusieurs questions dépassent 500 points maximum");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    try {
+      await supabase
+        .from("quizzes")
+        .update({
+          title,
+          description,
+          category,
+          difficulty,
+          time_limit_seconds: timeLimitSeconds,
+          cover_image_url: coverImageUrl || null,
+          language: quizLanguage,
+          quiz_type_id: selectedQuizType || null,
+          randomize_questions: randomizeQuestions,
+          randomize_answers: randomizeAnswers,
+          tags: tags.length > 0 ? tags : null,
+        })
+        .eq("id", quizId);
+
+      
+      const { data: existingQuestions } = await supabase
+        .from("questions")
+        .select("id")
+        .eq("quiz_id", quizId);
+
+      if (existingQuestions) {
+        
+        const currentQuestionIds = questions
+          .filter((q) => !q.isNew)
+          .map((q) => q.id);
+
+        const questionsToDelete = existingQuestions
+          .filter((eq) => !currentQuestionIds.includes(eq.id))
+          .map((eq) => eq.id);
+
+        if (questionsToDelete.length > 0) {
+          await supabase.from("questions").delete().in("id", questionsToDelete);
+        }
+      }
+
+      
+      for (const question of questions) {
+        if (question.isNew) {
+          
+          const { id, isNew, ...questionData } = question;
+          await supabase.from("questions").insert({
+            ...questionData,
             options:
-              questionData.question_type === "mcq"
-                ? (Array.isArray(questionData.options) ? questionData.options : []).filter(
-                    (opt: string) => opt.trim()
-                  )
+              question.question_type === "mcq"
+                ? (Array.isArray(question.options)
+                    ? question.options
+                    : []
+                  ).filter((opt: string) => opt.trim())
                 : null,
-            image_url: questionData.image_url,
-            option_images: questionData.option_images || null,
-            points: questionData.points,
-            order_index: questionData.order_index,
-          })
-          .eq("id", question.id);
+            correct_answers:
+              question.question_type === "mcq"
+                ? Array.isArray(question.correct_answers)
+                  ? question.correct_answers.filter((v: string) => v.trim())
+                  : []
+                : question.question_type === "single_answer" ||
+                  question.question_type === "text_free"
+                ? Array.isArray(question.correct_answers)
+                  ? question.correct_answers.filter((v: string) => v.trim())
+                  : []
+                : null,
+          });
+        } else {
+         
+          const { isNew, ...questionData } = question;
+          await supabase
+            .from("questions")
+            .update({
+              question_text: questionData.question_text,
+              question_type: questionData.question_type,
+              correct_answer: questionData.correct_answer,
+              correct_answers:
+                questionData.question_type === "mcq"
+                  ? Array.isArray(questionData.correct_answers)
+                    ? questionData.correct_answers.filter((v: string) =>
+                        v.trim()
+                      )
+                    : []
+                  : questionData.question_type === "single_answer" ||
+                    questionData.question_type === "text_free"
+                  ? Array.isArray(questionData.correct_answers)
+                    ? questionData.correct_answers.filter((v: string) =>
+                        v.trim()
+                      )
+                    : []
+                  : null,
+              options:
+                questionData.question_type === "mcq"
+                  ? (Array.isArray(questionData.options)
+                      ? questionData.options
+                      : []
+                    ).filter((opt: string) => opt.trim())
+                  : null,
+              image_url: questionData.image_url,
+              option_images: questionData.option_images || null,
+              points: questionData.points,
+              order_index: questionData.order_index,
+            })
+            .eq("id", question.id);
+        }
       }
+
+      alert(t("editQuiz.updateSuccess"));
+      onNavigate("quizzes");
+    } catch (err: any) {
+      setError(err.message || t("editQuiz.updateError"));
+    } finally {
+      setSaving(false);
     }
-
-    alert(t("editQuiz.updateSuccess"));
-    onNavigate("quizzes");
-  } catch (err: any) {
-    setError(err.message || t("editQuiz.updateError"));
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
 
   const getCategoryLabel = (cat: string) => {
     return t(`quizzes.category.${cat}` as any);
@@ -943,7 +942,7 @@ const saveQuestion = () => {
                               )
                                 .filter((opt: string) => opt.trim())
                                 .map((option: string, idx: number) => {
-                                  // ✅ Vérifier si cette option est dans correct_answers
+                                  
                                   const isSelected = (
                                     editingQuestion.correct_answers || []
                                   ).includes(option);
@@ -965,7 +964,7 @@ const saveQuestion = () => {
                                             editingQuestion.correct_answers ||
                                             [];
                                           if (e.target.checked) {
-                                            // ✅ Ajouter à la liste des bonnes réponses
+                                            
                                             setEditingQuestion({
                                               ...editingQuestion,
                                               correct_answers: [
@@ -975,7 +974,7 @@ const saveQuestion = () => {
                                               correct_answer: option,
                                             });
                                           } else {
-                                            // ✅ Retirer de la liste des bonnes réponses
+                                            
                                             const newAnswers = answers.filter(
                                               (a: string) => a !== option
                                             );

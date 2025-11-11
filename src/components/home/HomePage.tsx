@@ -53,106 +53,117 @@ export function HomePage({
   };
 
   useEffect(() => {
-    loadData();
-  }, [profile]);
+    const loadData = async () => {
+      if (!profile) return;
 
-  const loadData = async () => {
-    if (!profile) return;
+      try {
+        let query = supabase
+          .from("quizzes")
+          .select("*")
+          .or("is_public.eq.true,is_global.eq.true");
 
-    try {
-      const { data: allQuizzes, error } = await supabase
-        .from("quizzes")
+        if (!profile.show_all_languages && profile.language) {
+          query = query.eq("language", profile.language);
+        }
+
+        const { data: allQuizzes, error } = await query;
+
+        if (error) {
+          console.error("Erreur chargement quiz:", error);
+          return;
+        }
+
+        if (allQuizzes && allQuizzes.length > 0) {
+          const now = Date.now();
+          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+
+          const trendingQuizzes = allQuizzes
+            .map((quiz: any) => {
+              const quizAge = now - new Date(quiz.created_at).getTime();
+              const recencyScore = Math.max(0, 1 - quizAge / thirtyDaysMs);
+              const popularityScore = Math.min(
+                1,
+                (quiz.total_plays || 0) / 100
+              );
+              const trendScore = popularityScore * 0.7 + recencyScore * 0.3;
+
+              return { ...quiz, trendScore };
+            })
+            .sort((a: any, b: any) => b.trendScore - a.trendScore)
+            .slice(0, 4);
+
+          setRecentQuizzes(trendingQuizzes);
+        }
+      } catch (err) {
+        console.error("Erreur:", err);
+      }
+
+      const { data: sessions } = await supabase
+        .from("game_sessions")
         .select("*")
-        .or("is_public.eq.true,is_global.eq.true");
-
-      if (error) {
-        console.error("Erreur chargement quiz:", error);
-        return;
-      }
-
-      if (allQuizzes && allQuizzes.length > 0) {
-        const now = Date.now();
-        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-        const trendingQuizzes = allQuizzes
-          .map((quiz: any) => {
-            const quizAge = now - new Date(quiz.created_at).getTime();
-            const recencyScore = Math.max(0, 1 - quizAge / thirtyDaysMs);
-            const popularityScore = Math.min(1, (quiz.total_plays || 0) / 100);
-            const trendScore = popularityScore * 0.7 + recencyScore * 0.3;
-
-            return { ...quiz, trendScore };
-          })
-          .sort((a: any, b: any) => b.trendScore - a.trendScore)
-          .slice(0, 4);
-
-        setRecentQuizzes(trendingQuizzes);
-      }
-    } catch (err) {
-      console.error("Erreur:", err);
-    }
-
-    const { data: sessions } = await supabase
-      .from("game_sessions")
-      .select("*")
-      .eq("player_id", profile.id)
-      .eq("completed", true)
-      .order("completed_at", { ascending: false })
-      .limit(5);
-
-    if (sessions) {
-      setRecentSessions(sessions);
-
-      const totalPlays = sessions.length;
-      const averageScore =
-        sessions.reduce((acc, s) => acc + s.score, 0) / totalPlays || 0;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayISO = today.toISOString();
-
-      const { data: todaySessions } = await supabase
-        .from("game_sessions")
-        .select("score")
         .eq("player_id", profile.id)
         .eq("completed", true)
-        .gte("completed_at", todayISO);
+        .order("completed_at", { ascending: false })
+        .limit(5);
 
-      let dailyPoints = 0;
-      if (todaySessions) {
-        dailyPoints = todaySessions.reduce((sum, s) => sum + s.score, 0);
+      if (sessions) {
+        setRecentSessions(sessions);
+
+        const totalPlays = sessions.length;
+        const averageScore =
+          sessions.reduce((acc, s) => acc + s.score, 0) / totalPlays || 0;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayISO = today.toISOString();
+
+        const { data: todaySessions } = await supabase
+          .from("game_sessions")
+          .select("score")
+          .eq("player_id", profile.id)
+          .eq("completed", true)
+          .gte("completed_at", todayISO);
+
+        let dailyPoints = 0;
+        if (todaySessions) {
+          dailyPoints = todaySessions.reduce((sum, s) => sum + s.score, 0);
+        }
+
+        const { data: allCompletedSessions } = await supabase
+          .from("game_sessions")
+          .select("score, completed_at")
+          .eq("player_id", profile.id)
+          .eq("completed", true)
+          .order("completed_at", { ascending: false });
+
+        let maxDailyPoints = 0;
+        if (allCompletedSessions) {
+          const dailyPointsMap = new Map<string, number>();
+          allCompletedSessions.forEach((s) => {
+            const date = new Date(s.completed_at).toISOString().split("T")[0];
+            dailyPointsMap.set(date, (dailyPointsMap.get(date) || 0) + s.score);
+          });
+          maxDailyPoints = Math.max(...dailyPointsMap.values(), 0);
+        }
+
+        setStats({ totalPlays, averageScore, dailyPoints, maxDailyPoints });
       }
 
-      const { data: allCompletedSessions } = await supabase
-        .from("game_sessions")
-        .select("score, completed_at")
-        .eq("player_id", profile.id)
-        .eq("completed", true)
-        .order("completed_at", { ascending: false });
+      const { data: userWarnings } = await supabase
+        .from("warnings")
+        .select("*")
+        .eq("reported_user_id", profile.id)
+        .in("status", ["action_taken"])
+        .order("created_at", { ascending: false })
+        .limit(3);
 
-      let maxDailyPoints = 0;
-      if (allCompletedSessions) {
-        const dailyPointsMap = new Map<string, number>();
-        allCompletedSessions.forEach((s) => {
-          const date = new Date(s.completed_at).toISOString().split("T")[0];
-          dailyPointsMap.set(date, (dailyPointsMap.get(date) || 0) + s.score);
-        });
-        maxDailyPoints = Math.max(...dailyPointsMap.values(), 0);
-      }
+      if (userWarnings) setWarnings(userWarnings);
+    };
 
-      setStats({ totalPlays, averageScore, dailyPoints, maxDailyPoints });
+    if (profile) {
+      loadData();
     }
-
-    const { data: userWarnings } = await supabase
-      .from("warnings")
-      .select("*")
-      .eq("reported_user_id", profile.id)
-      .in("status", ["action_taken"])
-      .order("created_at", { ascending: false })
-      .limit(3);
-
-    if (userWarnings) setWarnings(userWarnings);
-  };
+  }, [profile?.id, profile?.language, profile?.show_all_languages]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

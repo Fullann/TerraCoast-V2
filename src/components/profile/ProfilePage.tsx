@@ -365,7 +365,6 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                 </div>
               </div>
 
-              {/* ✅ Barre de progression XP */}
               <div className="w-full max-w-md">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-xs font-medium text-gray-600">
@@ -593,7 +592,6 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                     weekday: "short",
                   });
 
-                  // ✅ Récupérer les points (0 si pas de données)
                   const targetPoints =
                     dailyStats.find((s) => s.date === dateStr)?.points || 0;
                   const currentPoints =

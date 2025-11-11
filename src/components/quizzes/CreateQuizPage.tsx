@@ -462,7 +462,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
               </div>
             )}
             <p className="text-xs text-gray-500 mt-2">
-              {t("createQuiz.maxTags")}  • {tags.length}/10
+              {t("createQuiz.maxTags")} • {tags.length}/10
             </p>
           </div>
 
@@ -706,7 +706,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 value={currentQuestion.points}
                 onChange={(e) => {
                   let value = parseInt(e.target.value) || 10;
-                  // ✅ Forcer le max à 500
+
                   if (value > 500) value = 500;
                   if (value < 10) value = 10;
                   setCurrentQuestion({
