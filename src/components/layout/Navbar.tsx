@@ -39,7 +39,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
   } = useNotifications();
   const { t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const [socialMenuOpen, setSocialMenuOpen] = useState(false);
   // Auto-fermeture des toasts
   useEffect(() => {
     if (duelNotification) {
@@ -72,7 +72,6 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
 
   return (
     <>
-    
       {messageNotification && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
           <div className="bg-white shadow-2xl rounded-xl border-2 border-blue-500 p-4 max-w-sm">
@@ -241,6 +240,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
       <nav className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
+            {/* Desktop content - garde l'ancien code */}
             <div className="flex items-center space-x-8">
               <div className="flex items-center">
                 <img
@@ -256,6 +256,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 </span>
               </div>
 
+              {/* Desktop menu */}
               <div className="hidden md:flex space-x-1">
                 <button
                   onClick={() => onNavigate("home")}
@@ -391,93 +392,118 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               >
                 <LogOut className="w-6 h-6" />
               </button>
-
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
             </div>
           </div>
         </div>
+      </nav>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-2 space-y-1">
-              <div className="py-3 border-b border-gray-200">
-                <p className="text-sm font-medium text-gray-800">
-                  {profile?.pseudo}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {t("profile.level")} {profile?.level}
-                </p>
-              </div>
+      {/* ✅ NOUVELLE BOTTOM NAV MOBILE */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 safe-area-inset-bottom">
+        <div className="grid grid-cols-5 h-16">
+          {/* Home */}
+          <button
+            onClick={() => onNavigate("home")}
+            className={`flex flex-col items-center justify-center transition-colors ${
+              currentView === "home" ? "text-emerald-600" : "text-gray-600"
+            }`}
+          >
+            <Home className="w-6 h-6" />
+            <span className="text-xs mt-1">{t("nav.home")}</span>
+          </button>
 
+          {/* Quiz */}
+          <button
+            onClick={() => onNavigate("quizzes")}
+            className={`flex flex-col items-center justify-center transition-colors ${
+              currentView === "quizzes" ? "text-emerald-600" : "text-gray-600"
+            }`}
+          >
+            <BookOpen className="w-6 h-6" />
+            <span className="text-xs mt-1">{t("nav.quizzes")}</span>
+          </button>
+
+          {/* Social (avec sous-menu) */}
+          <button
+            onClick={() => setSocialMenuOpen(!socialMenuOpen)}
+            className={`flex flex-col items-center justify-center transition-colors relative ${
+              ["friends", "duels", "chat"].includes(currentView)
+                ? "text-emerald-600"
+                : "text-gray-600"
+            }`}
+          >
+            <Users className="w-6 h-6" />
+            <span className="text-xs mt-1">Social</span>
+            {unreadMessages + pendingDuels + pendingFriendRequests > 0 && (
+              <span className="absolute top-1 right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {unreadMessages + pendingDuels + pendingFriendRequests}
+              </span>
+            )}
+          </button>
+
+          {/* Leaderboard */}
+          <button
+            onClick={() => onNavigate("leaderboard")}
+            className={`flex flex-col items-center justify-center transition-colors ${
+              currentView === "leaderboard"
+                ? "text-emerald-600"
+                : "text-gray-600"
+            }`}
+          >
+            <Trophy className="w-6 h-6" />
+            <span className="text-xs mt-1">{t("nav.leaderboard")}</span>
+          </button>
+
+          {/* Profile */}
+          <button
+            onClick={() => onNavigate("profile")}
+            className={`flex flex-col items-center justify-center transition-colors ${
+              currentView === "profile" ? "text-emerald-600" : "text-gray-600"
+            }`}
+          >
+            <User className="w-6 h-6" />
+            <span className="text-xs mt-1">{t("nav.profile")}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ✅ SOUS-MENU SOCIAL */}
+      {socialMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
+          onClick={() => setSocialMenuOpen(false)}
+        >
+          <div
+            className="fixed bottom-16 left-0 right-0 bg-white rounded-t-2xl shadow-2xl p-4 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">Social</h3>
               <button
-                onClick={() => {
-                  onNavigate("home");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentView === "home"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
+                onClick={() => setSocialMenuOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <Home className="w-5 h-5 inline mr-2" />
-                {t("nav.home")}
+                <X className="w-5 h-5 text-gray-600" />
               </button>
+            </div>
 
-              <button
-                onClick={() => {
-                  onNavigate("quizzes");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentView === "quizzes"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                <BookOpen className="w-5 h-5 inline mr-2" />
-                {t("nav.quizzes")}
-              </button>
-
-              <button
-                onClick={() => {
-                  onNavigate("leaderboard");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentView === "leaderboard"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                <Trophy className="w-5 h-5 inline mr-2" />
-                {t("nav.leaderboard")}
-              </button>
-
+            <div className="space-y-2">
               <button
                 onClick={() => {
                   onNavigate("friends");
-                  setMobileMenuOpen(false);
+                  setSocialMenuOpen(false);
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors relative ${
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
                   currentView === "friends"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <Users className="w-5 h-5 inline mr-2" />
-                {t("nav.friends")}
+                <div className="flex items-center">
+                  <Users className="w-5 h-5 mr-3" />
+                  <span className="font-medium">{t("nav.friends")}</span>
+                </div>
                 {pendingFriendRequests > 0 && (
-                  <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold">
                     {pendingFriendRequests}
                   </span>
                 )}
@@ -486,18 +512,20 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               <button
                 onClick={() => {
                   onNavigate("duels");
-                  setMobileMenuOpen(false);
+                  setSocialMenuOpen(false);
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors relative ${
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
                   currentView === "duels"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <Swords className="w-5 h-5 inline mr-2" />
-                {t("nav.duels")}
+                <div className="flex items-center">
+                  <Swords className="w-5 h-5 mr-3" />
+                  <span className="font-medium">{t("nav.duels")}</span>
+                </div>
                 {pendingDuels > 0 && (
-                  <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold">
                     {pendingDuels}
                   </span>
                 )}
@@ -506,69 +534,48 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               <button
                 onClick={() => {
                   onNavigate("chat");
-                  setMobileMenuOpen(false);
+                  setSocialMenuOpen(false);
                 }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors relative ${
+                className={`w-full flex items-center justify-between p-4 rounded-lg transition-colors ${
                   currentView === "chat"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <MessageCircle className="w-5 h-5 inline mr-2" />
-                {t("nav.chat")}
+                <div className="flex items-center">
+                  <MessageCircle className="w-5 h-5 mr-3" />
+                  <span className="font-medium">{t("nav.chat")}</span>
+                </div>
                 {unreadMessages > 0 && (
-                  <span className="absolute top-2 left-8 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold">
                     {unreadMessages}
                   </span>
                 )}
               </button>
-
-              {profile?.role === "admin" && (
-                <button
-                  onClick={() => {
-                    onNavigate("admin");
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                    currentView === "admin"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  <Shield className="w-5 h-5 inline mr-2" />
-                  {t("nav.admin")}
-                </button>
-              )}
-
-              <button
-                onClick={() => {
-                  onNavigate("profile");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-3 rounded-lg font-medium transition-colors ${
-                  currentView === "profile"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                <User className="w-5 h-5 inline mr-2" />
-                {t("nav.profile")}
-              </button>
-
-              <button
-                onClick={() => {
-                  handleSignOut();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut className="w-5 h-5 inline mr-2" />
-                {t("nav.logout")}
-              </button>
             </div>
           </div>
-        )}
-      </nav>
+        </div>
+      )}
+
+      {/* ✅ Ajoute du padding en bas pour éviter que le contenu soit caché */}
+      <style>{`
+      @media (max-width: 768px) {
+        body {
+          padding-bottom: 4rem;
+        }
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+      }
+    `}</style>
     </>
   );
 }

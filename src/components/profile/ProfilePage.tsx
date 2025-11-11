@@ -322,20 +322,10 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {!isOwnProfile && (
-        <button
-          onClick={() => onNavigate("home")}
-          className="flex items-center text-gray-600 hover:text-gray-800 mb-4"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          {t("common.back")}
-        </button>
-      )}
-
-      <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+      <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
               <span className="text-4xl font-bold text-white">
                 {profile.pseudo.charAt(0).toUpperCase()}
               </span>
@@ -387,69 +377,75 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                   </div>
                 </div>
               </div>
+              {/* Boutons compacts  */}
+              <div className="flex justify-end gap-3 mt-4">
+                {isOwnProfile && (
+                  <button
+                    onClick={() => onNavigate("settings")}
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
+                    title={t("nav.settings")}
+                  >
+                    <Settings className="w-6 h-6" />
+                    <span className="text-xs mt-1">{t("nav.settings")}</span>
+                  </button>
+                )}
+
+                {!isOwnProfile && friendshipStatus === "none" && (
+                  <button
+                    onClick={sendFriendRequest}
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-xl transition-colors"
+                    title={t("profile.addFriend")}
+                  >
+                    <UserPlus className="w-6 h-6" />
+                    <span className="text-xs mt-1"> {t("profile.addFriend")}</span>
+                  </button>
+                )}
+
+                {!isOwnProfile && friendshipStatus === "pending" && (
+                  <button
+                    disabled
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-gray-100 text-gray-500 rounded-xl cursor-not-allowed"
+                    title={t("profile.requestSent")}
+                  >
+                    <Clock className="w-6 h-6" />
+                    <span className="text-xs mt-1"> {t("profile.requestSent")}</span>
+                  </button>
+                )}
+
+                {!isOwnProfile && friendshipStatus === "accepted" && (
+                  <button
+                    disabled
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-green-100 text-green-700 rounded-xl cursor-not-allowed"
+                    title={t("profile.friend")}
+                  >
+                    <UserCheck className="w-6 h-6" />
+                    <span className="text-xs mt-1">{t("profile.friend")}</span>
+                  </button>
+                )}
+
+                {!isOwnProfile && isAdmin && (
+                  <button
+                    onClick={loadWarningHistory}
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl transition-colors"
+                    title={t("profile.history")}
+                  >
+                    <History className="w-6 h-6" />
+                    <span className="text-xs mt-1">{t("profile.history")}</span>
+                  </button>
+                )}
+
+                {!isOwnProfile && (
+                  <button
+                    onClick={() => setShowWarnModal(true)}
+                    className="flex flex-col items-center justify-center w-16 h-16 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-colors"
+                    title={t("profile.report")}
+                  >
+                    <AlertTriangle className="w-6 h-6" />
+                    <span className="text-xs mt-1"> {t("profile.report")}</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="flex space-x-2">
-            {isOwnProfile && (
-              <button
-                onClick={() => onNavigate("settings")}
-                className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-              >
-                <Settings className="w-5 h-5 mr-2" />
-                {t("nav.settings")}
-              </button>
-            )}
-
-            {!isOwnProfile && friendshipStatus === "none" && (
-              <button
-                onClick={sendFriendRequest}
-                className="flex items-center px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-colors"
-              >
-                <UserPlus className="w-5 h-5 mr-2" />
-                {t("profile.addFriend")}
-              </button>
-            )}
-
-            {!isOwnProfile && friendshipStatus === "pending" && (
-              <button
-                disabled
-                className="flex items-center px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
-              >
-                <Clock className="w-5 h-5 mr-2" />
-                {t("profile.requestSent")}
-              </button>
-            )}
-
-            {!isOwnProfile && friendshipStatus === "accepted" && (
-              <button
-                disabled
-                className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg cursor-not-allowed"
-              >
-                <UserCheck className="w-5 h-5 mr-2" />
-                {t("profile.friend")}
-              </button>
-            )}
-
-            {!isOwnProfile && isAdmin && (
-              <button
-                onClick={loadWarningHistory}
-                className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
-              >
-                <History className="w-5 h-5 mr-2" />
-                {t("profile.history")}
-              </button>
-            )}
-
-            {!isOwnProfile && (
-              <button
-                onClick={() => setShowWarnModal(true)}
-                className="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-              >
-                <AlertTriangle className="w-5 h-5 mr-2" />
-                {t("profile.report")}
-              </button>
-            )}
           </div>
         </div>
 

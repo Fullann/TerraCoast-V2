@@ -65,10 +65,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [error, setError] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
+  const [difficulties, setDifficulties] = useState<
+    { id: string; name: string; level: number }[]
+  >([]);
 
   useEffect(() => {
     loadQuiz();
     loadQuizTypes();
+    loadDifficulties();
   }, [quizId]);
 
   const loadQuizTypes = async () => {
@@ -80,7 +84,20 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
 
     if (data) setQuizTypes(data);
   };
+  const loadDifficulties = async () => {
+  const { data, error } = await supabase
+    .from("difficulties")
+    .select("*")
+    .order("multiplier");
+  if (error) {
+    console.error("Erreur chargement difficultés:", error);
+    return;
+  }
 
+  if (data) {
+    setDifficulties(data);
+  }
+};
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
       .from("quizzes")
@@ -335,14 +352,12 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         })
         .eq("id", quizId);
 
-      
       const { data: existingQuestions } = await supabase
         .from("questions")
         .select("id")
         .eq("quiz_id", quizId);
 
       if (existingQuestions) {
-        
         const currentQuestionIds = questions
           .filter((q) => !q.isNew)
           .map((q) => q.id);
@@ -356,10 +371,8 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
         }
       }
 
-      
       for (const question of questions) {
         if (question.isNew) {
-          
           const { id, isNew, ...questionData } = question;
           await supabase.from("questions").insert({
             ...questionData,
@@ -383,7 +396,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                 : null,
           });
         } else {
-         
           const { isNew, ...questionData } = question;
           await supabase
             .from("questions")
@@ -658,11 +670,25 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
-                    <option value="easy">{getDifficultyLabel("easy")}</option>
-                    <option value="medium">
-                      {getDifficultyLabel("medium")}
-                    </option>
-                    <option value="hard">{getDifficultyLabel("hard")}</option>
+                    {difficulties.length > 0 ? (
+                      difficulties.map((diff) => (
+                        <option key={diff.name} value={diff.name}>
+                          {diff.label}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="easy">
+                          {getDifficultyLabel("easy")}
+                        </option>
+                        <option value="medium">
+                          {getDifficultyLabel("medium")}
+                        </option>
+                        <option value="hard">
+                          {getDifficultyLabel("hard")}
+                        </option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -942,7 +968,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               )
                                 .filter((opt: string) => opt.trim())
                                 .map((option: string, idx: number) => {
-                                  
                                   const isSelected = (
                                     editingQuestion.correct_answers || []
                                   ).includes(option);
@@ -964,7 +989,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                             editingQuestion.correct_answers ||
                                             [];
                                           if (e.target.checked) {
-                                            
                                             setEditingQuestion({
                                               ...editingQuestion,
                                               correct_answers: [
@@ -974,7 +998,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                                               correct_answer: option,
                                             });
                                           } else {
-                                            
                                             const newAnswers = answers.filter(
                                               (a: string) => a !== option
                                             );

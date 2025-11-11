@@ -104,7 +104,6 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
       .in("status", ["pending", "in_progress"])
       .order("created_at", { ascending: false });
 
-    // ✅ Filtrer les duels avec des joueurs bannis
     const filteredActive = active?.filter(
       (duel: any) => !duel.player1?.is_banned && !duel.player2?.is_banned
     );
@@ -122,7 +121,6 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
       .limit(10);
 
     if (completed) {
-      // ✅ Filtrer les duels complétés avec des joueurs bannis
       const filteredCompleted = completed.filter(
         (duel: any) => !duel.player1?.is_banned && !duel.player2?.is_banned
       );
@@ -213,15 +211,11 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
       .update({ status: "accepted" })
       .eq("id", invitation.id);
 
-    // ✅ Recharger les données
     loadDuels();
     loadInvitations();
 
     if (duel) {
-      onNavigate("play-duel", {
-        duelId: duel.id,
-        quizId: invitation.quiz_id,
-      });
+      onNavigate("play-duel", { duelId: duel.id, quizId: invitation.quiz_id });
     }
   };
 
@@ -254,19 +248,22 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto px-4 py-4 sm:py-8">
+      {/* Header responsive */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center">
-              <Swords className="w-10 h-10 mr-3 text-emerald-600" />
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2 flex items-center">
+              <Swords className="w-8 h-8 sm:w-10 sm:h-10 mr-3 text-emerald-600" />
               {t("duels.title")}
             </h1>
-            <p className="text-gray-600">{t("duels.subtitle")}</p>
+            <p className="text-sm sm:text-base text-gray-600">
+              {t("duels.subtitle")}
+            </p>
           </div>
           <button
             onClick={() => setShowCreateInvitation(true)}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center"
+            className="w-full sm:w-auto px-4 sm:px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
           >
             <Plus className="w-5 h-5 mr-2" />
             {t("duels.createDuel")}
@@ -274,53 +271,63 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-        <div className="flex space-x-2">
+      {/* Onglets en grille 3 colonnes */}
+      <div className="bg-white rounded-xl shadow-md p-3 sm:p-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setActiveTab("active")}
-            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
               activeTab === "active"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <Swords className="w-4 h-4 inline mr-2" />
-            {t("duels.activeDuels")} ({activeDuels.length})
+            <Swords className="w-5 h-5 mb-1" />
+            <span className="text-xs sm:text-base">
+              {t("duels.activeDuels")}
+            </span>
+            <span className="text-xs">({activeDuels.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("invitations")}
-            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
               activeTab === "invitations"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <Users className="w-4 h-4 inline mr-2" />
-            {t("duels.invitations")} ({pendingInvitations.length})
+            <Users className="w-5 h-5 mb-1" />
+            <span className="text-xs sm:text-base">
+              {t("duels.invitations")}
+            </span>
+            <span className="text-xs">({pendingInvitations.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("completed")}
-            className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
               activeTab === "completed"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <Trophy className="w-4 h-4 inline mr-2" />
-            {t("duels.history")}
+            <Trophy className="w-5 h-5 mb-1" />
+            <span className="text-xs sm:text-base">{t("duels.history")}</span>
           </button>
         </div>
       </div>
 
+      {/* Active Duels */}
       {activeTab === "active" && (
         <div className="space-y-4">
           {activeDuels.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-12 text-center">
-              <Swords className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
+              <Swords className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
                 {t("duels.noActiveDuels")}
               </h3>
-              <p className="text-gray-500">{t("duels.createOrAccept")}</p>
+              <p className="text-sm sm:text-base text-gray-500">
+                {t("duels.createOrAccept")}
+              </p>
             </div>
           ) : (
             activeDuels.map((duel) => {
@@ -336,75 +343,69 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
               return (
                 <div
                   key={duel.id}
-                  className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-xl shadow-md p-4 sm:p-6 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">
-                        {duel.quizzes.title}
-                      </h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                        <span className="flex items-center">
-                          <Users className="w-4 h-4 mr-1" />
-                          {t("duels.vs")} {opponent.pseudo}
-                        </span>
-                        <span className="flex items-center">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {new Date(duel.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                            hasPlayed
-                              ? "bg-green-100 text-green-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              hasPlayed ? "bg-green-500" : "bg-amber-500"
-                            }`}
-                          />
-                          <span>
-                            {hasPlayed
-                              ? t("duels.youPlayed")
-                              : t("duels.waiting")}
-                          </span>
-                        </div>
-                        <div
-                          className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium ${
-                            opponentHasPlayed
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              opponentHasPlayed ? "bg-green-500" : "bg-gray-400"
-                            }`}
-                          />
-                          <span>
-                            {opponent.pseudo}{" "}
-                            {opponentHasPlayed
-                              ? t("duels.hasPlayed")
-                              : t("duels.hasNotPlayed")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => joinDuel(duel)}
-                      disabled={hasPlayed}
-                      className={`px-6 py-3 rounded-lg transition-colors font-medium ${
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
+                    {duel.quizzes.title}
+                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 text-sm text-gray-600 mb-3">
+                    <span className="flex items-center">
+                      <Users className="w-4 h-4 mr-1" />
+                      {t("duels.vs")} {opponent.pseudo}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="w-4 h-4 mr-1" />
+                      {new Date(duel.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                    <div
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-medium ${
                         hasPlayed
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-emerald-600 text-white hover:bg-emerald-700"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-amber-100 text-amber-700"
                       }`}
                     >
-                      {hasPlayed ? t("duels.alreadyPlayed") : t("quiz.play")}
-                    </button>
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          hasPlayed ? "bg-green-500" : "bg-amber-500"
+                        }`}
+                      />
+                      <span>
+                        {hasPlayed ? t("duels.youPlayed") : t("duels.waiting")}
+                      </span>
+                    </div>
+                    <div
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-full text-xs font-medium ${
+                        opponentHasPlayed
+                          ? "bg-green-100 text-green-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          opponentHasPlayed ? "bg-green-500" : "bg-gray-400"
+                        }`}
+                      />
+                      <span className="truncate">
+                        {opponent.pseudo}{" "}
+                        {opponentHasPlayed
+                          ? t("duels.hasPlayed")
+                          : t("duels.hasNotPlayed")}
+                      </span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => joinDuel(duel)}
+                    disabled={hasPlayed}
+                    className={`w-full px-4 py-3 rounded-lg transition-colors font-medium ${
+                      hasPlayed
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-emerald-600 text-white hover:bg-emerald-700"
+                    }`}
+                  >
+                    {hasPlayed ? t("duels.alreadyPlayed") : t("quiz.play")}
+                  </button>
                 </div>
               );
             })
@@ -412,42 +413,43 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
         </div>
       )}
 
+      {/* Invitations */}
       {activeTab === "invitations" && (
         <div className="space-y-6">
           {pendingInvitations.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
                 {t("duels.receivedInvitations")}
               </h2>
               <div className="space-y-3">
                 {pendingInvitations.map((invitation) => (
                   <div
                     key={invitation.id}
-                    className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6"
+                    className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 sm:p-6"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-semibold text-gray-800 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-base sm:text-lg font-semibold text-gray-800 mb-1">
                           {invitation.from_user.pseudo}{" "}
                           {t("duels.challengesYou")}
                         </p>
-                        <p className="text-gray-600 mb-2">
+                        <p className="text-sm sm:text-base text-gray-600 mb-2">
                           {invitation.quizzes.title}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500">
                           {new Date(invitation.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="flex space-x-2">
+                      <div className="flex gap-2">
                         <button
                           onClick={() => acceptInvitation(invitation)}
-                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm sm:text-base"
                         >
                           {t("friends.accept")}
                         </button>
                         <button
                           onClick={() => declineInvitation(invitation.id)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm sm:text-base"
                         >
                           {t("friends.reject")}
                         </button>
@@ -461,28 +463,28 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
 
           {sentInvitations.length > 0 && (
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
                 {t("duels.sentInvitations")}
               </h2>
               <div className="space-y-3">
                 {sentInvitations.map((invitation) => (
                   <div
                     key={invitation.id}
-                    className="bg-white rounded-xl shadow-md p-6"
+                    className="bg-white rounded-xl shadow-md p-4 sm:p-6"
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-lg font-semibold text-gray-800 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <p className="text-base sm:text-lg font-semibold text-gray-800 mb-1">
                           {t("duels.invitationTo")} {invitation.to_user.pseudo}
                         </p>
-                        <p className="text-gray-600 mb-2">
+                        <p className="text-sm sm:text-base text-gray-600 mb-2">
                           {invitation.quizzes.title}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500">
                           {new Date(invitation.created_at).toLocaleString()}
                         </p>
                       </div>
-                      <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium">
+                      <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium text-sm sm:text-base text-center">
                         {t("duels.waiting")}
                       </span>
                     </div>
@@ -493,26 +495,31 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           )}
 
           {pendingInvitations.length === 0 && sentInvitations.length === 0 && (
-            <div className="bg-white rounded-xl shadow-md p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
+              <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
                 {t("duels.noInvitations")}
               </h3>
-              <p className="text-gray-500">{t("duels.createToChallenge")}</p>
+              <p className="text-sm sm:text-base text-gray-500">
+                {t("duels.createToChallenge")}
+              </p>
             </div>
           )}
         </div>
       )}
 
+      {/* Completed Duels */}
       {activeTab === "completed" && (
         <div className="space-y-4">
           {completedDuels.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-md p-12 text-center">
-              <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            <div className="bg-white rounded-xl shadow-md p-8 sm:p-12 text-center">
+              <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
                 {t("duels.noCompletedDuels")}
               </h3>
-              <p className="text-gray-500">{t("duels.historyAppears")}</p>
+              <p className="text-sm sm:text-base text-gray-500">
+                {t("duels.historyAppears")}
+              </p>
             </div>
           ) : (
             completedDuels.map((duel) => {
@@ -543,58 +550,56 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                       : "bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-400"
                   }`}
                 >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-2xl font-bold text-gray-800">
+                          <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
                             {duel.quizzes.title}
                           </h3>
                           {status === t("duels.victory") && (
                             <Crown className="w-6 h-6 text-yellow-500" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500">
                           {duel.completed_at &&
                             new Date(duel.completed_at).toLocaleString()}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <span
-                          className={`inline-flex items-center px-4 py-2 rounded-lg font-bold text-xl shadow-md ${
-                            status === t("duels.victory")
-                              ? "bg-green-600 text-white"
-                              : status === t("duels.defeat")
-                              ? "bg-red-600 text-white"
-                              : "bg-gray-600 text-white"
-                          }`}
-                        >
-                          {status === t("duels.victory") && (
-                            <Trophy className="w-5 h-5 mr-2" />
-                          )}
-                          {status}
-                        </span>
-                      </div>
+                      <span
+                        className={`inline-flex items-center px-4 py-2 rounded-lg font-bold text-lg sm:text-xl shadow-md ${
+                          status === t("duels.victory")
+                            ? "bg-green-600 text-white"
+                            : status === t("duels.defeat")
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-600 text-white"
+                        }`}
+                      >
+                        {status === t("duels.victory") && (
+                          <Trophy className="w-5 h-5 mr-2" />
+                        )}
+                        {status}
+                      </span>
                     </div>
 
                     {winner && (
                       <div className="mb-4 p-4 bg-white/60 backdrop-blur rounded-lg border-2 border-yellow-300">
                         <div className="flex items-center justify-center space-x-3">
-                          <Crown className="w-8 h-8 text-yellow-500" />
+                          <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
                           <div className="text-center">
-                            <p className="text-sm text-gray-600 font-medium">
+                            <p className="text-xs sm:text-sm text-gray-600 font-medium">
                               {t("duels.winner")}
                             </p>
-                            <p className="text-2xl font-bold text-gray-800">
+                            <p className="text-xl sm:text-2xl font-bold text-gray-800">
                               {winner.pseudo}
                             </p>
                           </div>
-                          <Crown className="w-8 h-8 text-yellow-500" />
+                          <Crown className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
                         </div>
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div
                         className={`p-4 rounded-lg ${
                           status === t("duels.victory")
@@ -705,31 +710,31 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
                     </div>
 
                     {mySession && opponentSession && (
-                      <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-300">
-                        <div className="text-center p-3 bg-white/40 rounded-lg">
-                          <Target className="w-5 h-5 mx-auto mb-1 text-blue-600" />
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-4 border-t border-gray-300">
+                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
+                          <Target className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-blue-600" />
                           <p className="text-xs text-gray-600 mb-1">
                             {t("duels.gap")}
                           </p>
-                          <p className="text-lg font-bold text-gray-800">
+                          <p className="text-base sm:text-lg font-bold text-gray-800">
                             {Math.abs(mySession.score - opponentSession.score)}
                           </p>
                         </div>
-                        <div className="text-center p-3 bg-white/40 rounded-lg">
-                          <Zap className="w-5 h-5 mx-auto mb-1 text-yellow-600" />
+                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
+                          <Zap className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-yellow-600" />
                           <p className="text-xs text-gray-600 mb-1">
                             {t("duels.yourScore")}
                           </p>
-                          <p className="text-lg font-bold text-emerald-600">
+                          <p className="text-base sm:text-lg font-bold text-emerald-600">
                             {mySession.score}
                           </p>
                         </div>
-                        <div className="text-center p-3 bg-white/40 rounded-lg">
-                          <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-600" />
+                        <div className="text-center p-2 sm:p-3 bg-white/40 rounded-lg">
+                          <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-purple-600" />
                           <p className="text-xs text-gray-600 mb-1">
                             {t("quiz.questions")}
                           </p>
-                          <p className="text-lg font-bold text-gray-800">
+                          <p className="text-base sm:text-lg font-bold text-gray-800">
                             {mySession.total_questions}
                           </p>
                         </div>
@@ -831,7 +836,7 @@ function CreateDuelInvitation({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">
           {t("duels.createDuel")}
         </h2>
 
@@ -873,7 +878,7 @@ function CreateDuelInvitation({
           </div>
         </div>
 
-        <div className="flex space-x-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"

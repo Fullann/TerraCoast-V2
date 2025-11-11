@@ -5,7 +5,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import {
   BookOpen,
   Search,
-  ArrowLeft,
+  Copy,
   Trash2,
   Shield,
   AlertTriangle,
@@ -152,6 +152,28 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
 
     alert(`Quiz ${isGlobal ? "retiré des" : "ajouté aux"} quiz globaux !`);
     loadQuizzes();
+  };
+
+  const duplicateQuiz = async (quiz: QuizWithCreator) => {
+    if (!confirm(`Dupliquer le quiz "${quiz.title}" ?`)) return;
+
+    try {
+      const { data, error } = await supabase.rpc("duplicate_quiz", {
+        p_quiz_id: quiz.id,
+        p_new_title: `${quiz.title} (copie)`,
+      });
+
+      if (error) {
+        console.error("Erreur:", error);
+        alert("Erreur lors de la duplication : " + error.message);
+        return;
+      }
+
+      alert(`Quiz "${quiz.title}" dupliqué avec succès ! ID: ${data}`);
+      loadQuizzes();
+    } catch (error: any) {
+      alert("Erreur : " + error.message);
+    }
   };
 
   const resetQuizStats = async (quizId: string, quizTitle: string) => {
@@ -507,16 +529,23 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
-
                         {/* Bouton Modifier */}
                         <button
                           onClick={() =>
-                            onNavigate?.("edit-quiz", { quizId: quiz.id }) 
+                            onNavigate?.("edit-quiz", { quizId: quiz.id })
                           }
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Modifier"
                         >
                           <Edit2 className="w-4 h-4" />
+                        </button>
+                        {/* Bouton Dupliquer */}
+                        <button
+                          onClick={() => duplicateQuiz(quiz)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Dupliquer"
+                        >
+                          <Copy className="w-4 h-4" />
                         </button>
 
                         {/* Bouton Visibilité */}

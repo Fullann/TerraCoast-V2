@@ -5,12 +5,11 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import {
   BookOpen,
   Search,
-  Filter,
   Play,
+  Filter,
   Plus,
   Share2,
   CreditCard as Edit,
-  Dumbbell,
   Trash2,
   Globe,
 } from "lucide-react";
@@ -43,6 +42,7 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<"public" | "my" | "shared">(
     "public"
   );
@@ -286,7 +286,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
       </div>
 
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Recherche + Bouton filtres */}
+        <div className="flex gap-2 mb-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -298,106 +299,150 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
             />
           </div>
 
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-            style={{
-              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 0.5rem center",
-              backgroundSize: "1.5em 1.5em",
-            }}
+          {/* Bouton pour afficher/masquer les filtres */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center ${
+              showFilters
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
           >
-            <option value="all">{t("quizzes.allCategories")}</option>
-            {categories.map((category) => (
-              <option key={category.name} value={category.name}>
-                {category.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={difficultyFilter}
-            onChange={(e) => setDifficultyFilter(e.target.value)}
-            className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-            style={{
-              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 0.5rem center",
-              backgroundSize: "1.5em 1.5em",
-            }}
-          >
-            <option value="all">{t("quizzes.allDifficulties")}</option>
-            {difficulties.map((difficulty) => (
-              <option key={difficulty.name} value={difficulty.name}>
-                {difficulty.label}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
-            style={{
-              backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-              backgroundRepeat: "no-repeat",
-              backgroundPosition: "right 0.5rem center",
-              backgroundSize: "1.5em 1.5em",
-            }}
-          >
-            <option value="all">{t("quizzes.allTypes")}</option>
-            {quizTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name}
-              </option>
-            ))}
-          </select>
+            <Filter className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        {/* Filtres (cachables) */}
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 animate-slide-down">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.5rem center",
+                backgroundSize: "1.5em 1.5em",
+              }}
+            >
+              <option value="all">{t("quizzes.allCategories")}</option>
+              {categories.map((category) => (
+                <option key={category.name} value={category.name}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={difficultyFilter}
+              onChange={(e) => setDifficultyFilter(e.target.value)}
+              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.5rem center",
+                backgroundSize: "1.5em 1.5em",
+              }}
+            >
+              <option value="all">{t("quizzes.allDifficulties")}</option>
+              {difficulties.map((difficulty) => (
+                <option key={difficulty.name} value={difficulty.name}>
+                  {difficulty.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none appearance-none bg-white cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.5rem center",
+                backgroundSize: "1.5em 1.5em",
+              }}
+            >
+              <option value="all">{t("quizzes.allTypes")}</option>
+              {quizTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Onglets */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <button
             onClick={() => setActiveTab("public")}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all ${
               activeTab === "public"
-                ? "bg-emerald-100 text-emerald-700"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-lg"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <BookOpen className="w-4 h-4 inline mr-2" />
-            {t("quiz.publicQuizzes")}
+            <BookOpen className="w-5 h-5 mb-1" />
+            <span className="text-xs">{t("quiz.publicQuizzes")}</span>
           </button>
+
           <button
             onClick={() => setActiveTab("my")}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all ${
               activeTab === "my"
-                ? "bg-emerald-100 text-emerald-700"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            {t("quiz.myQuizzes")}
+            <Edit className="w-5 h-5 mb-1" />
+            <span className="text-xs">{t("quiz.myQuizzes")}</span>
           </button>
+
           <button
             onClick={() => setActiveTab("shared")}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium transition-all relative ${
               activeTab === "shared"
-                ? "bg-emerald-100 text-emerald-700"
-                : "text-gray-600 hover:bg-gray-100"
+                ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            <Share2 className="w-4 h-4 inline mr-2" />
-            {t("quiz.sharedQuizzes")} ({sharedQuizzes.length})
+            <Share2 className="w-5 h-5 mb-1" />
+            <span className="text-xs">{t("quiz.sharedQuizzes")}</span>
+            {sharedQuizzes.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {sharedQuizzes.length}
+              </span>
+            )}
           </button>
+
           <button
             onClick={() => onNavigate("create-quiz")}
-            className="ml-auto px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+            className="flex flex-col items-center justify-center px-4 py-3 rounded-xl font-medium bg-gradient-to-br from-teal-500 to-cyan-500 text-white hover:from-teal-600 hover:to-cyan-600 transition-all shadow-md"
           >
-            <Plus className="w-4 h-4 inline mr-2" />
-            {t("quiz.create")}
+            <Plus className="w-5 h-5 mb-1" />
+            <span className="text-xs">{t("quiz.create")}</span>
           </button>
         </div>
       </div>
+
+      {/* Style pour l'animation */}
+      <style>{`
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`}</style>
 
       {filteredQuizzes.length === 0 ? (
         <div className="bg-white rounded-xl shadow-md p-12 text-center">
@@ -418,7 +463,8 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
           {filteredQuizzes.map((quiz) => (
             <div
               key={quiz.id}
-              className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
+              onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
+              className="bg-white cursor-pointer rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden"
             >
               {quiz.cover_image_url ? (
                 <img
@@ -484,30 +530,23 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => onNavigate("play-quiz", { quizId: quiz.id })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNavigate("play-quiz", { quizId: quiz.id });
+                    }}
                     className="flex-1 bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     {t("quiz.play")}
                   </button>
-                  <button
-                    onClick={() =>
-                      onNavigate("play-training", {
-                        quizId: quiz.id,
-                        questionCount: 10,
-                      })
-                    }
-                    className="px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                    title={t("quizzes.trainingMode")}
-                  >
-                    <Dumbbell className="w-4 h-4" />
-                  </button>
+
                   {activeTab === "my" && (
                     <>
                       <button
-                        onClick={() =>
-                          onNavigate("edit-quiz", { quizId: quiz.id })
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigate("edit-quiz", { quizId: quiz.id });
+                        }}
                         className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                         title={t("quiz.edit")}
                       >
@@ -516,20 +555,22 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                       {!quiz.is_public && (
                         <>
                           <button
-                            onClick={() =>
-                              setShareQuiz({ id: quiz.id, title: quiz.title })
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShareQuiz({ id: quiz.id, title: quiz.title });
+                            }}
                             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                             title={t("quizzes.shareWithFriends")}
                           >
                             <Share2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               profile?.role === "admin"
                                 ? publishQuizDirectly(quiz.id)
-                                : requestPublish(quiz.id, quiz.title)
-                            }
+                                : requestPublish(quiz.id, quiz.title);
+                            }}
                             className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                             title={
                               profile?.role === "admin"
@@ -540,7 +581,10 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                             <Globe className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => deleteQuiz(quiz.id, quiz.title)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteQuiz(quiz.id, quiz.title);
+                            }}
                             className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                             title={t("quizzes.deleteQuiz")}
                           >
@@ -552,7 +596,10 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
                   )}
                   {activeTab === "shared" && (
                     <button
-                      onClick={() => removeSharedQuiz(quiz.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeSharedQuiz(quiz.id);
+                      }}
                       className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                       title={t("quizzes.removeFromList")}
                     >

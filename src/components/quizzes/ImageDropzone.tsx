@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { supabase } from "../../lib/supabase";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
+import imageCompression from "browser-image-compression";
 
 interface ImageDropzoneProps {
   onImageUploaded: (url: string) => void;
@@ -45,6 +46,27 @@ export function ImageDropzone({
     }
   };
 
+  const compressImage = async (file: File): Promise<File> => {
+    const options = {
+      maxSizeMB: 1, // Max 1MB
+      maxWidthOrHeight: 1920, // Résolution max
+      useWebWorker: true, // Performance
+      fileType: "image/jpeg", // Convertir en JPEG
+    };
+
+    try {
+      console.log(`Original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+      const compressedFile = await imageCompression(file, options);
+      console.log(
+        `Compressé: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`
+      );
+      return compressedFile;
+    } catch (error) {
+      console.error("Erreur de compression:", error);
+      return file; // Retourner l'original si erreur
+    }
+  };
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -55,13 +77,13 @@ export function ImageDropzone({
   const uploadImage = async (file: File) => {
     // Vérifier le type de fichier
     if (!file.type.startsWith("image/")) {
-      setError(t('imageDropzone.invalidType'));
+      setError(t("imageDropzone.invalidType"));
       return;
     }
 
-    // Vérifier la taille (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError(t('imageDropzone.fileTooLarge'));
+    // Vérifier la taille avant compression (max 10MB originale)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("Image trop grande (max 10MB)");
       return;
     }
 
@@ -69,17 +91,19 @@ export function ImageDropzone({
     setError("");
 
     try {
+      const compressedFile = await compressImage(file);
+
       // Créer un nom de fichier unique
-      const fileExt = file.name.split(".").pop();
+      const fileExt = compressedFile.name.split(".").pop();
       const fileName = `${Math.random()
         .toString(36)
         .substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload vers Supabase Storage
+      // Upload vers Supabase Storage avec le fichier compressé
       const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
-        .upload(filePath, file, {
+        .upload(filePath, compressedFile, {
           cacheControl: "3600",
           upsert: false,
         });
@@ -95,7 +119,7 @@ export function ImageDropzone({
 
       onImageUploaded(publicUrl);
     } catch (err: any) {
-      setError(err.message || t('imageDropzone.uploadError'));
+      setError(err.message || t("imageDropzone.uploadError"));
     } finally {
       setUploading(false);
     }
@@ -109,9 +133,9 @@ export function ImageDropzone({
   };
 
   return (
-    <div>
+    <div className="w-full">
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        {label || t('imageDropzone.imageLabel')}
+        {label || t("imageDropzone.imageLabel")}
       </label>
 
       <div
@@ -119,7 +143,7 @@ export function ImageDropzone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`
+        className={`w-full
           relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer
           ${
             isDragging
@@ -142,7 +166,7 @@ export function ImageDropzone({
           <div className="relative">
             <img
               src={currentImageUrl}
-              alt={t('imageDropzone.preview')}
+              alt={t("imageDropzone.preview")}
               className="w-full max-h-48 object-contain rounded-lg"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
@@ -169,13 +193,15 @@ export function ImageDropzone({
               )}
             </div>
             <p className="text-gray-600 font-medium mb-1">
-              {uploading ? t('imageDropzone.uploading') : t('imageDropzone.dragHere')}
+              {uploading
+                ? t("imageDropzone.uploading")
+                : t("imageDropzone.dragHere")}
             </p>
             <p className="text-sm text-gray-500">
-              {t('imageDropzone.orClickToSelect')}
+              {t("imageDropzone.orClickToSelect")}
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              {t('imageDropzone.supportedFormats')}
+              {t("imageDropzone.supportedFormats")}
             </p>
           </div>
         )}

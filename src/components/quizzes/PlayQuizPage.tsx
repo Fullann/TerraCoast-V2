@@ -52,27 +52,15 @@ export function PlayQuizPage({
   const isCompletingRef = useRef(false);
   const isCreatingSessionRef = useRef(false);
   const hasTimedOutRef = useRef(false);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log("[useEffect-loadQuiz] Loading quiz:", quizId);
     isCompletingRef.current = false;
     isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
 
   useEffect(() => {
-    console.log(
-      "[useEffect-session] quiz:",
-      !!quiz,
-      "questions:",
-      questions.length,
-      "sessionId:",
-      !!sessionId,
-      "gameComplete:",
-      gameComplete,
-      "isCreatingSession:",
-      isCreatingSessionRef.current
-    );
     if (
       quiz &&
       questions.length > 0 &&
@@ -80,7 +68,6 @@ export function PlayQuizPage({
       !gameComplete &&
       !isCreatingSessionRef.current
     ) {
-      console.log("[useEffect-session] Creating new session");
       isCreatingSessionRef.current = true;
       createSession();
     }
@@ -151,24 +138,49 @@ export function PlayQuizPage({
 
     if (!currentQuestion) return;
 
+    // ✅ Récupérer la réponse sélectionnée (si elle existe)
+    const finalAnswer =
+      currentQuestion.question_type === "mcq" ||
+      currentQuestion.question_type === "true_false"
+        ? selectedOption
+        : userAnswer;
+
+    // ✅ Vérifier si la réponse est correcte
+    const correctAnswers =
+      currentQuestion.correct_answers &&
+      currentQuestion.correct_answers.length > 0
+        ? [currentQuestion.correct_answer, ...currentQuestion.correct_answers]
+        : [currentQuestion.correct_answer];
+
+    const isCorrect =
+      finalAnswer &&
+      correctAnswers.some(
+        (ca) => normalizeAnswer(finalAnswer) === normalizeAnswer(ca)
+      );
+
+    const pointsEarned = isCorrect
+      ? calculatePoints(timeTaken, currentQuestion.points)
+      : 0;
+
     const answerData = {
       question_id: currentQuestion.id,
-      user_answer: "",
-      is_correct: false,
+      user_answer: finalAnswer || "",
+      is_correct: isCorrect || false,
       time_taken: timeTaken,
-      points_earned: 0,
+      points_earned: pointsEarned,
     };
 
     setAnswers((prev) => [...prev, answerData]);
+    setTotalScore((prev) => prev + pointsEarned);
     setIsAnswered(true);
+    setShowResult(true);
 
     saveAnswer(answerData);
 
-    console.log("[handleTimeout] Setting timeout to move to next question");
     setTimeout(() => {
       hasTimedOutRef.current = false;
       moveToNextQuestion();
-    }, 100);
+    }, 1500);
   }, [
     isAnswered,
     gameComplete,
@@ -176,6 +188,9 @@ export function PlayQuizPage({
     questions,
     currentQuestionIndex,
     sessionId,
+    selectedOption,
+    userAnswer,
+    totalScore,
   ]);
 
   const normalizeAnswer = (answer: string): string => {
@@ -215,6 +230,18 @@ export function PlayQuizPage({
     trainingMode,
     handleTimeout,
   ]);
+  useEffect(() => {
+    // Focus automatique quand la question change
+    const question = questions[currentQuestionIndex];
+    if (
+      question &&
+      (question.question_type === "single_answer" ||
+        question.question_type === "text_free") &&
+      textInputRef.current
+    ) {
+      setTimeout(() => textInputRef.current?.focus(), 100);
+    }
+  }, [currentQuestionIndex, questions]);
 
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
@@ -585,42 +612,45 @@ export function PlayQuizPage({
             </p>
           </div>
 
+          {/* ✅ Grille responsive : 2×2 sur mobile, ligne sur desktop */}
           <div
-            className={`grid gap-6 mb-8 ${
+            className={`grid gap-4 mb-8 ${
               trainingMode
-                ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+                ? "grid-cols-2 sm:grid-cols-2 max-w-2xl mx-auto"
+                : "grid-cols-2 lg:grid-cols-4"
             }`}
           >
             {!trainingMode && (
               <>
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-emerald-100 text-sm mb-2">
+                  <p className="text-emerald-100 text-xs sm:text-sm mb-2">
                     {t("playQuiz.totalScore")}
                   </p>
-                  <p className="text-4xl font-bold">{totalScore}</p>
+                  <p className="text-3xl sm:text-4xl font-bold">{totalScore}</p>
                 </div>
                 <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white text-center">
-                  <p className="text-purple-100 text-sm mb-2">
+                  <p className="text-purple-100 text-xs sm:text-sm mb-2">
                     {t("playQuiz.xpGained")}
                   </p>
-                  <p className="text-4xl font-bold">+{xpGained}</p>
+                  <p className="text-3xl sm:text-4xl font-bold">+{xpGained}</p>
                 </div>
               </>
             )}
 
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white text-center">
-              <p className="text-blue-100 text-sm mb-2">
+              <p className="text-blue-100 text-xs sm:text-sm mb-2">
                 {t("playQuiz.accuracy")}
               </p>
-              <p className="text-4xl font-bold">{Math.round(accuracy)}%</p>
+              <p className="text-3xl sm:text-4xl font-bold">
+                {Math.round(accuracy)}%
+              </p>
             </div>
 
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-6 text-white text-center">
-              <p className="text-amber-100 text-sm mb-2">
+              <p className="text-amber-100 text-xs sm:text-sm mb-2">
                 {t("playQuiz.correctAnswers")}
               </p>
-              <p className="text-4xl font-bold">
+              <p className="text-3xl sm:text-4xl font-bold">
                 {correctAnswers}/{questions.length}
               </p>
             </div>
@@ -712,17 +742,26 @@ export function PlayQuizPage({
             >
               {t("playQuiz.exploreOtherQuizzes")}
             </button>
-            <button
-              onClick={() => {
-                onNavigate("play-quiz", {
-                  quizId,
-                  resetKey: Date.now(),
-                });
-              }}
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              {t("playQuiz.playAgain")}
-            </button>
+            {mode === "duel" ? (
+              <button
+                onClick={() => onNavigate("duels")}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                {t("duels.viewResults")} {/* ✅ Ajouter cette traduction */}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onNavigate("play-quiz", {
+                    quizId,
+                    resetKey: Date.now(),
+                  });
+                }}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                {t("playQuiz.playAgain")}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -999,6 +1038,7 @@ export function PlayQuizPage({
           {(currentQuestion.question_type === "single_answer" ||
             currentQuestion.question_type === "text_free") && (
             <input
+              ref={textInputRef}
               type="text"
               value={userAnswer}
               onChange={(e) => setUserAnswer(e.target.value)}
