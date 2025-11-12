@@ -117,12 +117,41 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
     }
   };
 
-  const toggleQuizVisibility = async (quizId: string, isPublic: boolean) => {
-    if (!confirm(`Rendre ce quiz ${isPublic ? "privé" : "public"} ?`)) return;
+  const toggleQuizVisibility = async (
+    quizId: string,
+    isPublic: boolean,
+    isGlobal: boolean
+  ) => {
+    let newIsPublic: boolean;
+    let newIsGlobal: boolean;
+    let statusText: string;
+
+    // Cycle : Privé → Public → Global → Privé
+    if (!isPublic && !isGlobal) {
+      // État actuel: Privé → Passer à Public
+      newIsPublic = true;
+      newIsGlobal = false;
+      statusText = "public";
+    } else if (isPublic && !isGlobal) {
+      // État actuel: Public → Passer à Global
+      newIsPublic = true;
+      newIsGlobal = true;
+      statusText = "global";
+    } else {
+      // État actuel: Global (isPublic=true, isGlobal=true) → Passer à Privé
+      newIsPublic = false;
+      newIsGlobal = false;
+      statusText = "privé";
+    }
+
+    if (!confirm(`Rendre ce quiz ${statusText} ?`)) return;
 
     const { error } = await supabase
       .from("quizzes")
-      .update({ is_public: !isPublic })
+      .update({
+        is_public: newIsPublic,
+        is_global: newIsGlobal,
+      })
       .eq("id", quizId);
 
     if (error) {
@@ -130,29 +159,9 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
       return;
     }
 
-    alert(`Quiz rendu ${isPublic ? "privé" : "public"} !`);
+    alert(`Quiz rendu ${statusText} !`);
     loadQuizzes();
-  };
-
-  const toggleQuizGlobal = async (quizId: string, isGlobal: boolean) => {
-    if (
-      !confirm(`${isGlobal ? "Retirer" : "Ajouter"} ce quiz des quiz globaux ?`)
-    )
-      return;
-
-    const { error } = await supabase
-      .from("quizzes")
-      .update({ is_global: !isGlobal })
-      .eq("id", quizId);
-
-    if (error) {
-      alert("Erreur : " + error.message);
-      return;
-    }
-
-    alert(`Quiz ${isGlobal ? "retiré des" : "ajouté aux"} quiz globaux !`);
-    loadQuizzes();
-  };
+  };  
 
   const duplicateQuiz = async (quiz: QuizWithCreator) => {
     if (!confirm(`Dupliquer le quiz "${quiz.title}" ?`)) return;
@@ -510,23 +519,23 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col space-y-1">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            quiz.is_public
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {quiz.is_public ? "Public" : "Privé"}
-                        </span>
-                        {quiz.is_global && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                            Global
-                          </span>
-                        )}
-                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          quiz.is_global
+                            ? "bg-blue-100 text-blue-700"
+                            : quiz.is_public
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {quiz.is_global
+                          ? "Global"
+                          : quiz.is_public
+                          ? "Public"
+                          : "Privé"}
+                      </span>
                     </td>
+
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         {/* Bouton Modifier */}
@@ -551,41 +560,34 @@ export function QuizManagementPage({ onNavigate }: QuizManagementPageProps) {
                         {/* Bouton Visibilité */}
                         <button
                           onClick={() =>
-                            toggleQuizVisibility(quiz.id, quiz.is_public)
-                          }
-                          className={`p-2 rounded-lg transition-colors ${
-                            quiz.is_public
-                              ? "text-orange-600 hover:bg-orange-50"
-                              : "text-green-600 hover:bg-green-50"
-                          }`}
-                          title={
-                            quiz.is_public ? "Rendre privé" : "Rendre public"
-                          }
-                        >
-                          {quiz.is_public ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-
-                        {/* Bouton Global */}
-                        <button
-                          onClick={() =>
-                            toggleQuizGlobal(quiz.id, quiz.is_global)
+                            toggleQuizVisibility(
+                              quiz.id,
+                              quiz.is_public,
+                              quiz.is_global
+                            )
                           }
                           className={`p-2 rounded-lg transition-colors ${
                             quiz.is_global
-                              ? "text-purple-600 hover:bg-purple-50"
+                              ? "text-blue-600 hover:bg-blue-50"
+                              : quiz.is_public
+                              ? "text-green-600 hover:bg-green-50"
                               : "text-gray-600 hover:bg-gray-50"
                           }`}
                           title={
                             quiz.is_global
-                              ? "Retirer des globaux"
-                              : "Ajouter aux globaux"
+                              ? "Global → Privé"
+                              : quiz.is_public
+                              ? "Public → Global"
+                              : "Privé → Public"
                           }
                         >
-                          <BookOpen className="w-4 h-4" />
+                          {quiz.is_global ? (
+                            <BookOpen className="w-4 h-4" />
+                          ) : quiz.is_public ? (
+                            <Eye className="w-4 h-4" />
+                          ) : (
+                            <EyeOff className="w-4 h-4" />
+                          )}
                         </button>
 
                         {/* Bouton Reset Stats */}

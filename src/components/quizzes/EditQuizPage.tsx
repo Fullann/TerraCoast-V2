@@ -21,13 +21,7 @@ type QuestionType =
   | "map_click"
   | "text_free"
   | "true_false";
-type QuizCategory =
-  | "flags"
-  | "capitals"
-  | "maps"
-  | "borders"
-  | "regions"
-  | "mixed";
+type QuizCategory = string;
 type Difficulty = "easy" | "medium" | "hard";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
@@ -45,7 +39,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<QuizCategory>("capitals");
+  const [category, setCategory] = useState<QuizCategory>("");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(30);
   const [coverImageUrl, setCoverImageUrl] = useState("");
@@ -68,10 +62,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [difficulties, setDifficulties] = useState<
     { id: string; name: string; level: number }[]
   >([]);
+  const [categories, setCategories] = useState<
+    { id: string; name: string; label: string }[]
+  >([]);
 
   useEffect(() => {
     loadQuiz();
     loadQuizTypes();
+    loadCategories();
     loadDifficulties();
   }, [quizId]);
 
@@ -85,19 +83,35 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     if (data) setQuizTypes(data);
   };
   const loadDifficulties = async () => {
-  const { data, error } = await supabase
-    .from("difficulties")
-    .select("*")
-    .order("multiplier");
-  if (error) {
-    console.error("Erreur chargement difficultés:", error);
-    return;
-  }
+    const { data, error } = await supabase
+      .from("difficulties")
+      .select("*")
+      .order("multiplier");
+    if (error) {
+      console.error("Erreur chargement difficultés:", error);
+      return;
+    }
 
-  if (data) {
-    setDifficulties(data);
-  }
-};
+    if (data) {
+      setDifficulties(data);
+    }
+  };
+  const loadCategories = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("label");
+
+    if (error) {
+      console.error("Erreur chargement catégories:", error);
+      return;
+    }
+
+    if (data) {
+      setCategories(data);
+    }
+  };
+
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
       .from("quizzes")
@@ -644,18 +658,32 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
-                    <option value="flags">{getCategoryLabel("flags")}</option>
-                    <option value="capitals">
-                      {getCategoryLabel("capitals")}
-                    </option>
-                    <option value="maps">{getCategoryLabel("maps")}</option>
-                    <option value="borders">
-                      {getCategoryLabel("borders")}
-                    </option>
-                    <option value="regions">
-                      {getCategoryLabel("regions")}
-                    </option>
-                    <option value="mixed">{getCategoryLabel("mixed")}</option>
+                    {categories.length > 0 ? (
+                      categories.map((cat) => (
+                        <option key={cat.name} value={cat.name}>
+                          {cat.label}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="flags">
+                          {getCategoryLabel("flags")}
+                        </option>
+                        <option value="capitals">
+                          {getCategoryLabel("capitals")}
+                        </option>
+                        <option value="maps">{getCategoryLabel("maps")}</option>
+                        <option value="borders">
+                          {getCategoryLabel("borders")}
+                        </option>
+                        <option value="regions">
+                          {getCategoryLabel("regions")}
+                        </option>
+                        <option value="mixed">
+                          {getCategoryLabel("mixed")}
+                        </option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -665,7 +693,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   </label>
                   <select
                     value={difficulty}
-                    onChange={(e) =>
+                    onChange={(e) =>  
                       setDifficulty(e.target.value as Difficulty)
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"

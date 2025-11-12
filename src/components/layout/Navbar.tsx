@@ -30,6 +30,8 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     unreadMessages,
     pendingDuels,
     pendingFriendRequests,
+    pendingDuelsToPlay,
+    newDuelResults,
     duelNotification,
     messageNotification,
     friendRequestNotification,
@@ -38,8 +40,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     clearFriendRequestNotification,
   } = useNotifications();
   const { t } = useLanguage();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
+  
+  const totalSocialNotifications =
+    unreadMessages +
+    pendingFriendRequests +
+    (pendingDuelsToPlay || 0) +
+    (newDuelResults || 0);
   // Auto-fermeture des toasts
   useEffect(() => {
     if (duelNotification) {
@@ -321,9 +328,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 >
                   <Swords className="w-5 h-5 inline mr-2" />
                   {t("nav.duels")}
-                  {pendingDuels > 0 && (
+                  {pendingDuelsToPlay + newDuelResults > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                      {pendingDuels}
+                      {pendingDuelsToPlay + newDuelResults}
                     </span>
                   )}
                 </button>
@@ -433,9 +440,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
           >
             <Users className="w-6 h-6" />
             <span className="text-xs mt-1">Social</span>
-            {unreadMessages + pendingDuels + pendingFriendRequests > 0 && (
+            {totalSocialNotifications > 0 && (
               <span className="absolute top-1 right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {unreadMessages + pendingDuels + pendingFriendRequests}
+                {totalSocialNotifications}
               </span>
             )}
           </button>
@@ -524,10 +531,25 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   <Swords className="w-5 h-5 mr-3" />
                   <span className="font-medium">{t("nav.duels")}</span>
                 </div>
-                {pendingDuels > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold">
-                    {pendingDuels}
-                  </span>
+                {pendingDuelsToPlay + newDuelResults > 0 && (
+                  <div className="flex items-center gap-1">
+                    {pendingDuelsToPlay > 0 && (
+                      <span
+                        className="bg-amber-500 text-white text-xs rounded-full px-2 py-1 font-bold"
+                        title="À jouer"
+                      >
+                        {pendingDuelsToPlay}
+                      </span>
+                    )}
+                    {newDuelResults > 0 && (
+                      <span
+                        className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold"
+                        title="Nouveaux résultats"
+                      >
+                        {newDuelResults}
+                      </span>
+                    )}
+                  </div>
                 )}
               </button>
 

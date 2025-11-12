@@ -27,6 +27,8 @@ interface FriendRequestNotification {
 interface NotificationContextType {
   unreadMessages: number;
   pendingDuels: number;
+  pendingDuelsToPlay: number;
+  newDuelResults: number;
   pendingFriendRequests: number;
   duelNotification: DuelNotification | null;
   messageNotification: MessageNotification | null;
@@ -52,6 +54,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<MessageNotification | null>(null);
   const [friendRequestNotification, setFriendRequestNotification] =
     useState<FriendRequestNotification | null>(null);
+  const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
+  const [newDuelResults, setNewDuelResults] = useState(0);
 
   const refreshNotifications = async () => {
     if (!profile) return;
@@ -79,6 +83,49 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       .eq("status", "pending");
 
     setPendingFriendRequests(friendRequestsCount || 0);
+    const { data: activeDuels } = await supabase
+      .from("duels")
+      .select(
+        "*, player1_session_id, player2_session_id, player1_id, player2_id"
+      )
+      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
+      .in("status", ["pending", "in_progress"]);
+
+    if (activeDuels) {
+      const toPlay = activeDuels.filter((duel: any) => {
+        const isPlayer1 = duel.player1_id === profile.id;
+        const hasPlayed = isPlayer1
+          ? !!duel.player1_session_id
+          : !!duel.player2_session_id;
+        return !hasPlayed;
+      }).length;
+      setPendingDuelsToPlay(toPlay);
+    }
+
+    const { data: completedDuels } = await supabase
+      .from("duels")
+      .select("*")
+      .or(`player1_id.eq.${profile.id},player2_id.eq.${profile.id}`)
+      .eq("status", "completed")
+      .order("completed_at", { ascending: false })
+      .limit(10);
+
+    if (completedDuels) {
+      const stored = localStorage.getItem("viewedDuels");
+      const viewedDuels = stored ? new Set(JSON.parse(stored)) : new Set();
+
+      const newResults = completedDuels.filter((duel: any) => {
+        const completedAt = duel.completed_at
+          ? new Date(duel.completed_at)
+          : null;
+        const isRecent =
+          completedAt &&
+          Date.now() - completedAt.getTime() < 24 * 60 * 60 * 1000;
+        return isRecent && !viewedDuels.has(duel.id);
+      }).length;
+
+      setNewDuelResults(newResults);
+    }
   };
 
   const clearDuelNotification = () => setDuelNotification(null);
@@ -88,8 +135,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!profile) return;
-
     refreshNotifications();
+    const interval = setInterval(() => {
+      refreshNotifications();
+    }, 30000);
 
     const messagesSubscription = supabase
       .channel("notifications_messages")
@@ -300,6 +349,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       duelInvitationsSubscription.unsubscribe();
       duelAcceptedSubscription.unsubscribe();
       duelsCompletedSubscription.unsubscribe();
+      clearInterval(interval);
     };
   }, [profile]);
 
@@ -309,6 +359,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         unreadMessages,
         pendingDuels,
         pendingFriendRequests,
+        pendingDuelsToPlay,
+        newDuelResults,
         duelNotification,
         messageNotification,
         friendRequestNotification,

@@ -9,7 +9,7 @@ import {
   Filter,
   Plus,
   Share2,
-  CreditCard as Edit,
+  PenIcon as Edit,
   Trash2,
   Globe,
 } from "lucide-react";

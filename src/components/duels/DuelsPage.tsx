@@ -64,6 +64,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
     "active" | "completed" | "invitations"
   >("active");
   const [showCreateInvitation, setShowCreateInvitation] = useState(false);
+  const [viewedDuels, setViewedDuels] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadDuels();
@@ -91,7 +92,36 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
       subscription.unsubscribe();
     };
   }, [profile]);
+  useEffect(() => {
+    if (activeTab === "completed" && completedDuels.length > 0) {
+      // Marquer tous les duels complétés comme consultés
+      const newViewedDuels = new Set(viewedDuels);
+      completedDuels.forEach((duel) => newViewedDuels.add(duel.id));
+      setViewedDuels(newViewedDuels);
 
+      // Sauvegarder dans le localStorage pour persister
+      localStorage.setItem("viewedDuels", JSON.stringify([...newViewedDuels]));
+    }
+  }, [activeTab, completedDuels]);
+  useEffect(() => {
+    // Charger les duels consultés depuis localStorage
+    const stored = localStorage.getItem("viewedDuels");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setViewedDuels(new Set(parsed));
+      } catch (e) {
+        console.error("Error loading viewed duels:", e);
+      }
+    }
+  }, []);
+  const pendingDuelsCount = activeDuels.filter((duel) => {
+    const isPlayer1 = duel.player1_id === profile?.id;
+    const hasPlayed = isPlayer1
+      ? !!duel.player1_session_id
+      : !!duel.player2_session_id;
+    return !hasPlayed; // Compter les duels où on n'a pas joué
+  }).length;
   const loadDuels = async () => {
     if (!profile) return;
 
@@ -149,7 +179,15 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
       setCompletedDuels(enrichedDuels as DuelWithDetails[]);
     }
   };
+  const newResultsCount = completedDuels.filter((duel) => {
+    // Vérifier si le duel a été terminé dans les dernières 24h
+    const completedAt = duel.completed_at ? new Date(duel.completed_at) : null;
+    const isRecent =
+      completedAt && Date.now() - completedAt.getTime() < 24 * 60 * 60 * 1000;
 
+    // Et qu'il n'a pas encore été consulté
+    return isRecent && !viewedDuels.has(duel.id);
+  }).length;
   const loadInvitations = async () => {
     if (!profile) return;
 
@@ -276,7 +314,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setActiveTab("active")}
-            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
+            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
               activeTab === "active"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -287,7 +325,16 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
               {t("duels.activeDuels")}
             </span>
             <span className="text-xs">({activeDuels.length})</span>
+
+            {/* Notification point rouge si duels en attente */}
+            {pendingDuelsCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+              </span>
+            )}
           </button>
+
           <button
             onClick={() => setActiveTab("invitations")}
             className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
@@ -304,7 +351,7 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           </button>
           <button
             onClick={() => setActiveTab("completed")}
-            className={`flex flex-col items-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
+            className={`relative flex flex-col items-center justify-center px-2 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition-colors ${
               activeTab === "completed"
                 ? "bg-emerald-600 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -312,6 +359,14 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
           >
             <Trophy className="w-5 h-5 mb-1" />
             <span className="text-xs sm:text-base">{t("duels.history")}</span>
+            <span className="text-xs">({completedDuels.length})</span>
+
+            {/* Badge pour nouveaux résultats */}
+            {newResultsCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white animate-pulse">
+                {newResultsCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
