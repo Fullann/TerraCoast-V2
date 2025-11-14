@@ -30,6 +30,7 @@ import { ChatPage } from "./components/chat/ChatPage";
 import { LandingPage } from "./components/landing/LandingPage";
 import { BannedPage } from "./components/auth/BannedPage";
 import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
+import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
@@ -43,6 +44,9 @@ function AppContent() {
     setCurrentView(view);
     setViewData(data);
   };
+
+  const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
+  const shouldShowNavbar = !hideNavbarViews.includes(currentView);
 
   if (loading) {
     return (
@@ -102,9 +106,11 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navbar currentView={currentView} onNavigate={handleNavigate} />
+      {shouldShowNavbar && (
+        <Navbar currentView={currentView} onNavigate={handleNavigate} />
+      )}
 
-      <main className="pb-8">
+      <main className={shouldShowNavbar ? "pb-8" : ""}>
         {currentView === "home" && <HomePage onNavigate={handleNavigate} />}
         {currentView === "profile" && (
           <ProfilePage onNavigate={handleNavigate} />
@@ -184,7 +190,16 @@ function AppContent() {
         {currentView === "quiz-validation" && <QuizValidationPage />}
         {currentView === "warnings-management" && <WarningsManagementPage />}
         {currentView === "quiz-type-management" && <QuizTypeManagementPage />}
-        {currentView === "user-management" && <UserManagementPage />}
+        {currentView === "user-management" && (
+          <UserManagementPage onNavigate={handleNavigate} />
+        )}
+        {currentView === "account-details" && (
+          <AccountDetailsPage
+            userId={viewData?.userId}
+            onNavigate={handleNavigate}
+          />
+        )}
+
         {currentView === "quiz-management" && (
           <QuizManagementPage onNavigate={handleNavigate} />
         )}

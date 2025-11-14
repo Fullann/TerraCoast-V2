@@ -3,15 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
-import {
-  Plus,
-  Trash2,
-  Save,
-  ArrowLeft,
-  CreditCard as Edit,
-  Image,
-  X,
-} from "lucide-react";
+import { Plus, Trash2, ArrowLeft, CreditCard as Edit, X } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 
@@ -21,13 +13,7 @@ type QuestionType =
   | "map_click"
   | "text_free"
   | "true_false";
-type QuizCategory =
-  | "flags"
-  | "capitals"
-  | "maps"
-  | "borders"
-  | "regions"
-  | "mixed";
+type QuizCategory = string;
 type Difficulty = "easy" | "medium" | "hard";
 
 type Quiz = Database["public"]["Tables"]["quizzes"]["Row"];
@@ -45,7 +31,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<QuizCategory>("capitals");
+  const [category, setCategory] = useState<QuizCategory>("");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [timeLimitSeconds, setTimeLimitSeconds] = useState(30);
   const [coverImageUrl, setCoverImageUrl] = useState("");
@@ -68,10 +54,14 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const [difficulties, setDifficulties] = useState<
     { id: string; name: string; level: number }[]
   >([]);
+  const [categories, setCategories] = useState<
+    { id: string; name: string; label: string }[]
+  >([]);
 
   useEffect(() => {
     loadQuiz();
     loadQuizTypes();
+    loadCategories();
     loadDifficulties();
   }, [quizId]);
 
@@ -85,19 +75,35 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
     if (data) setQuizTypes(data);
   };
   const loadDifficulties = async () => {
-  const { data, error } = await supabase
-    .from("difficulties")
-    .select("*")
-    .order("multiplier");
-  if (error) {
-    console.error("Erreur chargement difficultés:", error);
-    return;
-  }
+    const { data, error } = await supabase
+      .from("difficulties")
+      .select("*")
+      .order("multiplier");
+    if (error) {
+      console.error("Erreur chargement difficultés:", error);
+      return;
+    }
 
-  if (data) {
-    setDifficulties(data);
-  }
-};
+    if (data) {
+      setDifficulties(data);
+    }
+  };
+  const loadCategories = async () => {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("label");
+
+    if (error) {
+      console.error("Erreur chargement catégories:", error);
+      return;
+    }
+
+    if (data) {
+      setCategories(data);
+    }
+  };
+
   const loadQuiz = async () => {
     const { data: quizData } = await supabase
       .from("quizzes")
@@ -206,6 +212,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       order_index: questions.length,
       created_at: new Date().toISOString(),
       isNew: true,
+      complement_if_wrong: "",
     };
 
     setQuestions([...questions, newQuestion]);
@@ -429,6 +436,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
               option_images: questionData.option_images || null,
               points: questionData.points,
               order_index: questionData.order_index,
+               complement_if_wrong: questionData.complement_if_wrong || null,
             })
             .eq("id", question.id);
         }
@@ -644,18 +652,32 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   >
-                    <option value="flags">{getCategoryLabel("flags")}</option>
-                    <option value="capitals">
-                      {getCategoryLabel("capitals")}
-                    </option>
-                    <option value="maps">{getCategoryLabel("maps")}</option>
-                    <option value="borders">
-                      {getCategoryLabel("borders")}
-                    </option>
-                    <option value="regions">
-                      {getCategoryLabel("regions")}
-                    </option>
-                    <option value="mixed">{getCategoryLabel("mixed")}</option>
+                    {categories.length > 0 ? (
+                      categories.map((cat) => (
+                        <option key={cat.name} value={cat.name}>
+                          {cat.label}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="flags">
+                          {getCategoryLabel("flags")}
+                        </option>
+                        <option value="capitals">
+                          {getCategoryLabel("capitals")}
+                        </option>
+                        <option value="maps">{getCategoryLabel("maps")}</option>
+                        <option value="borders">
+                          {getCategoryLabel("borders")}
+                        </option>
+                        <option value="regions">
+                          {getCategoryLabel("regions")}
+                        </option>
+                        <option value="mixed">
+                          {getCategoryLabel("mixed")}
+                        </option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -1086,7 +1108,23 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           </p>
                         </div>
                       )}
-
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t("createQuiz.complementIfWrong")}
+                        </label>
+                        <textarea
+                          value={editingQuestion?.complement_if_wrong || ""}
+                          onChange={(e) =>
+                            setEditingQuestion({
+                              ...editingQuestion,
+                              complement_if_wrong: e.target.value,
+                            })
+                          }
+                          placeholder={t("createQuiz.complementIfWrongPlaceholder")}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-transparent outline-none"
+                        />
+                      </div>
                       <div className="flex space-x-3 pt-4">
                         <button
                           onClick={saveQuestion}

@@ -33,6 +33,7 @@ interface Question {
   option_images?: Record<string, string>;
   points: number;
   order_index: number;
+  complement_if_wrong?: string;
 }
 
 interface CreateQuizPageProps {
@@ -315,6 +316,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
             : null,
         points: q.points,
         order_index: q.order_index,
+        complement_if_wrong: q.complement_if_wrong || null,
       }));
 
       const { error: questionsError } = await supabase
@@ -940,6 +942,23 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
                 )}
               </div>
             )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("createQuiz.complementIfWrong")}
+              </label>
+              <textarea
+                value={currentQuestion.complement_if_wrong || ""}
+                onChange={(e) =>
+                  setCurrentQuestion({
+                    ...currentQuestion,
+                    complement_if_wrong: e.target.value,
+                  })
+                }
+                placeholder={t("createQuiz.complementIfWrongPlaceholder")}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                rows={3}
+              />
+            </div>
           </div>
 
           {editingIndex !== null && (

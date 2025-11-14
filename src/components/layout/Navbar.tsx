@@ -5,14 +5,12 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import {
   Trophy,
   User,
-  LogOut,
   Home,
   BookOpen,
   Users,
   Shield,
   Swords,
   MessageCircle,
-  Menu,
   X,
   CheckCircle,
   Mail,
@@ -25,11 +23,12 @@ interface NavbarProps {
 }
 
 export function Navbar({ currentView, onNavigate }: NavbarProps) {
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const {
     unreadMessages,
-    pendingDuels,
     pendingFriendRequests,
+    pendingDuelsToPlay,
+    newDuelResults,
     duelNotification,
     messageNotification,
     friendRequestNotification,
@@ -38,8 +37,14 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     clearFriendRequestNotification,
   } = useNotifications();
   const { t } = useLanguage();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [socialMenuOpen, setSocialMenuOpen] = useState(false);
+
+  const totalSocialNotifications =
+    unreadMessages +
+    pendingFriendRequests +
+    (pendingDuelsToPlay || 0) +
+    (newDuelResults || 0);
+
   // Auto-fermeture des toasts
   useEffect(() => {
     if (duelNotification) {
@@ -62,16 +67,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
     }
   }, [friendRequestNotification, clearFriendRequestNotification]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
-
   return (
     <>
+      {/* Toast Message */}
       {messageNotification && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
           <div className="bg-white shadow-2xl rounded-xl border-2 border-blue-500 p-4 max-w-sm">
@@ -81,7 +79,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-bold text-gray-900">
-                  Nouveau message !
+                  {t("notifications.newMessage")}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   <span className="font-medium">
@@ -97,7 +95,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   }}
                   className="mt-3 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
-                  Voir le message
+                  {t("notifications.viewMessage")}
                 </button>
               </div>
               <button
@@ -111,6 +109,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       )}
 
+      {/* Toast Friend Request */}
       {friendRequestNotification && (
         <div className="fixed top-36 right-4 z-50 animate-slide-in-right">
           <div className="bg-white shadow-2xl rounded-xl border-2 border-purple-500 p-4 max-w-sm">
@@ -120,13 +119,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-bold text-gray-900">
-                  Nouvelle demande d'ami !
+                  {t("notifications.newFriendRequest")}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   <span className="font-medium">
                     {friendRequestNotification.from}
                   </span>{" "}
-                  veut être ton ami
+                  {t("notifications.wantsFriend")}
                 </p>
                 <button
                   onClick={() => {
@@ -135,7 +134,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   }}
                   className="mt-3 w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                 >
-                  Voir les demandes
+                  {t("notifications.viewRequests")}
                 </button>
               </div>
               <button
@@ -149,6 +148,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       )}
 
+      {/* Toast Duel */}
       {duelNotification && (
         <div className="fixed top-20 right-4 z-50 animate-slide-in-right">
           <div className="bg-white shadow-2xl rounded-xl border-2 border-emerald-500 p-4 max-w-sm">
@@ -168,13 +168,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 {duelNotification.type === "invitation" && (
                   <>
                     <h3 className="text-sm font-bold text-gray-900">
-                      Nouveau duel !
+                      {t("notifications.newDuel")}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">
                       <span className="font-medium">
                         {duelNotification.from}
                       </span>{" "}
-                      t'a défié sur{" "}
+                      {t("notifications.challengedYou")}{" "}
                       <span className="font-medium">
                         {duelNotification.quizTitle}
                       </span>
@@ -184,13 +184,13 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 {duelNotification.type === "accepted" && (
                   <>
                     <h3 className="text-sm font-bold text-gray-900">
-                      Duel accepté !
+                      {t("notifications.duelAccepted")}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">
                       <span className="font-medium">
                         {duelNotification.from}
                       </span>{" "}
-                      a accepté ton duel sur{" "}
+                      {t("notifications.acceptedDuel")}{" "}
                       <span className="font-medium">
                         {duelNotification.quizTitle}
                       </span>
@@ -200,16 +200,19 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 {duelNotification.type === "completed" && (
                   <>
                     <h3 className="text-sm font-bold text-gray-900">
-                      {duelNotification.result === "won" && "🎉 Victoire !"}
-                      {duelNotification.result === "lost" && "😔 Défaite"}
-                      {duelNotification.result === "draw" && "🤝 Égalité"}
+                      {duelNotification.result === "won" &&
+                        t("notifications.victory")}
+                      {duelNotification.result === "lost" &&
+                        t("notifications.defeat")}
+                      {duelNotification.result === "draw" &&
+                        t("notifications.draw")}
                     </h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Duel terminé contre{" "}
+                      {t("notifications.duelFinished")}{" "}
                       <span className="font-medium">
                         {duelNotification.from}
                       </span>{" "}
-                      sur{" "}
+                      {t("notifications.on")}{" "}
                       <span className="font-medium">
                         {duelNotification.quizTitle}
                       </span>
@@ -223,7 +226,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   }}
                   className="mt-3 w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
                 >
-                  Voir les duels
+                  {t("notifications.viewDuels")}
                 </button>
               </div>
               <button
@@ -240,9 +243,12 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
       <nav className="bg-white shadow-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Desktop content - garde l'ancien code */}
             <div className="flex items-center space-x-8">
-              <div className="flex items-center">
+              {/* ✅ Logo et nom cliquables */}
+              <button
+                onClick={() => onNavigate("home")}
+                className="flex items-center hover:opacity-80 transition-opacity"
+              >
                 <img
                   src="/logo.png"
                   alt="TerraCoast Logo"
@@ -254,7 +260,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 <span className="ml-3 text-2xl font-bold text-emerald-600">
                   TerraCoast
                 </span>
-              </div>
+              </button>
 
               {/* Desktop menu */}
               <div className="hidden md:flex space-x-1">
@@ -321,9 +327,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                 >
                   <Swords className="w-5 h-5 inline mr-2" />
                   {t("nav.duels")}
-                  {pendingDuels > 0 && (
+                  {(pendingDuelsToPlay || 0) + (newDuelResults || 0) > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                      {pendingDuels}
+                      {(pendingDuelsToPlay || 0) + (newDuelResults || 0)}
                     </span>
                   )}
                 </button>
@@ -361,6 +367,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               </div>
             </div>
 
+            {/* ✅ Bouton profil uniquement (déconnexion supprimée) */}
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => onNavigate("profile")}
@@ -384,23 +391,14 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               >
                 <User className="w-6 h-6" />
               </button>
-
-              <button
-                onClick={handleSignOut}
-                className="hidden md:block p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                title={t("nav.logout")}
-              >
-                <LogOut className="w-6 h-6" />
-              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* ✅ NOUVELLE BOTTOM NAV MOBILE */}
+      {/* Bottom Nav Mobile */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-40 safe-area-inset-bottom">
         <div className="grid grid-cols-5 h-16">
-          {/* Home */}
           <button
             onClick={() => onNavigate("home")}
             className={`flex flex-col items-center justify-center transition-colors ${
@@ -411,7 +409,6 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <span className="text-xs mt-1">{t("nav.home")}</span>
           </button>
 
-          {/* Quiz */}
           <button
             onClick={() => onNavigate("quizzes")}
             className={`flex flex-col items-center justify-center transition-colors ${
@@ -422,7 +419,6 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <span className="text-xs mt-1">{t("nav.quizzes")}</span>
           </button>
 
-          {/* Social (avec sous-menu) */}
           <button
             onClick={() => setSocialMenuOpen(!socialMenuOpen)}
             className={`flex flex-col items-center justify-center transition-colors relative ${
@@ -432,15 +428,14 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             }`}
           >
             <Users className="w-6 h-6" />
-            <span className="text-xs mt-1">Social</span>
-            {unreadMessages + pendingDuels + pendingFriendRequests > 0 && (
+            <span className="text-xs mt-1">{t("nav.social")}</span>
+            {totalSocialNotifications > 0 && (
               <span className="absolute top-1 right-4 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                {unreadMessages + pendingDuels + pendingFriendRequests}
+                {totalSocialNotifications}
               </span>
             )}
           </button>
 
-          {/* Leaderboard */}
           <button
             onClick={() => onNavigate("leaderboard")}
             className={`flex flex-col items-center justify-center transition-colors ${
@@ -453,7 +448,6 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             <span className="text-xs mt-1">{t("nav.leaderboard")}</span>
           </button>
 
-          {/* Profile */}
           <button
             onClick={() => onNavigate("profile")}
             className={`flex flex-col items-center justify-center transition-colors ${
@@ -466,7 +460,7 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       </div>
 
-      {/* ✅ SOUS-MENU SOCIAL */}
+      {/* Sous-menu Social Mobile */}
       {socialMenuOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50"
@@ -477,7 +471,9 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Social</h3>
+              <h3 className="text-lg font-bold text-gray-800">
+                {t("nav.social")}
+              </h3>
               <button
                 onClick={() => setSocialMenuOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -524,10 +520,25 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
                   <Swords className="w-5 h-5 mr-3" />
                   <span className="font-medium">{t("nav.duels")}</span>
                 </div>
-                {pendingDuels > 0 && (
-                  <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold">
-                    {pendingDuels}
-                  </span>
+                {(pendingDuelsToPlay || 0) + (newDuelResults || 0) > 0 && (
+                  <div className="flex items-center gap-1">
+                    {(pendingDuelsToPlay || 0) > 0 && (
+                      <span
+                        className="bg-amber-500 text-white text-xs rounded-full px-2 py-1 font-bold"
+                        title={t("notifications.toPlay")}
+                      >
+                        {pendingDuelsToPlay}
+                      </span>
+                    )}
+                    {(newDuelResults || 0) > 0 && (
+                      <span
+                        className="bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold"
+                        title={t("notifications.newResults")}
+                      >
+                        {newDuelResults}
+                      </span>
+                    )}
+                  </div>
                 )}
               </button>
 
@@ -557,25 +568,24 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         </div>
       )}
 
-      {/* ✅ Ajoute du padding en bas pour éviter que le contenu soit caché */}
       <style>{`
-      @media (max-width: 768px) {
-        body {
-          padding-bottom: 4rem;
-        }
-        .animate-slide-up {
-          animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp {
-          from {
-            transform: translateY(100%);
+        @media (max-width: 768px) {
+          body {
+            padding-bottom: 4rem;
           }
-          to {
-            transform: translateY(0);
+          .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
+          }
+          @keyframes slideUp {
+            from {
+              transform: translateY(100%);
+            }
+            to {
+              transform: translateY(0);
+            }
           }
         }
-      }
-    `}</style>
+      `}</style>
     </>
   );
 }
