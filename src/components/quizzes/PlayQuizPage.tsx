@@ -865,7 +865,7 @@ export function PlayQuizPage({
         </div>
       </div>
 
-      {/* ✅ ZONE DE CONTENU SCROLLABLE */}
+      {/* ZONE DE CONTENU SCROLLABLE */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* IMAGE DE LA QUESTION */}
@@ -884,10 +884,10 @@ export function PlayQuizPage({
 
           {/* TEXTE DE LA QUESTION */}
           <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">
-            {currentQuestion.question_text}
+            {quiz.title} {currentQuestion.question_text}
           </h3>
 
-          {/* ✅ OPTIONS CHOIX MULTIPLES EN GRILLE */}
+          {/* OPTIONS CHOIX MULTIPLES EN GRILLE */}
           {currentQuestion.question_type === "mcq" &&
             currentQuestion.options && (
               <div
@@ -1141,14 +1141,23 @@ export function PlayQuizPage({
             </button>
           ) : (
             trainingMode && (
-              <button
-                onClick={moveToNextQuestion}
-                className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
-              >
-                {currentQuestionIndex < questions.length - 1
-                  ? t("playQuiz.nextQuestion")
-                  : t("playQuiz.finishQuiz")}
-              </button>
+              <>
+                { currentQuestion.complement_if_wrong && (
+                  <div className="my-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded shadow">
+                    <strong>{t("playQuiz.explanation")} :</strong>
+                    <p>{currentQuestion.complement_if_wrong}</p>
+                  </div>
+                )}
+
+                <button
+                  onClick={moveToNextQuestion}
+                  className="w-full py-3 md:py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
+                >
+                  {currentQuestionIndex < questions.length - 1
+                    ? t("playQuiz.nextQuestion")
+                    : t("playQuiz.finishQuiz")}
+                </button>
+              </>
             )
           )}
         </div>

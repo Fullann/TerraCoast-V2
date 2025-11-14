@@ -186,6 +186,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
+    "createQuiz.complementIfWrongPlaceholder": "Texte affiché lorsque la réponse est fausse",
+    "createQuiz.complementIfWrong": "Complément si mauvaise réponse (optionnel)",
 
     // Edit Quiz
     "editQuiz.confirmDeleteQuestion": "Veux-tu vraiment supprimer cette question ?",
@@ -260,6 +262,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.variants": "Variantes",
     "playQuiz.acceptedVariants": "Variantes acceptées",
     "playQuiz.nextQuestion": "Question suivante",
+    "playQuiz.explanation": "Explication",
 
     // Training
     "training.title": "Mode Entraînement",

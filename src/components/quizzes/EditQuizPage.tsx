@@ -3,15 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useLanguage } from "../../contexts/LanguageContext";
 import { languageNames, Language } from "../../i18n/translations";
-import {
-  Plus,
-  Trash2,
-  Save,
-  ArrowLeft,
-  CreditCard as Edit,
-  Image,
-  X,
-} from "lucide-react";
+import { Plus, Trash2, ArrowLeft, CreditCard as Edit, X } from "lucide-react";
 import type { Database } from "../../lib/database.types";
 import { ImageDropzone } from "./ImageDropzone";
 
@@ -220,6 +212,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       order_index: questions.length,
       created_at: new Date().toISOString(),
       isNew: true,
+      complement_if_wrong: "",
     };
 
     setQuestions([...questions, newQuestion]);
@@ -443,6 +436,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
               option_images: questionData.option_images || null,
               points: questionData.points,
               order_index: questionData.order_index,
+               complement_if_wrong: questionData.complement_if_wrong || null,
             })
             .eq("id", question.id);
         }
@@ -693,7 +687,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                   </label>
                   <select
                     value={difficulty}
-                    onChange={(e) =>  
+                    onChange={(e) =>
                       setDifficulty(e.target.value as Difficulty)
                     }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
@@ -1114,7 +1108,23 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                           </p>
                         </div>
                       )}
-
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {t("createQuiz.complementIfWrong")}
+                        </label>
+                        <textarea
+                          value={editingQuestion?.complement_if_wrong || ""}
+                          onChange={(e) =>
+                            setEditingQuestion({
+                              ...editingQuestion,
+                              complement_if_wrong: e.target.value,
+                            })
+                          }
+                          placeholder={t("createQuiz.complementIfWrongPlaceholder")}
+                          rows={3}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-transparent outline-none"
+                        />
+                      </div>
                       <div className="flex space-x-3 pt-4">
                         <button
                           onClick={saveQuestion}

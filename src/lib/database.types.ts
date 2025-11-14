@@ -210,6 +210,7 @@ export interface Database {
           points: number
           order_index: number
           created_at: string
+          complement_if_wrong?: string;
         }
         Insert: {
           id?: string
