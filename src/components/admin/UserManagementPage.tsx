@@ -569,16 +569,6 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
-                        {/* Bouton Vue profil */}
-                        <button
-                          onClick={() =>
-                            onNavigate?.("view-profile", { userId: user.id })
-                          }
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Voir le profil"
-                        >
-                          <Users className="w-4 h-4" />
-                        </button>
 
                         {/* Bouton Rôle */}
                         <button

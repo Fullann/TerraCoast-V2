@@ -57,6 +57,13 @@ export function HomePage({
       if (!profile) return;
 
       try {
+        const { data: freshProfile } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", profile.id)
+          .single();
+
+        // Charger les quiz
         let query = supabase
           .from("quizzes")
           .select("*")
@@ -98,9 +105,9 @@ export function HomePage({
         console.error("Erreur:", err);
       }
 
-      const { data: sessions } = await supabase
+      const { data: sessions, count: totalSessionsCount } = await supabase
         .from("game_sessions")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("player_id", profile.id)
         .eq("completed", true)
         .order("completed_at", { ascending: false })
@@ -109,9 +116,9 @@ export function HomePage({
       if (sessions) {
         setRecentSessions(sessions);
 
-        const totalPlays = sessions.length;
+        const totalPlays = totalSessionsCount || 0;
         const averageScore =
-          sessions.reduce((acc, s) => acc + s.score, 0) / totalPlays || 0;
+          sessions.reduce((acc, s) => acc + s.score, 0) / sessions.length || 0;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -140,7 +147,7 @@ export function HomePage({
         if (allCompletedSessions) {
           const dailyPointsMap = new Map<string, number>();
           allCompletedSessions.forEach((s) => {
-            const date = new Date(s.completed_at).toISOString().split("T")[0];
+            const date = new Date(s.completed_at).toISOString().split("T");
             dailyPointsMap.set(date, (dailyPointsMap.get(date) || 0) + s.score);
           });
           maxDailyPoints = Math.max(...dailyPointsMap.values(), 0);
@@ -162,6 +169,27 @@ export function HomePage({
 
     if (profile) {
       loadData();
+
+      const sessionSubscription = supabase
+        .channel(`sessions_${profile.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "game_sessions",
+            filter: `player_id=eq.${profile.id}`,
+          },
+          () => {
+            console.log("🔄 Session mise à jour, rechargement...");
+            loadData();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        sessionSubscription.unsubscribe();
+      };
     }
   }, [profile?.id, profile?.language, profile?.show_all_languages]);
 
@@ -525,7 +553,7 @@ export function HomePage({
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-blue-700 font-medium">
-                    💡 {t("profile.streakTip")}
+                    💡 {t("profile.playTodayToKeepStreak")}
                   </p>
                 </div>
 
@@ -544,24 +572,45 @@ export function HomePage({
 
                   <div className="bg-gray-50 p-4 rounded-lg text-center">
                     <p className="text-xs text-gray-600 mb-1">
-                      {t("profile.daysToGo")}
+                      {(profile.current_streak || 0) >
+                      (profile.longest_streak || 0)
+                        ? t("profile.keepGoing")
+                        : t("profile.daysToBreakRecord")}
                     </p>
-                    <p className="text-2xl font-bold text-gray-800">
-                      {Math.max(
-                        0,
-                        (profile.longest_streak || 0) -
-                          (profile.current_streak || 0)
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {getDayText(
-                        Math.max(
-                          0,
-                          (profile.longest_streak || 0) -
-                            (profile.current_streak || 0)
-                        )
-                      )}
-                    </p>
+                    {(profile.current_streak || 0) <=
+                    (profile.longest_streak || 0) ? (
+                      <>
+                        <p className="text-2xl font-bold text-gray-800">
+                          {Math.max(
+                            0,
+                            (profile.longest_streak || 0) -
+                              (profile.current_streak || 0)
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {getDayText(
+                            Math.max(
+                              0,
+                              (profile.longest_streak || 0) -
+                                (profile.current_streak || 0)
+                            )
+                          )}
+                        </p>
+                      </>
+                    ) : (
+                      <div className="mt-2">
+                        <p className="text-3xl">🔥🎉</p>
+                        <p className="text-xs text-emerald-600 font-bold mt-1">
+                          +
+                          {(profile.current_streak || 0) -
+                            (profile.longest_streak || 0)}{" "}
+                          {getDayText(
+                            (profile.current_streak || 0) -
+                              (profile.longest_streak || 0)
+                          )}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
