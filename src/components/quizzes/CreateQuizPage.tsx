@@ -226,7 +226,7 @@ export function CreateQuizPage({ onNavigate }: CreateQuizPageProps) {
   const saveQuiz = async () => {
     if (!profile) return;
 
-    if (!title.trim()) {
+    if (!title.trim() && !coverImageUrl) {
       setError(t("editQuiz.titleRequired"));
       return;
     }

@@ -80,7 +80,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       .select("*")
       .order("multiplier");
     if (error) {
-      console.error("Erreur chargement difficultés:", error);
       return;
     }
 
@@ -95,7 +94,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       .order("label");
 
     if (error) {
-      console.error("Erreur chargement catégories:", error);
       return;
     }
 
@@ -233,7 +231,6 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
       .eq("id", questionId);
 
     if (error) {
-      console.error("Error deleting question:", error);
       alert(t("editQuiz.deleteQuestionError"));
       return;
     }
@@ -317,7 +314,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
   const saveQuiz = async () => {
     if (!profile || !quiz) return;
 
-    if (!title.trim()) {
+    if (!title.trim() && !coverImageUrl) {
       setError(t("editQuiz.titleRequired"));
       return;
     }
@@ -436,7 +433,7 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
               option_images: questionData.option_images || null,
               points: questionData.points,
               order_index: questionData.order_index,
-               complement_if_wrong: questionData.complement_if_wrong || null,
+              complement_if_wrong: questionData.complement_if_wrong || null,
             })
             .eq("id", question.id);
         }
@@ -1120,7 +1117,9 @@ export function EditQuizPage({ quizId, onNavigate }: EditQuizPageProps) {
                               complement_if_wrong: e.target.value,
                             })
                           }
-                          placeholder={t("createQuiz.complementIfWrongPlaceholder")}
+                          placeholder={t(
+                            "createQuiz.complementIfWrongPlaceholder"
+                          )}
                           rows={3}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-transparent outline-none"
                         />

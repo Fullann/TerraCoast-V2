@@ -13,6 +13,7 @@ interface DuelNotification {
   from: string;
   quizTitle: string;
   result?: "won" | "lost" | "draw";
+    onNavigate?: () => void;
 }
 
 interface MessageNotification {
@@ -37,6 +38,7 @@ interface NotificationContextType {
   clearMessageNotification: () => void;
   clearFriendRequestNotification: () => void;
   refreshNotifications: () => Promise<void>;
+   setNavigationCallback: (callback: (view: string, params?: any) => void) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -56,6 +58,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<FriendRequestNotification | null>(null);
   const [pendingDuelsToPlay, setPendingDuelsToPlay] = useState(0);
   const [newDuelResults, setNewDuelResults] = useState(0);
+   const [navigationCallback, setNavigationCallback] = useState<((view: string, params?: any) => void) | null>(null);
 
   const refreshNotifications = async () => {
     if (!profile) return;
@@ -151,8 +154,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `to_user_id=eq.${profile.id}`,
         },
         async (payload) => {
-          console.log("💬 Nouveau message reçu:", payload);
-
           const newMessage = payload.new as any;
 
           const { data: fromUser } = await supabase
@@ -184,8 +185,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `friend_id=eq.${profile.id}`,
         },
         async (payload) => {
-          console.log("👥 Nouvelle demande d'ami reçue:", payload);
-
           const newRequest = payload.new as any;
 
           const { data: fromUser } = await supabase
@@ -216,8 +215,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           filter: `to_user_id=eq.${profile.id}`,
         },
         async (payload) => {
-          console.log("📨 Nouvelle invitation de duel:", payload);
-
           const newInvitation = payload.new as any;
 
           const { data: fromUser } = await supabase
@@ -237,6 +234,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               type: "invitation",
               from: fromUser.pseudo,
               quizTitle: quiz.title,
+               onNavigate: () => navigationCallback?.("duels", { tab: "invitations" }),
             });
 
             setPendingDuels((prev) => prev + 1);
@@ -259,8 +257,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           const updatedInvitation = payload.new as any;
 
           if (updatedInvitation.status === "accepted") {
-            console.log("✅ Invitation acceptée:", payload);
-
             const { data: toUser } = await supabase
               .from("profiles")
               .select("pseudo")
@@ -305,8 +301,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             return;
           }
 
-          console.log("🏁 Duel terminé:", payload);
-
           const opponentId =
             completedDuel.player1_id === profile.id
               ? completedDuel.player2_id
@@ -337,6 +331,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               from: opponent.pseudo,
               quizTitle: quiz.title,
               result,
+               onNavigate: () => navigationCallback?.("duels", { tab: "history" }),
             });
           }
         }
@@ -368,6 +363,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         clearMessageNotification,
         clearFriendRequestNotification,
         refreshNotifications,
+        setNavigationCallback: (callback) => setNavigationCallback(() => callback),
       }}
     >
       {children}

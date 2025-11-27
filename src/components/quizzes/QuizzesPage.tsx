@@ -64,7 +64,88 @@ export function QuizzesPage({ onNavigate }: QuizzesPageProps) {
     language,
     showAllLanguages,
   ]);
+  useEffect(() => {
+    if (!profile) return;
 
+    // Abonnement aux mises à jour des quiz (total_plays, average_score)
+    const quizzesSubscription = supabase
+      .channel("quizzes_updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "quizzes",
+        },
+        (payload) => {
+          const updatedQuiz = payload.new as Quiz;
+
+          // Mettre à jour dans la liste des quiz publics
+          setQuizzes((prev) =>
+            prev.map((q) =>
+              q.id === updatedQuiz.id
+                ? {
+                    ...q,
+                    total_plays: updatedQuiz.total_plays,
+                    average_score: updatedQuiz.average_score,
+                  }
+                : q
+            )
+          );
+
+          // Mettre à jour dans la liste de mes quiz
+          setMyQuizzes((prev) =>
+            prev.map((q) =>
+              q.id === updatedQuiz.id
+                ? {
+                    ...q,
+                    total_plays: updatedQuiz.total_plays,
+                    average_score: updatedQuiz.average_score,
+                  }
+                : q
+            )
+          );
+
+          // Mettre à jour dans la liste des quiz partagés
+          setSharedQuizzes((prev) =>
+            prev.map((q) =>
+              q.id === updatedQuiz.id
+                ? {
+                    ...q,
+                    total_plays: updatedQuiz.total_plays,
+                    average_score: updatedQuiz.average_score,
+                  }
+                : q
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      quizzesSubscription.unsubscribe();
+    };
+  }, [profile]);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadQuizzes();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    profile,
+    categoryFilter,
+    difficultyFilter,
+    typeFilter,
+    language,
+    showAllLanguages,
+  ]);
   const loadQuizTypes = async () => {
     const { data } = await supabase
       .from("quiz_types")

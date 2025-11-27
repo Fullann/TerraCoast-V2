@@ -55,14 +55,12 @@ export function ImageDropzone({
     };
 
     try {
-      console.log(`Original: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+     
       const compressedFile = await imageCompression(file, options);
-      console.log(
-        `Compressé: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`
-      );
+     
       return compressedFile;
     } catch (error) {
-      console.error("Erreur de compression:", error);
+     
       return file; // Retourner l'original si erreur
     }
   };

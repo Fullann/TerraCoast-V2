@@ -79,8 +79,6 @@ export function ShareQuizModal({ quizId, quizTitle, onClose }: ShareQuizModalPro
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (error) {
-      console.error('Error sharing quiz:', error);
     } finally {
       setLoading(false);
     }

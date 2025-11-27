@@ -46,9 +46,10 @@ interface InvitationWithDetails extends DuelInvitation {
 
 interface DuelsPageProps {
   onNavigate: (view: string, data?: any) => void;
+  initialTab?: string;
 }
 
-export function DuelsPage({ onNavigate }: DuelsPageProps) {
+export function DuelsPage({ onNavigate, initialTab }: DuelsPageProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { refreshNotifications } = useNotifications();
@@ -61,8 +62,8 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
     InvitationWithDetails[]
   >([]);
   const [activeTab, setActiveTab] = useState<
-    "active" | "completed" | "invitations"
-  >("active");
+    "invitations" | "active" | "history"
+  >((initialTab as "invitations" | "active" | "history") || "invitations");
   const [showCreateInvitation, setShowCreateInvitation] = useState(false);
   const [viewedDuels, setViewedDuels] = useState<Set<string>>(new Set());
 
@@ -152,7 +153,10 @@ export function DuelsPage({ onNavigate }: DuelsPageProps) {
 
     if (completed) {
       const filteredCompleted = completed.filter(
-        (duel: any) => !duel.player1?.is_banned && !duel.player2?.is_banned
+        (duel: any) =>
+          !duel.player1?.is_banned &&
+          !duel.player2?.is_banned &&
+          duel.quizzes !== null
       );
 
       const enrichedDuels = await Promise.all(

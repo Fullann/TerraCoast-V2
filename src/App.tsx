@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -31,9 +31,11 @@ import { LandingPage } from "./components/landing/LandingPage";
 import { BannedPage } from "./components/auth/BannedPage";
 import { ForceUsernamePage } from "./components/auth/ForceUsernamePage";
 import { AccountDetailsPage } from "./components/profile/AccountDetailsPage";
+import { useNotifications } from "./contexts/NotificationContext";
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
+  const { setNavigationCallback } = useNotifications();
   const [authView, setAuthView] = useState<"login" | "register" | "landing">(
     "landing"
   );
@@ -44,7 +46,9 @@ function AppContent() {
     setCurrentView(view);
     setViewData(data);
   };
-
+  useEffect(() => {
+    setNavigationCallback(handleNavigate);
+  }, []);
   const hideNavbarViews = ["play-quiz", "play-training", "play-duel"];
   const shouldShowNavbar = !hideNavbarViews.includes(currentView);
 
@@ -176,7 +180,9 @@ function AppContent() {
         {currentView === "friends" && (
           <FriendsPage onNavigate={handleNavigate} />
         )}
-        {currentView === "duels" && <DuelsPage onNavigate={handleNavigate} />}
+        {currentView === "duels" && (
+          <DuelsPage onNavigate={handleNavigate} initialTab={viewData?.tab} />
+        )}
         {currentView === "chat" && (
           <ChatPage friendId={viewData?.friendId} onNavigate={handleNavigate} />
         )}

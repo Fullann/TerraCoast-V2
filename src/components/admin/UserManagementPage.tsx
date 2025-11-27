@@ -302,53 +302,53 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
     }
 
     try {
-      console.log("Début suppression pour user:", userId);
+     
 
       // Supprimer toutes les données associées à l'utilisateur
-      console.log("Suppression user_badges...");
+     
       await supabase.from("user_badges").delete().eq("user_id", userId);
 
-      console.log("Suppression user_titles...");
+      
       await supabase.from("user_titles").delete().eq("user_id", userId);
 
-      console.log("Suppression game_sessions...");
+    
       await supabase.from("game_sessions").delete().eq("player_id", userId);
 
-      console.log("Suppression quiz_shares...");
+     
       await supabase
         .from("quiz_shares")
         .delete()
         .eq("shared_with_user_id", userId);
 
-      console.log("Suppression friendships...");
+     
       await supabase
         .from("friendships")
         .delete()
         .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
 
-      console.log("Suppression warnings...");
+     
       await supabase
         .from("warnings")
         .delete()
         .or(`reported_user_id.eq.${userId},reporter_user_id.eq.${userId}`);
 
-      console.log("Suppression notifications...");
+      
       await supabase.from("notifications").delete().eq("user_id", userId);
 
-      console.log("Suppression chat_messages...");
+      
       await supabase
         .from("chat_messages")
         .delete()
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
 
-      console.log("Suppression monthly_rankings_history...");
+      
       await supabase
         .from("monthly_rankings_history")
         .delete()
         .eq("user_id", userId);
 
       // Supprimer les quiz créés par l'utilisateur
-      console.log("Récupération des quiz...");
+     
       const { data: userQuizzes, error: quizzesError } = await supabase
         .from("quizzes")
         .select("id")
@@ -359,7 +359,7 @@ export function UserManagementPage({ onNavigate }: UserManagementPageProps) {
       }
 
       if (userQuizzes && userQuizzes.length > 0) {
-        console.log(`Suppression de ${userQuizzes.length} quiz...`);
+     
         for (const quiz of userQuizzes) {
           // Supprimer les questions du quiz
           await supabase.from("questions").delete().eq("quiz_id", quiz.id);

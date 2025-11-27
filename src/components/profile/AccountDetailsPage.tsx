@@ -37,7 +37,7 @@ export function AccountDetailsPage({ onNavigate, userId }: AccountDetailsPagePro
     if (!targetUserId) return;
     
     setChargement(true);
-    console.log("🔍 Chargement du profil pour:", targetUserId); // Debug
+   
     
     const { data, error } = await supabase
       .from("profiles")
@@ -45,9 +45,7 @@ export function AccountDetailsPage({ onNavigate, userId }: AccountDetailsPagePro
       .eq("id", targetUserId)
       .single();
 
-    console.log("📊 Profil chargé:", data); // Debug
-    console.log("❌ Erreur:", error); // Debug
-    
+   
     setProfile(data);
     setChargement(false);
   };
