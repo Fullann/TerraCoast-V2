@@ -87,13 +87,11 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
     return count > 1 ? t("common.days") : t("common.day");
   };
 
-  // ✅ Fonction pour calculer l'XP nécessaire pour le prochain niveau
   const getXPForLevel = (level: number) => {
     // Retourne l'XP total nécessaire pour atteindre ce niveau
     return (level - 1) * 100;
   };
 
-  // ✅ Calcul de la progression du niveau
   const getLevelProgress = () => {
     if (!profile)
       return { current: 0, needed: 100, percentage: 0, remaining: 100 };
@@ -817,9 +815,8 @@ export function ProfilePage({ userId, onNavigate }: ProfilePageProps) {
                         {t("profile.questions")}
                       </p>
                       <p className="text-2xl font-bold text-green-700">
-                        {session.correct_answers || 0}/
-                        {session.total_questions || 0}
-                      </p>
+  {session.correct_answers ?? 0}/{session.total_questions ?? 0}
+</p>
                     </div>
 
                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 text-center">

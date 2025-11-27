@@ -56,7 +56,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "home.warningsReceived": "Avertissements reçus",
     "home.warning": "Avertissement",
     "home.note": "Note",
-    "home.respectRules": "Merci de respecter les règles de la communauté pour éviter d'autres sanctions",
+    "home.respectRules":
+      "Merci de respecter les règles de la communauté pour éviter d'autres sanctions",
     "home.gamesPlayed": "Parties jouées",
     "home.totalSessions": "Total de tes sessions",
     "home.currentStreak": "Série en cours",
@@ -132,19 +133,24 @@ export const translations: Record<Language, Record<string, string>> = {
     "quizzes.noQuizCreated": "Tu n'as pas encore créé de quiz",
     "quizzes.noQuizShared": "Aucun quiz partagé avec toi",
     "quizzes.tryDifferentFilters": "Essaie de modifier tes filtres",
-    "quizzes.confirmPublishRequest": "Demander la publication de \"{title}\" ?",
+    "quizzes.confirmPublishRequest": 'Demander la publication de "{title}" ?',
     "quizzes.publishRequestError": "Erreur lors de la demande",
-    "quizzes.publishRequestSuccess": "Demande envoyée ! Un administrateur validera ton quiz.",
+    "quizzes.publishRequestSuccess":
+      "Demande envoyée ! Un administrateur validera ton quiz.",
     "quizzes.publishError": "Erreur lors de la publication",
     "quizzes.publishSuccess": "Quiz publié avec succès !",
-    "quizzes.confirmRemoveShared": "Veux-tu retirer ce quiz de ta liste partagée ?",
+    "quizzes.confirmRemoveShared":
+      "Veux-tu retirer ce quiz de ta liste partagée ?",
     "quizzes.removeSuccess": "Quiz retiré de ta liste avec succès !",
     "quizzes.removeError": "Erreur lors de la suppression",
-    "quizzes.confirmDelete": "Es-tu sûr de vouloir supprimer le quiz '{title}' ? Cette action est irréversible.",
+    "quizzes.confirmDelete":
+      "Es-tu sûr de vouloir supprimer le quiz '{title}' ? Cette action est irréversible.",
     "quizzes.deleteSuccess": "Quiz supprimé avec succès !",
     "quizzes.deleteError": "Erreur lors de la suppression du quiz",
-    "quizzes.deleteQuestionsError": "Erreur lors de la suppression des questions",
+    "quizzes.deleteQuestionsError":
+      "Erreur lors de la suppression des questions",
     "quizzes.deleteQuiz": "Supprimer le quiz",
+    "profile.daysToBreakRecord": "jours pour battre ton record",
 
     // Create Quiz
     "createQuiz.title": "Créer un quiz",
@@ -153,23 +159,31 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.noType": "Aucun type",
     "createQuiz.randomizeQuestions": "Mélange l'ordre des questions",
     "createQuiz.randomizeAnswers": "Mélange l'ordre des réponses (QCM)",
-    "createQuiz.publicQuizAdmin": "Quiz public - En tant qu'admin, ce sera un quiz global approuvé immédiatement",
-    "createQuiz.submitValidation": "Soumettre pour validation ({count}/10 quiz publiés)",
+    "createQuiz.publicQuizAdmin":
+      "Quiz public - En tant qu'admin, ce sera un quiz global approuvé immédiatement",
+    "createQuiz.submitValidation":
+      "Soumettre pour validation ({count}/10 quiz publiés)",
     "createQuiz.addQuestion": "Ajouter une question",
-    "createQuiz.questionPlaceholder": "Ex: Quelle est la capitale de la France ?",
-    "createQuiz.questionImageDesc": "Ajoute une image pour illustrer ta question",
+    "createQuiz.questionPlaceholder":
+      "Ex: Quelle est la capitale de la France ?",
+    "createQuiz.questionImageDesc":
+      "Ajoute une image pour illustrer ta question",
     "createQuiz.trueFalse.type": "Vrai / Faux",
-    "createQuiz.trueFalse.description": "Pour les questions Vrai/Faux, les options sont automatiquement définies. Sélectionne simplement la bonne réponse ci-dessous.",
+    "createQuiz.trueFalse.description":
+      "Pour les questions Vrai/Faux, les options sont automatiquement définies. Sélectionne simplement la bonne réponse ci-dessous.",
     "createQuiz.trueFalse.true": "Vrai",
     "createQuiz.trueFalse.false": "Faux",
     "createQuiz.optionsMinTwo": "Options (2 minimum)",
-    "createQuiz.optionImageDesc": "Ajoute des images pour chaque option (ex: drapeaux). Parfait pour les quiz visuels !",
-    "createQuiz.multipleCorrect": "Sélectionne une ou plusieurs réponses correctes (ex: Capitales d'Afrique du Sud)",
+    "createQuiz.optionImageDesc":
+      "Ajoute des images pour chaque option (ex: drapeaux). Parfait pour les quiz visuels !",
+    "createQuiz.multipleCorrect":
+      "Sélectionne une ou plusieurs réponses correctes (ex: Capitales d'Afrique du Sud)",
     "createQuiz.answerPlaceholder": "Ex: Paris",
     "createQuiz.variants": "Variantes acceptées (optionnel)",
     "createQuiz.variantPlaceholder": "Variante {number} (ex: paris, PARIS)",
     "createQuiz.addVariant": "Ajouter une variante",
-    "createQuiz.variantsDesc": "Ajoute plusieurs variantes acceptées (ex: \"Paris\", \"paris\", \"La capitale de la France\")",
+    "createQuiz.variantsDesc":
+      'Ajoute plusieurs variantes acceptées (ex: "Paris", "paris", "La capitale de la France")',
     "createQuiz.editingQuestion": "Modification de la question #{number}",
     "createQuiz.updateQuestion": "Mettre à jour",
     "createQuiz.addThisQuestion": "Ajouter cette question",
@@ -178,20 +192,26 @@ export const translations: Record<Language, Record<string, string>> = {
     "createQuiz.saveQuiz": "Enregistrer le quiz",
     "createQuiz.success": "Quiz créé avec succès !",
     "createQuiz.errors.questionEmpty": "La question ne peut pas être vide",
-    "createQuiz.errors.answerEmpty": "La réponse correcte ne peut pas être vide",
+    "createQuiz.errors.answerEmpty":
+      "La réponse correcte ne peut pas être vide",
     "createQuiz.errors.minTwoOptions": "Il faut au moins 2 options pour un QCM",
-    "createQuiz.errors.answerMustBeOption": "La réponse correcte doit être dans les options",
-    "createQuiz.errors.maxQuizReached": "Tu as atteint la limite de 10 quiz publics",
+    "createQuiz.errors.answerMustBeOption":
+      "La réponse correcte doit être dans les options",
+    "createQuiz.errors.maxQuizReached":
+      "Tu as atteint la limite de 10 quiz publics",
     "createQuiz.errors.createError": "Erreur lors de la création du quiz",
     "createQuiz.searchTags": "Tags de recherche (Europe, Asie ...)",
     "createQuiz.addTagPlaceholder": "Ajoute un tag et appuie sur Entrée...",
     "createQuiz.maxTags": "Maximum 10 tags",
-    "createQuiz.complementIfWrongPlaceholder": "Texte affiché lorsque la réponse est fausse",
-    "createQuiz.complementIfWrong": "Complément si mauvaise réponse (optionnel)",
+    "createQuiz.complementIfWrongPlaceholder":
+      "Texte affiché lorsque la réponse est fausse",
+    "createQuiz.complementIfWrong":
+      "Complément si mauvaise réponse (optionnel)",
 
     // Edit Quiz
-    "editQuiz.confirmDeleteQuestion": "Veux-tu vraiment supprimer cette question ?",
-    "editQuiz.titleRequired": "Le titre ne peut pas être vide",
+    "editQuiz.confirmDeleteQuestion":
+      "Veux-tu vraiment supprimer cette question ?",
+    "editQuiz.titleRequired": "Un titre ou une image de couverture est requis",
     "editQuiz.atLeastOneQuestion": "Ajoute au moins une question",
     "editQuiz.updateSuccess": "Quiz mis à jour avec succès !",
     "editQuiz.updateError": "Erreur lors de la mise à jour du quiz",
@@ -222,14 +242,15 @@ export const translations: Record<Language, Record<string, string>> = {
     "editQuiz.points": "Points",
     "editQuiz.options": "Options",
     "editQuiz.option": "Option",
-    "editQuiz.imageForOption": "Image pour \"{option}\" (optionnel)",
+    "editQuiz.imageForOption": 'Image pour "{option}" (optionnel)',
     "editQuiz.correctAnswer": "Réponse correcte",
     "editQuiz.select": "Sélectionne",
     "editQuiz.imageIncluded": "Image incluse",
     "editQuiz.saving": "Enregistrement...",
     "editQuiz.saveChanges": "Enregistrer les modifications",
     "editQuiz.deleteQuestionSuccess": "Question supprimée avec succès !",
-    "editQuiz.deleteQuestionError": "Erreur lors de la suppression de la question",
+    "editQuiz.deleteQuestionError":
+      "Erreur lors de la suppression de la question",
 
     // Play Quiz
     "playQuiz.selectAnswer": "Merci de sélectionner ou d'entrer une réponse",
@@ -248,7 +269,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.correctAnswer": "Bonne réponse",
     "playQuiz.exploreOtherQuizzes": "Explorer d'autres quiz",
     "playQuiz.playAgain": "Rejouer",
-    "playQuiz.confirmQuit": "Es-tu sûr de vouloir quitter ? Ta progression sera perdue.",
+    "playQuiz.confirmQuit":
+      "Es-tu sûr de vouloir quitter ? Ta progression sera perdue.",
     "playQuiz.quit": "Quitter",
     "playQuiz.trainingMode": "Mode Entraînement",
     "playQuiz.question": "Question",
@@ -263,12 +285,14 @@ export const translations: Record<Language, Record<string, string>> = {
     "playQuiz.acceptedVariants": "Variantes acceptées",
     "playQuiz.nextQuestion": "Question suivante",
     "playQuiz.explanation": "Explication",
+    "playQuiz.finishQuiz": "Terminer le quiz",
 
     // Training
     "training.title": "Mode Entraînement",
     "training.subtitle": "Pratique sans limite de temps et sans gagner d'XP",
     "training.features": "Caractéristiques du mode entraînement",
-    "training.feature1": "Pas de limite de temps - prends le temps de réfléchir",
+    "training.feature1":
+      "Pas de limite de temps - prends le temps de réfléchir",
     "training.feature2": "Pas de gain d'XP - juste pour s'entraîner",
     "training.feature3": "Choisis le nombre de questions",
     "training.feature4": "Validation immédiate avec explications",
@@ -325,7 +349,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.clickPointInfo": "Clique sur un point pour voir les détails",
     "profile.streakDetails": "Détails de la série",
     "profile.streakStartedOn": "Série commencée le",
-    
+
     "profile.currentStreak": "Série actuelle",
     "profile.longestStreak": "Meilleure série",
     "profile.keepGoing": "Continue comme ça !",
@@ -335,7 +359,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.myScore": "Mon score",
     "profile.difference": "Différence",
     "profile.reportUser": "Signaler {user}",
-    "profile.reportDescription": "Décris la raison de ton signalement. Un administrateur examinera ta demande.",
+    "profile.reportDescription":
+      "Décris la raison de ton signalement. Un administrateur examinera ta demande.",
     "profile.reportReason": "Raison du signalement...",
     "profile.warnReason": "Raison de l'avertissement...",
     "profile.sendWarning": "Envoyer l'avertissement",
@@ -364,7 +389,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "leaderboard.friends": "Entre amis",
     "leaderboard.thisMonth": "Ce mois-ci",
     "leaderboard.allTime": "Tous les temps",
-    "leaderboard.monthlyReset": "Les scores sont réinitialisés chaque mois. Top 10 reçoivent un titre !",
+    "leaderboard.monthlyReset":
+      "Les scores sont réinitialisés chaque mois. Top 10 reçoivent un titre !",
     "leaderboard.loading": "Chargement du classement...",
     "leaderboard.noPlayers": "Aucun joueur",
     "leaderboard.emptyLeaderboard": "Le classement est vide pour le moment",
@@ -451,13 +477,14 @@ export const translations: Record<Language, Record<string, string>> = {
     "share.title": "Partager le quiz",
     "share.success": "Quiz partagé !",
     "share.successMessage": "Tes amis peuvent maintenant y accéder",
-    "share.shareWith": "Partage \"{title}\" avec tes amis",
+    "share.shareWith": 'Partage "{title}" avec tes amis',
     "share.sharing": "Partage...",
 
     // Settings
     "settings.language": "Langue",
     "settings.showAllLanguages": "Afficher tous les quiz (toutes langues)",
-    "settings.showOnlyMyLanguage": "Afficher uniquement les quiz dans ma langue",
+    "settings.showOnlyMyLanguage":
+      "Afficher uniquement les quiz dans ma langue",
     "settings.accountSettings": "Paramètres du compte",
     "settings.backToProfile": "Retour au profil",
     "settings.pseudoRequired": "Le pseudo ne peut pas être vide",
@@ -466,20 +493,25 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.emailPasswordRequired": "Email et mot de passe actuel requis",
     "settings.incorrectPassword": "Mot de passe incorrect",
     "settings.emailUpdateError": "Erreur lors de la mise à jour de l'email",
-    "settings.emailConfirmationSent": "Un email de confirmation a été envoyé à ta nouvelle adresse",
+    "settings.emailConfirmationSent":
+      "Un email de confirmation a été envoyé à ta nouvelle adresse",
     "settings.allFieldsRequired": "Tous les champs sont requis",
     "settings.passwordsMismatch": "Les mots de passe ne correspondent pas",
-    "settings.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
+    "settings.passwordTooShort":
+      "Le mot de passe doit contenir au moins 6 caractères",
     "settings.currentPasswordIncorrect": "Mot de passe actuel incorrect",
-    "settings.passwordUpdateError": "Erreur lors de la mise à jour du mot de passe",
+    "settings.passwordUpdateError":
+      "Erreur lors de la mise à jour du mot de passe",
     "settings.passwordUpdateSuccess": "Mot de passe mis à jour avec succès",
-    "settings.deleteConfirmation": "Cette action est irréversible. Tape \"SUPPRIMER\" pour confirmer :",
+    "settings.deleteConfirmation":
+      'Cette action est irréversible. Tape "SUPPRIMER" pour confirmer :',
     "settings.deleteKeyword": "SUPPRIMER",
     "settings.deleteAccountError": "Erreur lors de la suppression du compte",
     "settings.manageInfo": "Gère tes informations personnelles",
     "settings.languagePreferences": "Langue et préférences",
     "settings.interfaceLanguage": "Langue de l'interface",
-    "settings.showAllLanguagesDescription": "Affiche tous les quiz dans toutes les langues (sinon, uniquement les quiz dans ma langue)",
+    "settings.showAllLanguagesDescription":
+      "Affiche tous les quiz dans toutes les langues (sinon, uniquement les quiz dans ma langue)",
     "settings.username": "Pseudo",
     "settings.newUsername": "Nouveau pseudo",
     "settings.yourUsername": "Ton pseudo",
@@ -494,11 +526,14 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.confirmNewPassword": "Confirmer le nouveau mot de passe",
     "settings.updatePassword": "Mettre à jour le mot de passe",
     "settings.dangerZone": "Zone de danger",
-    "settings.deleteWarning": "Supprimer ton compte est une action irréversible. Toutes tes données seront perdues.",
+    "settings.deleteWarning":
+      "Supprimer ton compte est une action irréversible. Toutes tes données seront perdues.",
     "settings.deleteAccount": "Supprimer mon compte",
+    "settings.logout": "Se déconnecter",
 
     // Image Dropzone
-    "imageDropzone.invalidType": "Merci de sélectionner une image (JPG, PNG, GIF, WebP)",
+    "imageDropzone.invalidType":
+      "Merci de sélectionner une image (JPG, PNG, GIF, WebP)",
     "imageDropzone.fileTooLarge": "L'image ne doit pas dépasser 5 MB",
     "imageDropzone.uploadError": "Erreur lors de l'upload",
     "imageDropzone.imageLabel": "Image (URL)",
@@ -526,6 +561,11 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.viewDuels": "Voir les duels",
     "notifications.toPlay": "À jouer",
     "notifications.newResults": "Nouveaux résultats",
+
+    "leaderboard.monthlyPoints": "Points mensuels",
+    "leaderboard.totalXP": "XP total",
+    "leaderboard.you": "VOUS"
+  
   },
 
   en: {
@@ -997,8 +1037,8 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.toPlay": "To play",
     "notifications.newResults": "New results",
     "nav.social": "Social",
-      "profile.daysToBreakRecord": "days to break your streak",
-    "profile.keepGoing": "Keep going, you're smashing it!"
+    "profile.daysToBreakRecord": "days to break your streak",
+    "profile.keepGoing": "Keep going, you're smashing it!",
   },
   es: {
     "app.title": "TerraCoast",
@@ -1479,7 +1519,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.newResults": "Nuevos resultados",
     "nav.social": "Social",
     "profile.daysToBreakRecord": "días para superar tu racha",
-    "profile.keepGoing": "¡Sigue así, lo estás logrando!"
+    "profile.keepGoing": "¡Sigue así, lo estás logrando!",
   },
   de: {
     "app.title": "TerraCoast",
@@ -1958,7 +1998,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.newResults": "Neue Ergebnisse",
     "nav.social": "Soziales",
     "profile.daysToBreakRecord": "Tage, um deinen Rekord zu brechen",
-    "profile.keepGoing": "Weiter so, du schaffst das!"
+    "profile.keepGoing": "Weiter so, du schaffst das!",
   },
   it: {
     "app.title": "TerraCoast",
@@ -2436,7 +2476,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.newResults": "Nuovi risultati",
     "nav.social": "Social",
     "profile.daysToBreakRecord": "Giorni per battere il tuo record",
-    "profile.keepGoing": "Continua così, ce la fai!"
+    "profile.keepGoing": "Continua così, ce la fai!",
   },
   pt: {
     "app.title": "TerraCoast",
@@ -2910,7 +2950,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "notifications.newResults": "Novos resultados",
     "nav.social": "Social",
     "profile.daysToBreakRecord": "Dias para bater seu recorde",
-    "profile.keepGoing": "Continue assim, você consegue!"
+    "profile.keepGoing": "Continue assim, você consegue!",
   },
 };
 

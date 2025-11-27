@@ -59,7 +59,17 @@ export function PlayQuizPage({
     isCreatingSessionRef.current = false;
     loadQuiz();
   }, [quizId]);
-
+  // Détecter quand toutes les questions ont été répondues
+  useEffect(() => {
+    if (
+      answers.length === questions.length &&
+      answers.length > 0 &&
+      !gameComplete &&
+      !isCompletingRef.current
+    ) {
+      completeGame();
+    }
+  }, [answers.length, questions.length, gameComplete]);
   useEffect(() => {
     if (
       quiz &&
@@ -87,22 +97,11 @@ export function PlayQuizPage({
   };
 
   const moveToNextQuestion = () => {
-    console.log(
-      "[moveToNextQuestion] Called. gameComplete:",
-      gameComplete,
-      "currentQuestionIndex:",
-      currentQuestionIndex,
-      "questions.length:",
-      questions.length
-    );
-
     if (gameComplete) {
-      console.log("[moveToNextQuestion] Game already complete, exiting");
       return;
     }
 
     if (currentQuestionIndex < questions.length - 1) {
-      console.log("[moveToNextQuestion] Moving to next question");
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setUserAnswer("");
       setSelectedOption("");
@@ -111,24 +110,10 @@ export function PlayQuizPage({
       setTimeLeft(quiz?.time_limit_seconds || 30);
       setQuestionStartTime(Date.now());
       hasTimedOutRef.current = false;
-    } else {
-      console.log(
-        "[moveToNextQuestion] Last question reached, calling completeGame"
-      );
-      completeGame();
     }
   };
 
   const handleTimeout = useCallback(() => {
-    console.log(
-      "[handleTimeout] Called. isAnswered:",
-      isAnswered,
-      "gameComplete:",
-      gameComplete,
-      "hasTimedOut:",
-      hasTimedOutRef.current
-    );
-
     if (isAnswered || gameComplete || hasTimedOutRef.current) return;
 
     hasTimedOutRef.current = true;
@@ -284,9 +269,7 @@ export function PlayQuizPage({
   };
 
   const createSession = async () => {
-    console.log("[createSession] Starting session creation");
     if (!profile || trainingMode) {
-      console.log("[createSession] Skipping (no profile or training mode)");
       isCreatingSessionRef.current = false;
       return;
     }
@@ -302,13 +285,11 @@ export function PlayQuizPage({
       .single();
 
     if (error) {
-      console.error("[createSession] Error creating session:", error);
       isCreatingSessionRef.current = false;
       return;
     }
 
     if (session) {
-      console.log("[createSession] Session created:", session.id);
       setSessionId(session.id);
       isCreatingSessionRef.current = false;
     }
@@ -370,7 +351,6 @@ export function PlayQuizPage({
       time_taken: timeTaken,
       points_earned: pointsEarned,
     };
-
     setAnswers([...answers, answerData]);
     setTotalScore(totalScore + pointsEarned);
     setShowResult(true);
@@ -378,7 +358,6 @@ export function PlayQuizPage({
 
     saveAnswer(answerData);
 
-    // ✅ EN MODE NORMAL, PASSER AUTO. EN MODE ENTRAINEMENT, ATTENDRE VALIDATION
     if (!trainingMode) {
       setTimeout(() => {
         moveToNextQuestion();
@@ -387,26 +366,14 @@ export function PlayQuizPage({
   };
 
   const completeGame = async () => {
-    console.log(
-      "[completeGame] Called. gameComplete:",
-      gameComplete,
-      "isCompletingRef:",
-      isCompletingRef.current
-    );
-
     if (gameComplete || isCompletingRef.current) {
-      console.log("[completeGame] Already completing or complete, exiting");
       return;
     }
 
-    console.log("[completeGame] Starting game completion");
     isCompletingRef.current = true;
     setGameComplete(true);
 
-    if (trainingMode) {
-      return;
-    }
-
+    if (trainingMode) return;
     if (!sessionId || !profile) return;
 
     const correctAnswers = answers.filter((a) => a.is_correct).length;
@@ -418,7 +385,7 @@ export function PlayQuizPage({
       Math.round((totalScore / (questions.length * 150)) * 100)
     );
 
-    await supabase
+    const { error } = await supabase
       .from("game_sessions")
       .update({
         score: normalizedScore,
@@ -781,7 +748,6 @@ export function PlayQuizPage({
   }
 
   if (currentQuestionIndex >= questions.length && !gameComplete) {
-    console.log("[Render] Index out of bounds, calling completeGame");
     completeGame();
     return null;
   }
@@ -789,11 +755,6 @@ export function PlayQuizPage({
   const currentQuestion = questions[currentQuestionIndex];
 
   if (!currentQuestion) {
-    console.error("[Render] Current question is undefined!", {
-      currentQuestionIndex,
-      questionsLength: questions.length,
-      gameComplete,
-    });
     return null;
   }
 
@@ -801,7 +762,7 @@ export function PlayQuizPage({
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
-      {/* ✅ HEADER FIXE AVEC PROGRESSION */}
+      {/* HEADER FIXE AVEC PROGRESSION */}
       <div className="bg-white shadow-sm px-4 py-3">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-3">
@@ -883,21 +844,16 @@ export function PlayQuizPage({
           )}
 
           {/* TEXTE DE LA QUESTION */}
-          <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-6">
-            {quiz.title} {currentQuestion.question_text}
-          </h3>
+          <div className="mb-6">
+            <p className="text-sm text-gray-500 mb-2">{quiz.title}</p>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-800">
+              {currentQuestion.question_text}
+            </h3>
+          </div>
 
-          {/* OPTIONS CHOIX MULTIPLES EN GRILLE */}
           {currentQuestion.question_type === "mcq" &&
             currentQuestion.options && (
-              <div
-                className={`grid gap-3 ${
-                  currentQuestion.option_images &&
-                  Object.keys(currentQuestion.option_images).length > 0
-                    ? "grid-cols-1 sm:grid-cols-2"
-                    : "grid-cols-1 sm:grid-cols-2"
-                }`}
-              >
+              <div className="grid grid-cols-2 gap-3">
                 {(Array.isArray(currentQuestion.options)
                   ? currentQuestion.options
                   : []
@@ -913,7 +869,7 @@ export function PlayQuizPage({
                       key={index}
                       onClick={(e) => handleAnswerClick(option, e)}
                       disabled={isAnswered}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      className={`p-2 md:p-4 rounded-lg border-2 transition-all text-left ${
                         isAnswered &&
                         (currentQuestion.correct_answers &&
                         currentQuestion.correct_answers.length > 0
@@ -939,14 +895,14 @@ export function PlayQuizPage({
                           <img
                             src={imageUrl}
                             alt={option}
-                            className="max-w-full h-32 md:h-40 rounded object-contain"
+                            className="max-w-full h-20 md:h-40 rounded object-contain"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                             }}
                           />
                         </div>
                       )}
-                      <span className="font-medium text-center block">
+                      <span className="font-medium text-center block text-sm md:text-base">
                         {option}
                       </span>
                     </button>
@@ -1142,7 +1098,7 @@ export function PlayQuizPage({
           ) : (
             trainingMode && (
               <>
-                { currentQuestion.complement_if_wrong && (
+                {currentQuestion.complement_if_wrong && (
                   <div className="my-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded shadow">
                     <strong>{t("playQuiz.explanation")} :</strong>
                     <p>{currentQuestion.complement_if_wrong}</p>

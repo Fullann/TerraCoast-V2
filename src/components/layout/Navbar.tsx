@@ -19,7 +19,7 @@ import {
 
 interface NavbarProps {
   currentView: string;
-  onNavigate: (view: string) => void;
+  onNavigate: (view: string, data?: any) => void;
 }
 
 export function Navbar({ currentView, onNavigate }: NavbarProps) {
@@ -167,56 +167,55 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
               <div className="flex-1">
                 {duelNotification.type === "invitation" && (
                   <>
-                    <h3 className="text-sm font-bold text-gray-900">
-                      {t("notifications.newDuel")}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">
-                        {duelNotification.from}
-                      </span>{" "}
+                    <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+                    <div
+                      className="cursor-pointer flex-1"
+                      onClick={() => {
+                        if (duelNotification.onNavigate) {
+                          duelNotification.onNavigate();
+                        }
+                        clearDuelNotification();
+                      }}
+                    >
+                      <strong>{duelNotification.from}</strong>{" "}
                       {t("notifications.challengedYou")}{" "}
-                      <span className="font-medium">
-                        {duelNotification.quizTitle}
-                      </span>
-                    </p>
+                      <strong>{duelNotification.quizTitle}</strong>
+                    </div>
                   </>
                 )}
                 {duelNotification.type === "accepted" && (
                   <>
-                    <h3 className="text-sm font-bold text-gray-900">
-                      {t("notifications.duelAccepted")}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">
-                        {duelNotification.from}
-                      </span>{" "}
+                    <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                    <div
+                      className="cursor-pointer flex-1"
+                      onClick={() => {
+                        onNavigate("duels", { tab: "active" });
+                        clearDuelNotification();
+                      }}
+                    >
+                      <strong>{duelNotification.from}</strong>{" "}
                       {t("notifications.acceptedDuel")}{" "}
-                      <span className="font-medium">
-                        {duelNotification.quizTitle}
-                      </span>
-                    </p>
+                      <strong>{duelNotification.quizTitle}</strong>
+                    </div>
                   </>
                 )}
                 {duelNotification.type === "completed" && (
                   <>
-                    <h3 className="text-sm font-bold text-gray-900">
-                      {duelNotification.result === "won" &&
-                        t("notifications.victory")}
-                      {duelNotification.result === "lost" &&
-                        t("notifications.defeat")}
-                      {duelNotification.result === "draw" &&
-                        t("notifications.draw")}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <Trophy className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                    <div
+                      className="cursor-pointer flex-1"
+                      onClick={() => {
+                        if (duelNotification.onNavigate) {
+                          duelNotification.onNavigate();
+                        }
+                        clearDuelNotification();
+                      }}
+                    >
                       {t("notifications.duelFinished")}{" "}
-                      <span className="font-medium">
-                        {duelNotification.from}
-                      </span>{" "}
+                      <strong>{duelNotification.from}</strong>{" "}
                       {t("notifications.on")}{" "}
-                      <span className="font-medium">
-                        {duelNotification.quizTitle}
-                      </span>
-                    </p>
+                      <strong>{duelNotification.quizTitle}</strong>
+                    </div>
                   </>
                 )}
                 <button

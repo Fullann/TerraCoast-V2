@@ -25,12 +25,13 @@ export function QuizValidationPage() {
 
   const loadPendingQuizzes = async () => {
     setLoading(true);
-    const { data: quizzes } = await supabase
-      .from('quizzes')
-      .select('*, author:profiles!quizzes_author_id_fkey(*)')
-      .eq('pending_validation', true)
-      .eq('validation_status', 'pending')
-      .order('created_at', { ascending: false });
+   const { data: quizzes, error } = await supabase
+  .from('quizzes')
+  .select('*, author:profiles!quizzes_creator_id_fkey(*)')
+  .eq('pending_validation', true)
+  .eq('validation_status', 'pending')
+  .order('created_at', { ascending: false });
+
 
     if (quizzes) {
       const quizzesWithCounts = await Promise.all(
