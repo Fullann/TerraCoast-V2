@@ -564,7 +564,54 @@ export const translations: Record<Language, Record<string, string>> = {
 
     "leaderboard.monthlyPoints": "Points mensuels",
     "leaderboard.totalXP": "XP total",
-    "leaderboard.you": "VOUS"
+    "leaderboard.you": "VOUS",
+   // Landing Page
+    "landing.nav.features": "Fonctionnalités",
+    "landing.nav.about": "À propos",
+    "landing.nav.contact": "Contact",
+    
+    "landing.hero.welcome": "Bienvenue sur",
+    "landing.hero.subtitle": "La plateforme ultime pour apprendre la géographie,",
+    "landing.hero.subtitleHighlight": "gratuitement et sans publicité",
+    "landing.hero.startAdventure": "Commencer l'aventure",
+    "landing.hero.login": "Se connecter",
+    
+    "landing.features.free.title": "100% Gratuit",
+    "landing.features.free.desc": "Aucun abonnement, aucune publicité, aucun pop-up. La géographie doit être accessible à tous.",
+    "landing.features.community.title": "Créé par la communauté",
+    "landing.features.community.desc": "Crée tes propres quiz et partage-les avec la communauté. Tout le monde peut contribuer.",
+    "landing.features.progress.title": "Progression & Défis",
+    "landing.features.progress.desc": "Gagne de l'expérience, débloque des badges et affronte tes amis en duel.",
+    
+    "landing.about.title": "Qui sommes-nous ?",
+    "landing.about.intro": "Nous sommes deux étudiants en informatique qui avons décidé de mêler nos compétences en développement pour l'un et sa passion géographique pour l'autre.",
+    "landing.about.mission": "Notre Mission",
+    "landing.about.missionText": "Nous avons créé ce site car les plateformes actuelles ne permettent pas de faire tout ce que l'on veut sans payer un abonnement. Notre vision est simple : la géographie doit être accessible à tous et GRATUITEMENT.",
+    "landing.about.goal": "Objectif Principal",
+    "landing.about.goalText": "À travers ce site, nous voulons donner la possibilité à n'importe qui de pouvoir apprendre la géographie sans contrainte d'abonnement, de publicité ou autres pop-ups intrusifs.",
+    "landing.about.offers": "Ce que nous offrons",
+    "landing.about.offer1": "Quiz variés : Drapeaux, capitales, cartes, frontières et bien plus",
+    "landing.about.offer2": "Création de quiz : Crée tes propres quiz et partage-les avec la communauté",
+    "landing.about.offer3": "Défis multijoueurs : Affronte tes amis en duel ou grimpe dans le classement",
+    "landing.about.offer4": "Système de progression : Niveaux, XP, badges et titres exclusifs",
+    "landing.about.offer5": "Fonctionnalités sociales : Chat en temps réel et système d'amis",
+    "landing.about.joinTitle": "Rejoins l'aventure",
+    "landing.about.joinText": "Que tu sois un passionné de géographie ou simplement curieux d'apprendre, TerraCoast t'offre un environnement stimulant pour développer tes connaissances tout en t'amusant.",
+    
+    "landing.stats.free": "Gratuit",
+    "landing.stats.ads": "Publicités",
+    "landing.stats.quizzes": "Quiz disponibles",
+    "landing.stats.available": "Disponible",
+    
+    "landing.cta.ready": "Prêt à commencer ?",
+    "landing.cta.createAccount": "Créer mon compte gratuitement",
+    
+    "landing.footer.tagline": "Fait avec passion pour rendre la géographie accessible à tous",
+    "landing.footer.legal": "Mentions légales",
+    "landing.footer.privacy": "Politique de confidentialité",
+    "landing.footer.terms": "Conditions d'utilisation",
+    "landing.footer.contact": "Contact",
+    "landing.footer.social": "Communauté"
   
   },
 
