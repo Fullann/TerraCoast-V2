@@ -1,8 +1,10 @@
-import { useAuth } from '../../contexts/AuthContext';
-import { ShieldOff, Clock, Ban } from 'lucide-react';
+import { useAuth } from "../../contexts/AuthContext";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { ShieldOff, Clock, Ban } from "lucide-react";
 
 export function BannedPage() {
   const { profile, signOut } = useAuth();
+  const { t, language } = useLanguage();
 
   const isPermanentBan = !profile?.ban_until;
   const banUntil = profile?.ban_until ? new Date(profile.ban_until) : null;
@@ -10,26 +12,46 @@ export function BannedPage() {
   const isStillBanned = banUntil ? banUntil > now : isPermanentBan;
 
   const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('fr-FR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    // Mapper les langues vers les locales
+    const localeMap: Record<string, string> = {
+      fr: "fr-FR",
+      en: "en-US",
+      es: "es-ES",
+      de: "de-DE",
+      it: "it-IT",
+      pt: "pt-PT",
+    };
+
+    return new Intl.DateTimeFormat(localeMap[language] || "fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   };
 
   const getTimeRemaining = () => {
-    if (!banUntil) return '';
+    if (!banUntil) return "";
 
     const diff = banUntil.getTime() - now.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    if (days > 0) return `${days} jour${days > 1 ? 's' : ''} et ${hours} heure${hours > 1 ? 's' : ''}`;
-    if (hours > 0) return `${hours} heure${hours > 1 ? 's' : ''} et ${minutes} minute${minutes > 1 ? 's' : ''}`;
-    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+    if (days > 0) {
+      return `${days} ${days > 1 ? t("banned.days") : t("banned.day")} ${t(
+        "banned.and"
+      )} ${hours} ${hours > 1 ? t("banned.hours") : t("banned.hour")}`;
+    }
+    if (hours > 0) {
+      return `${hours} ${hours > 1 ? t("banned.hours") : t("banned.hour")} ${t(
+        "banned.and"
+      )} ${minutes} ${minutes > 1 ? t("banned.minutes") : t("banned.minute")}`;
+    }
+    return `${minutes} ${
+      minutes > 1 ? t("banned.minutes") : t("banned.minute")
+    }`;
   };
 
   if (!isStillBanned) {
@@ -52,7 +74,9 @@ export function BannedPage() {
           )}
 
           <h1 className="text-2xl font-bold text-white mb-2">
-            {isPermanentBan ? 'Compte Désactivé' : 'Compte Temporairement Suspendu'}
+            {isPermanentBan
+              ? t("banned.permanentTitle")
+              : t("banned.temporaryTitle")}
           </h1>
         </div>
 
@@ -60,11 +84,13 @@ export function BannedPage() {
           {isPermanentBan ? (
             <div>
               <p className="text-gray-300 mb-4 text-center">
-                Votre compte a été définitivement banni et ne peut plus être utilisé.
+                {t("banned.permanentMessage")}
               </p>
               {profile?.ban_reason && (
                 <div className="mt-4 p-4 bg-red-900/20 rounded-lg border border-red-800/30">
-                  <p className="text-sm text-gray-400 mb-1">Raison :</p>
+                  <p className="text-sm text-gray-400 mb-1">
+                    {t("banned.reason")}
+                  </p>
                   <p className="text-gray-200">{profile.ban_reason}</p>
                 </div>
               )}
@@ -73,7 +99,7 @@ export function BannedPage() {
             <div>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Clock className="w-5 h-5 text-orange-400" />
-                <p className="text-gray-300">Votre compte sera réactivé dans :</p>
+                <p className="text-gray-300">{t("banned.timeRemaining")}</p>
               </div>
 
               <div className="text-center mb-4">
@@ -81,13 +107,15 @@ export function BannedPage() {
                   {getTimeRemaining()}
                 </p>
                 <p className="text-sm text-gray-400">
-                  Date de fin : {banUntil && formatDate(banUntil)}
+                  {t("banned.endDate")} {banUntil && formatDate(banUntil)}
                 </p>
               </div>
 
               {profile?.ban_reason && (
                 <div className="mt-4 p-4 bg-orange-900/20 rounded-lg border border-orange-800/30">
-                  <p className="text-sm text-gray-400 mb-1">Raison de la suspension :</p>
+                  <p className="text-sm text-gray-400 mb-1">
+                    {t("banned.suspensionReason")}
+                  </p>
                   <p className="text-gray-200">{profile.ban_reason}</p>
                 </div>
               )}
@@ -99,7 +127,7 @@ export function BannedPage() {
           {!isPermanentBan && (
             <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
               <p className="text-sm text-blue-300 text-center">
-                Vous pourrez vous reconnecter automatiquement une fois la suspension levée.
+                {t("banned.autoReconnect")}
               </p>
             </div>
           )}
@@ -108,7 +136,7 @@ export function BannedPage() {
             onClick={signOut}
             className="w-full py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
           >
-            Se Déconnecter
+            {t("banned.signOut")}
           </button>
         </div>
       </div>

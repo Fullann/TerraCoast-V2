@@ -530,6 +530,7 @@ export const translations: Record<Language, Record<string, string>> = {
       "Supprimer ton compte est une action irréversible. Toutes tes données seront perdues.",
     "settings.deleteAccount": "Supprimer mon compte",
     "settings.logout": "Se déconnecter",
+    "settings.logoutConfirmation": "Es-tu sûr de vouloir te déconnecter ?",
 
     // Image Dropzone
     "imageDropzone.invalidType":
@@ -564,8 +565,129 @@ export const translations: Record<Language, Record<string, string>> = {
 
     "leaderboard.monthlyPoints": "Points mensuels",
     "leaderboard.totalXP": "XP total",
-    "leaderboard.you": "VOUS"
-  
+    "leaderboard.you": "VOUS",
+    // Landing Page
+    "landing.nav.features": "Fonctionnalités",
+    "landing.nav.about": "À propos",
+    "landing.nav.contact": "Contact",
+
+    "landing.hero.welcome": "Bienvenue sur",
+    "landing.hero.subtitle":
+      "La plateforme ultime pour apprendre la géographie,",
+    "landing.hero.subtitleHighlight": "gratuitement et sans publicité",
+    "landing.hero.startAdventure": "Commencer l'aventure",
+    "landing.hero.login": "Se connecter",
+
+    "landing.features.free.title": "100% Gratuit",
+    "landing.features.free.desc":
+      "Aucun abonnement, aucune publicité, aucun pop-up. La géographie doit être accessible à tous.",
+    "landing.features.community.title": "Créé par la communauté",
+    "landing.features.community.desc":
+      "Crée tes propres quiz et partage-les avec la communauté. Tout le monde peut contribuer.",
+    "landing.features.progress.title": "Progression & Défis",
+    "landing.features.progress.desc":
+      "Gagne de l'expérience, débloque des badges et affronte tes amis en duel.",
+
+    "landing.about.title": "Qui sommes-nous ?",
+    "landing.about.intro":
+      "Nous sommes deux étudiants en informatique qui avons décidé de mêler nos compétences en développement pour l'un et sa passion géographique pour l'autre.",
+    "landing.about.mission": "Notre Mission",
+    "landing.about.missionText":
+      "Nous avons créé ce site car les plateformes actuelles ne permettent pas de faire tout ce que l'on veut sans payer un abonnement. Notre vision est simple : la géographie doit être accessible à tous et GRATUITEMENT.",
+    "landing.about.goal": "Objectif Principal",
+    "landing.about.goalText":
+      "À travers ce site, nous voulons donner la possibilité à n'importe qui de pouvoir apprendre la géographie sans contrainte d'abonnement, de publicité ou autres pop-ups intrusifs.",
+    "landing.about.offers": "Ce que nous offrons",
+    "landing.about.offer1":
+      "Quiz variés : Drapeaux, capitales, cartes, frontières et bien plus",
+    "landing.about.offer2":
+      "Création de quiz : Crée tes propres quiz et partage-les avec la communauté",
+    "landing.about.offer3":
+      "Défis multijoueurs : Affronte tes amis en duel ou grimpe dans le classement",
+    "landing.about.offer4":
+      "Système de progression : Niveaux, XP, badges et titres exclusifs",
+    "landing.about.offer5":
+      "Fonctionnalités sociales : Chat en temps réel et système d'amis",
+    "landing.about.joinTitle": "Rejoins l'aventure",
+    "landing.about.joinText":
+      "Que tu sois un passionné de géographie ou simplement curieux d'apprendre, TerraCoast t'offre un environnement stimulant pour développer tes connaissances tout en t'amusant.",
+
+    "landing.stats.free": "Gratuit",
+    "landing.stats.ads": "Publicités",
+    "landing.stats.quizzes": "Quiz disponibles",
+    "landing.stats.available": "Disponible",
+
+    "landing.cta.ready": "Prêt à commencer ?",
+    "landing.cta.createAccount": "Créer mon compte gratuitement",
+
+    "landing.footer.tagline":
+      "Fait avec passion pour rendre la géographie accessible à tous",
+    "landing.footer.legal": "Mentions légales",
+    "landing.footer.privacy": "Politique de confidentialité",
+    "landing.footer.terms": "Conditions d'utilisation",
+    "landing.footer.contact": "Contact",
+    "landing.footer.social": "Communauté",
+
+    // Banned Page
+    "banned.permanentTitle": "Compte Désactivé",
+    "banned.temporaryTitle": "Compte Temporairement Suspendu",
+    "banned.permanentMessage":
+      "Votre compte a été définitivement banni et ne peut plus être utilisé.",
+    "banned.timeRemaining": "Votre compte sera réactivé dans :",
+    "banned.endDate": "Date de fin :",
+    "banned.reason": "Raison :",
+    "banned.suspensionReason": "Raison de la suspension :",
+    "banned.autoReconnect":
+      "Vous pourrez vous reconnecter automatiquement une fois la suspension levée.",
+    "banned.signOut": "Se Déconnecter",
+    "banned.day": "jour",
+    "banned.days": "jours",
+    "banned.hour": "heure",
+    "banned.hours": "heures",
+    "banned.minute": "minute",
+    "banned.minutes": "minutes",
+    "banned.and": "et",
+
+    // Auth - Login/Register
+    "auth.username": "Pseudo",
+    "auth.hasAccount": "Déjà un compte ?",
+    "auth.emailPlaceholder": "votre@email.com",
+    "auth.passwordPlaceholder": "••••••••",
+    "auth.usernamePlaceholder": "VotreNom",
+    "auth.connectionError": "Erreur de connexion",
+    "auth.passwordMismatch": "Les mots de passe ne correspondent pas",
+    "auth.registrationError": "Erreur d'inscription",
+    "auth.pseudoPlaceholder": "Votre pseudo",
+    "auth.passwordMinLength": "Minimum 6 caractères",
+    "auth.passwordTooShort":
+      "Le mot de passe doit contenir au moins 6 caractères",
+    "auth.pseudoTooShort": "Le pseudo doit contenir au moins 3 caractères",
+    "auth.emailAlreadyUsed": "Cet email est déjà utilisé",
+    "auth.pseudoAlreadyTaken": "Ce pseudo est déjà pris",
+    // Force Username Change
+    "forceUsername.title": "Changement de Pseudo Requis",
+    "forceUsername.subtitle":
+      "Vous devez choisir un nouveau pseudo pour continuer",
+    "forceUsername.flaggedTitle": "Votre pseudo actuel a été signalé",
+    "forceUsername.flaggedDesc":
+      "Un administrateur vous demande de choisir un nouveau pseudo approprié.",
+    "forceUsername.currentPseudo": "Pseudo Actuel",
+    "forceUsername.newPseudo": "Nouveau Pseudo",
+    "forceUsername.placeholder": "Entrez votre nouveau pseudo",
+    "forceUsername.rules":
+      "3-20 caractères, lettres, chiffres, underscores et espaces uniquement",
+    "forceUsername.confirm": "Confirmer le Nouveau Pseudo",
+    "forceUsername.updating": "Mise à jour...",
+    "forceUsername.notice":
+      "Vous ne pourrez pas accéder à l'application tant que vous n'aurez pas choisi un nouveau pseudo approprié.",
+    "forceUsername.errorEmpty": "Veuillez entrer un nouveau pseudo",
+    "forceUsername.errorLength":
+      "Le pseudo doit contenir entre 3 et 20 caractères",
+    "forceUsername.errorInvalid":
+      "Le pseudo ne peut contenir que des lettres, chiffres, underscores et espaces",
+    "forceUsername.errorTaken": "Ce pseudo est déjà pris",
+    "forceUsername.errorUpdate": "Erreur lors de la mise à jour du pseudo",
+    "forceUsername.errorGeneric": "Une erreur est survenue",
   },
 
   en: {
@@ -617,6 +739,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "settings.showOnlyMyLanguage": "Show only quizzes in my language",
     "settings.accountSettings": "Account Settings",
     "settings.backToProfile": "Back to Profile",
+
     "common.save": "Save",
     "common.cancel": "Cancel",
     "common.loading": "Loading...",

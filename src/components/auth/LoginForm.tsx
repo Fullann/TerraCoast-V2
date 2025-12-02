@@ -19,7 +19,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
     try {
       await signIn(email, password);
     } catch (err: any) {
-      setError(err.message || 'Erreur de connexion');
+      setError(err.message || t('auth.connectionError'));
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            placeholder="votre@email.com"
+            placeholder={t('auth.emailPlaceholder')}
           />
         </div>
 
@@ -65,7 +65,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
             onChange={(e) => setPassword(e.target.value)}
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            placeholder="••••••••"
+            placeholder={t('auth.passwordPlaceholder')}
           />
         </div>
 
@@ -74,7 +74,7 @@ export function LoginForm({ onSwitchToRegister }: { onSwitchToRegister: () => vo
           disabled={loading}
           className="w-full bg-emerald-600 text-white py-2 px-4 rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
-          {loading ? `${t('common.loading')}` : t('auth.signIn')}
+          {loading ? t('common.loading') : t('auth.signIn')}
         </button>
       </form>
 
