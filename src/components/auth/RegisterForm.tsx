@@ -10,6 +10,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [pseudo, setPseudo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,12 +20,17 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
     setError('');
 
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+      setError(t('auth.passwordTooShort'));
       return;
     }
 
     if (pseudo.length < 3) {
-      setError('Le pseudo doit contenir au moins 3 caractères');
+      setError(t('auth.pseudoTooShort'));
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError(t('auth.passwordMismatch'));
       return;
     }
 
@@ -43,11 +49,11 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
       }
     } catch (err: any) {
       if (err.message.includes('already registered')) {
-        setError('Cet email est déjà utilisé');
+        setError(t('auth.emailAlreadyUsed'));
       } else if (err.message.includes('duplicate key')) {
-        setError('Ce pseudo est déjà pris');
+        setError(t('auth.pseudoAlreadyTaken'));
       } else {
-        setError(err.message || 'Erreur lors de l\'inscription');
+        setError(err.message || t('auth.registrationError'));
       }
     } finally {
       setLoading(false);
@@ -80,7 +86,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
             required
             minLength={3}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            placeholder="Votre pseudo"
+            placeholder={t('auth.pseudoPlaceholder')}
           />
         </div>
 
@@ -95,7 +101,7 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
             onChange={(e) => setEmail(e.target.value)}
             required
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            placeholder="votre@email.com"
+            placeholder={t('auth.emailPlaceholder')}
           />
         </div>
 
@@ -111,9 +117,25 @@ export function RegisterForm({ onSwitchToLogin }: { onSwitchToLogin: () => void 
             required
             minLength={6}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-            placeholder="••••••••"
+            placeholder={t('auth.passwordPlaceholder')}
           />
-          <p className="text-xs text-gray-500 mt-1">Minimum 6 caractères</p>
+          <p className="text-xs text-gray-500 mt-1">{t('auth.passwordMinLength')}</p>
+        </div>
+
+        <div>
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+            {t('auth.confirmPassword')}
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={6}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+            placeholder={t('auth.passwordPlaceholder')}
+          />
         </div>
 
         <button

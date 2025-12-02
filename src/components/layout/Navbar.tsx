@@ -243,7 +243,6 @@ export function Navbar({ currentView, onNavigate }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              {/* ✅ Logo et nom cliquables */}
               <button
                 onClick={() => onNavigate("home")}
                 className="flex items-center hover:opacity-80 transition-opacity"

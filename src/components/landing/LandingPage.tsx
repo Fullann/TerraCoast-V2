@@ -41,14 +41,22 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                <Globe className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                TerraCoast
-              </span>
-            </div>
+            <button
+                onClick={() => onNavigate("landing")}
+                className="flex items-center hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/logo.png"
+                  alt="TerraCoast Logo"
+                  className="h-12 w-auto"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <span className="ml-3 text-2xl font-bold text-emerald-600">
+                  TerraCoast
+                </span>
+              </button>
 
             {/* Navigation desktop */}
             <nav className="hidden md:flex items-center space-x-8">
@@ -432,12 +440,22 @@ export function LandingPage({ onNavigate }: LandingPageProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             {/* Colonne 1: Logo et description */}
             <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-2xl font-bold">TerraCoast</span>
-              </div>
+              <button
+                onClick={() => onNavigate("home")}
+                className="flex items-center hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src="/logo.png"
+                  alt="TerraCoast Logo"
+                  className="h-12 w-auto"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <span className="ml-3 text-2xl font-bold text-emerald-600">
+                  TerraCoast
+                </span>
+              </button>
               <p className="text-gray-400 text-sm">© 2025 TerraCoast</p>
               <p className="text-gray-400 text-sm mt-2">
                 {t("landing.footer.tagline")}
